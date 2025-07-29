@@ -65,7 +65,7 @@ export default function Training2025() {
     >
       <Breadcrumb>
         <BreadcrumbItem>
-          <Link href='/assets/learn'>Learn</Link>
+          <Link href='/resources/learn'>Learn</Link>
         </BreadcrumbItem>
       </Breadcrumb>
 
@@ -269,7 +269,7 @@ export default function Training2025() {
                   <li>
                     have a brief read of{' '}
                     <Link
-                      href='/assets/learn/training-2025/quantitative-biologist'
+                      href='/resources/learn/training-2025/quantitative-biologist'
                       className='text-[#0f62fe] hover:underline'
                     >
                       The Multilingual Quantitative Biologist
@@ -279,7 +279,7 @@ export default function Training2025() {
                   <li>
                     read and work through the{' '}
                     <Link
-                      href='/assets/learn/training-2025/biological-computing-in-r'
+                      href='/resources/learn/training-2025/biological-computing-in-r'
                       className='text-[#0f62fe] hover:underline'
                     >
                       Biological Computing in R in 1 hour
@@ -490,7 +490,7 @@ export default function Training2025() {
                     <li>
                       (optionally) read and work through the{' '}
                       <Link
-                        href='/assets/learn/training-2025/biological-computing-in-r'
+                        href='/resources/learn/training-2025/biological-computing-in-r'
                         className='text-[#0f62fe] hover:underline'
                       >
                         Biological Computing in R
@@ -499,7 +499,7 @@ export default function Training2025() {
                     <li>
                       read and work through the{' '}
                       <Link
-                        href='/assets/learn/training-2025/data-management-and-visualisation'
+                        href='/resources/learn/training-2025/data-management-and-visualisation'
                         className='text-[#0f62fe] hover:underline'
                       >
                         Data Management and Visualisation
@@ -560,7 +560,7 @@ export default function Training2025() {
                     <li>
                       read and work through the{' '}
                       <Link
-                        href='/assets/learn/training-2025/data-management-and-visualisation?anchor=beautiful-graphics-in-r'
+                        href='/resources/learn/training-2025/data-management-and-visualisation?anchor=beautiful-graphics-in-r'
                         className='text-[#0f62fe] hover:underline'
                       >
                         Data Management and Visualisation
@@ -616,7 +616,7 @@ export default function Training2025() {
                     <li>
                       work through the{' '}
                       <Link
-                        href='/assets/learn/training-2025/linear-regression'
+                        href='/resources/learn/training-2025/linear-regression'
                         className='text-[#0f62fe] hover:underline'
                       >
                         Linear regression
@@ -638,7 +638,7 @@ export default function Training2025() {
                     <li>
                       work through the{' '}
                       <Link
-                        href='/assets/learn/training-2025/introduction-to-time-series'
+                        href='/resources/learn/training-2025/introduction-to-time-series'
                         className='text-[#0f62fe] hover:underline'
                       >
                         Introduction to Time Series
@@ -674,7 +674,7 @@ export default function Training2025() {
                     <li>
                       continue the{' '}
                       <Link
-                        href='/assets/learn/training-2025/introduction-to-time-series'
+                        href='/resources/learn/training-2025/introduction-to-time-series'
                         className='text-[#0f62fe] hover:underline'
                       >
                         Introduction to Time Series

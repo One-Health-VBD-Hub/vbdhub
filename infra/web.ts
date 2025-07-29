@@ -6,5 +6,6 @@ export const web = new sst.aws.Nextjs("Web", {
   link: [bucket],                 // give the site access to your bucket
   environment: {
     BUCKET_NAME: bucket.name,     // pass the bucket name in env
+    NEXT_PUBLIC_API_URL: 'https://backend362fd4e1.proudbush-b07084fd.uksouth.azurecontainerapps.io/api'
   },
 });

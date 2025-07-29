@@ -12,10 +12,10 @@ export default function Page() {
       <Stack as='main' className='mx-auto mt-24 sm:mt-32' id='main-content'>
         <Breadcrumb>
           <BreadcrumbItem>
-            <Link href='/assets/learn'>Learn</Link>
+            <Link href='/resources/learn'>Learn</Link>
           </BreadcrumbItem>
           <BreadcrumbItem>
-            <Link href='/assets/learn/training-2025'>Training 2025</Link>
+            <Link href='/resources/learn/training-2025'>Training 2025</Link>
           </BreadcrumbItem>
         </Breadcrumb>
         <MulQuaBioPage page='/notebooks/Data_R.html' />
