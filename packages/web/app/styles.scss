@@ -1,0 +1,33 @@
+// Saas styles for Carbon Design System
+@use '@carbon/react/scss/components/content-switcher';
+@use '@carbon/react/scss/components/pagination-nav';
+@use '@carbon/react/scss/components/menu';
+@use '@carbon/react/scss/components/ui-shell';
+@use '@carbon/react/scss/components/search';
+@use '@carbon/react/scss/components/notification';
+@use '@carbon/react/scss/components/loading';
+@use '@carbon/react/scss/components/inline-loading';
+@use '@carbon/react/scss/components/breadcrumb'; // must be before `tile` because otherwise it breaks it
+@use '@carbon/react/scss/components/tile';
+@use '@carbon/react/scss/components/text-input';
+@use '@carbon/react/scss/components/form';
+@use '@carbon/react/scss/components/button';
+@use '@carbon/react/scss/components/accordion';
+@use '@carbon/react/scss/components/checkbox';
+@use '@carbon/react/scss/components/date-picker';
+@use '@carbon/react/scss/components/code-snippet';
+@use '@carbon/react/scss/components/copy-button';
+@use '@carbon/react/scss/components/combo-box';
+@use '@carbon/react/scss/components/modal';
+@use '@carbon/react/scss/components/tooltip';
+@use '@carbon/react/scss/components/popover';
+@use '@carbon/react/scss/components/tabs';
+@use '@carbon/react/scss/components/toggle';
+@use '@carbon/react/scss/components/toggletip';
+@use '@carbon/react/scss/components/multiselect';
+@use '@carbon/react/scss/components/dropdown';
+@use '@carbon/react/scss/components/skeleton-styles';
+
+// DO NOT USE because this contains a weird reset that breaks Tailwind (font sizes do not apply to Tile component)
+// but if not present this break the Snippet component (fonts not loading)
+//@use '@carbon/react';

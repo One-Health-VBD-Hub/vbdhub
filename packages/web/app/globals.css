@@ -1,0 +1,101 @@
+/* see comment (#1) below */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+/* (#1) necessary because of https://github.com/tailwindlabs/tailwindcss/discussions/15870 */
+@layer theme, base, components, utilities;
+
+/* adding custom `xs` breakpoint */
+@theme {
+    --breakpoint-xs: 30rem;
+}
+
+/* define a “touch” variant that only fires on coarse/no-hover pointers */
+@custom-variant touch {
+    @media (pointer: coarse) and (hover: none) {
+        /* wrap whatever utility you slot in */
+        & {
+            /* noinspection CssInvalidAtRule */
+            @slot;
+        }
+    }
+}
+
+@custom-variant no-touch {
+    @media (pointer: fine) and (hover: hover) {
+        & {
+            /* noinspection CssInvalidAtRule */
+            @slot;
+        }
+    }
+}
+
+/* this is custom style for FilterPanel component */
+.custom-accordion .cds--accordion__title {
+    font-weight: 500;
+}
+
+/* custom CodeSnippet styles */
+
+.cds--snippet--multi .cds--snippet-container {
+    padding-left: 16px;
+    padding-top: 13px;
+    min-height: 0 !important;
+    padding-bottom: 13px;
+}
+
+.cds--snippet--multi {
+    padding: 0;
+}
+
+.cds--snippet.cds--snippet--multi .cds--popover-container {
+    inset-block-start: 0;
+    inset-inline-end: 0;
+}
+
+.cds--snippet--multi .cds--copy-btn {
+    height: 40px;
+    width: 40px;
+}
+
+/*****************************/
+
+/* to fix fonts in Snippet component */
+.cds--snippet code {
+    font-family: "__IBMPlexMono_776576", monospace;
+}
+
+/* dotted background */
+.homepage--dots {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' xml:space='preserve' enable-background='new 0 0 16 16' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='none'/%3E%3Crect width='1' height='1'/%3E%3C/svg%3E");
+    background-size: 16px;
+    opacity: 0.25;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    position: fixed; /* Ensures background remains fixed while scrolling */
+    top: 0;
+    left: 0;
+}
+
+/* custom Modal styles for mobile filter */
+
+.filter-modal-mobile .cds--modal-container {
+    height: auto;
+}
+
+.filter-modal-mobile .cds--modal-content {
+    padding: 0;
+}
+
+.filter-modal-mobile .cds--modal-header {
+    display: none;
+}
+
+/*****************************/
+
+address {
+    font-style: normal;
+    display: inline;
+}

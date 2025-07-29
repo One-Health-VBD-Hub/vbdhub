@@ -1,0 +1,32 @@
+{
+  "name": "Vector-Borne Diseases Hub",
+  "short_name": "VBD Hub",
+  "description": "Sharing, exploration, and collaboration on vector-borne diseases. Data on diseases spread by mosquitoes, ticks and other vectors and tools to work with them.",
+  "keywords": [
+    "vector-borne diseases",
+    "mosquitoes",
+    "ticks",
+    "data sharing",
+    "data exploration",
+    "data collaboration",
+    "VBD",
+    "UK"
+  ],
+  "icons": [
+    {
+      "src": "/hotlink-ok/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/hotlink-ok/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "theme_color": "#0f62fe",
+  "background_color": "#0f62fe",
+  "display": "standalone"
+}

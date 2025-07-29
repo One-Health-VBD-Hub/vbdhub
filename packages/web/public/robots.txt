@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://vbdhub.org
+
+# Sitemaps
+Sitemap: https://vbdhub.org/sitemap.xml
