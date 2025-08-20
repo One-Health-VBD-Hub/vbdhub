@@ -1,10 +1,15 @@
-import { Resource } from "sst";
-import { Handler } from "aws-lambda";
-import { Example } from "@vbdhub/core/example";
+import {Resource} from "sst";
+import {Example} from "@vbdhub/core/example";
+import middy from "@middy/core";
+import {APIGatewayProxyEventV2, APIGatewayProxyResultV2, Handler} from "aws-lambda";
 
-export const handler: Handler = async (_event) => {
-  return {
-    statusCode: 200,
-    body: `${Example.hello()} Linked to ${Resource.MyBucket.name}.`,
-  };
+const rawHandler: Handler<
+    APIGatewayProxyEventV2,
+    APIGatewayProxyResultV2<string>> = async (event): Promise<APIGatewayProxyResultV2<string>> => {
+    return {
+        statusCode: 200,
+        body: `${Example.hello()} Linked to ${Resource.MyBucket.name}.`,
+    };
 };
+
+export const handler = middy(rawHandler)

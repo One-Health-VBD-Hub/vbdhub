@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@middy/core": "^6",
     "sst": "^3"
   }
 }
