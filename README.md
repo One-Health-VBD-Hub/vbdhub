@@ -74,7 +74,7 @@ This template uses [npm Workspaces](https://docs.npmjs.com/cli/v8/using-npm/work
 
 The `infra/` directory allows you to logically split the infrastructure of your app into separate files. This can be helpful as your app grows.
 
-In the template, we have an `api.ts`, and `storage.ts`. These export the created resources. And are imported in the `sst.config.ts`.
+In the template, we have an `test.ts`, and `storage.ts`. These export the created resources. And are imported in the `sst.config.ts`.
 
 ---
 

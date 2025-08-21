@@ -5,14 +5,21 @@
 
 declare module "sst" {
   export interface Resource {
-    "MyApi": {
-      "name": string
-      "type": "sst.aws.Function"
+    "Api": {
+      "type": "sst.aws.ApiGatewayV2"
+      "url": string
+    }
+    "Database": {
+      "type": "sst.sst.Linkable"
       "url": string
     }
     "MyBucket": {
       "name": string
       "type": "sst.aws.Bucket"
+    }
+    "NeonDbUrl": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "Web": {
       "type": "sst.aws.Nextjs"
