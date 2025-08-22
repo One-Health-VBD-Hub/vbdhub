@@ -22,6 +22,13 @@ export const service = new sst.aws.Service('Service', {
     context: '.',
     dockerfile: 'packages/service/Dockerfile'
   },
+  scaling: {
+    min: 0,
+    max: 2,
+    cpuUtilization: 70,
+    memoryUtilization: 70,
+    requestCount: 20
+  },
   loadBalancer: {
     domain: {
       name: domainName,
