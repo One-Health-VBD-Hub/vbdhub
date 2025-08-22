@@ -7,7 +7,7 @@ const elasticSearchKey = new sst.Secret('ELASTICSEARCH_API_KEY');
 
 const stage = $app.stage;
 
-export const service = new sst.aws.Service('MyService', {
+export const service = new sst.aws.Service('Service', {
   cluster,
   environment: {
     ELASTICSEARCH_NODE: elasticSearchNode.value,

@@ -7,8 +7,6 @@
     "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "next lint",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
     "knip": "knip"
   },
   "dependencies": {
@@ -33,16 +31,7 @@
     "wellknown": "^0.5"
   },
   "devDependencies": {
-    "@chromatic-com/storybook": "^3",
     "@eslint/js": "^9",
-    "@storybook/addon-essentials": "^8",
-    "@storybook/addon-interactions": "^8",
-    "@storybook/addon-links": "^8",
-    "@storybook/addon-onboarding": "^8",
-    "@storybook/blocks": "^8",
-    "@storybook/nextjs": "^8",
-    "@storybook/react": "^8",
-    "@storybook/test": "^8",
     "@tailwindcss/postcss": "^4",
     "@tanstack/eslint-plugin-query": "^5",
     "@types/eslint__js": "^8",
@@ -57,14 +46,12 @@
     "eslint-config-next": "^15",
     "eslint-config-prettier": "^10",
     "eslint-plugin-prettier": "^5",
-    "eslint-plugin-storybook": "^0.12",
     "knip": "^5",
     "next-sitemap": "^4",
     "postcss": "^8",
     "prettier": "^3",
     "prettier-plugin-tailwindcss": "^0.6",
     "sass": "^1",
-    "storybook": "^8",
     "tailwindcss": "^4",
     "typescript": "^5",
     "typescript-eslint": "^7"

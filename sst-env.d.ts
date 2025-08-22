@@ -21,6 +21,11 @@ declare module "sst" {
     "MyVpc": {
       "type": "sst.aws.Vpc"
     }
+    "Service": {
+      "service": string
+      "type": "sst.aws.Service"
+      "url": string
+    }
     "Web": {
       "type": "sst.aws.Nextjs"
       "url": string

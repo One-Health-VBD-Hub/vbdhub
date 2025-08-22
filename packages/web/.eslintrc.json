@@ -2,10 +2,11 @@
   "extends": [
     "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended",
-    "plugin:storybook/recommended",
     "plugin:prettier/recommended",
     "plugin:@tanstack/eslint-plugin-query/recommended"
   ],
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@typescript-eslint"
+  ],
   "root": true
 }
