@@ -12,18 +12,13 @@ export default $config({
         aws: {
           profile:
             input.stage === 'production' ? 'vbdhub-production' : 'vbdhub-dev'
-        }
+        },
+        cloudflare: '6.6.0'
       }
     };
   },
   async run() {
-    const storage = await import('./infra/storage');
-    await import('./infra/api');
     await import('./infra/web');
-    await import('./infra/db');
-
-    return {
-      MyBucket: storage.bucket.name
-    };
+    await import('./infra/service');
   }
 });

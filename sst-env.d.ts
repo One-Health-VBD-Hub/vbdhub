@@ -5,21 +5,21 @@
 
 declare module "sst" {
   export interface Resource {
-    "Api": {
-      "type": "sst.aws.ApiGatewayV2"
-      "url": string
-    }
-    "Database": {
-      "type": "sst.sst.Linkable"
-      "url": string
-    }
-    "MyBucket": {
-      "name": string
-      "type": "sst.aws.Bucket"
-    }
-    "NeonDbUrl": {
+    "ELASTICSEARCH_API_KEY": {
       "type": "sst.sst.Secret"
       "value": string
+    }
+    "ELASTICSEARCH_NODE": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "MyService": {
+      "service": string
+      "type": "sst.aws.Service"
+      "url": string
+    }
+    "MyVpc": {
+      "type": "sst.aws.Vpc"
     }
     "Web": {
       "type": "sst.aws.Nextjs"
