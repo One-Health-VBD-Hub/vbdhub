@@ -5,7 +5,10 @@ const cluster = new sst.aws.Cluster('MyCluster', { vpc });
 const elasticSearchNode = new sst.Secret('ELASTICSEARCH_NODE');
 const elasticSearchKey = new sst.Secret('ELASTICSEARCH_API_KEY');
 
-const stage = $app.stage;
+const domainName =
+  $app.stage === 'production'
+    ? 'api.vbdhub.org'
+    : `api-${$app.stage}.vbdhub.org`;
 
 export const service = new sst.aws.Service('Service', {
   cluster,
@@ -21,10 +24,7 @@ export const service = new sst.aws.Service('Service', {
   },
   loadBalancer: {
     domain: {
-      name:
-        $app.stage === 'production'
-          ? 'api.vbdhub.org'
-          : `api-${stage}.vbdhub.org`,
+      name: domainName,
       dns: sst.cloudflare.dns({
         proxy: true
       })

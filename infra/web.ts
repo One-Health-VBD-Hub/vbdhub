@@ -1,16 +1,15 @@
 import { service } from './service'; // import your S3 bucket construct
 
-const stage = $app.stage;
+const domainName =
+  $app.stage === 'production' ? 'vbdhub.org' : `${$app.stage}.vbdhub.org`;
 
 // instantiate your Next.js site
 export const web = new sst.aws.Nextjs('Web', {
   path: 'packages/web', // wherever your Next.js lives
   link: [service], // give the site access to your bucket
   domain: {
-    name:
-      $app.stage === 'production'
-        ? 'new.vbdhub.org'
-        : `new-${stage}.vbdhub.org`,
+    name: domainName,
+    redirects: [`www.${domainName}`],
     dns: sst.cloudflare.dns({
       proxy: true
     })
