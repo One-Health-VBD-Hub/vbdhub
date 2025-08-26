@@ -1,10 +1,10 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import type { NextConfig } from 'next';
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   output: 'standalone',
   // necessary for the `MulQuaBioPage` component to work
-  rewrites: () => {
+  rewrites: async () => {
     return [
       // rewrites /mqb requests to the MulQuaBio domain pages
       {
@@ -63,5 +63,5 @@ export default withSentryConfig(nextConfig, {
   // See the following for more information:
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
-  automaticVercelMonitors: true
+  automaticVercelMonitors: false
 });
