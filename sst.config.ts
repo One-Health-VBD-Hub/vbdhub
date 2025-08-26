@@ -13,7 +13,9 @@ export default $config({
           profile:
             input.stage === 'production' ? 'vbdhub-production' : 'vbdhub-dev'
         },
-        cloudflare: '6.6.0'
+        cloudflare: {
+          apiToken: process.env.CLOUDFLARE_API_TOKEN
+        }
       }
     };
   },

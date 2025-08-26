@@ -22,15 +22,14 @@ export const service = new sst.aws.Service('Service', {
     context: '.',
     dockerfile: 'packages/service/Dockerfile'
   },
-  // Use 50% regular Fargate and 50% Fargate Spot. And ensure that the first task uses Fargate Spot
   capacity: {
-    fargate: { weight: 1 },
-    spot: { weight: 1, base: 1 }
+    fargate: { base: 1, weight: 0 }, // 1st task on On-Demand Fargate
+    spot: { weight: 1 } // all remaining tasks on Spot
   },
   scaling: {
     min: 1,
     max: 3,
-    cpuUtilization: 70,
+    requestCount: 15,
     memoryUtilization: 70
   },
   loadBalancer: {
