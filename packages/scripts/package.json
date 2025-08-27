@@ -1,0 +1,15 @@
+{
+  "name": "@vbdhub/scripts",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "sst": "*"
+  },
+  "scripts": {
+    "shell": "sst shell tsx"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4"
+  }
+}

@@ -1,16 +1,16 @@
 const vpc = new sst.aws.Vpc('MyVpc');
-const cluster = new sst.aws.Cluster('MyCluster', { vpc });
+export const cluster = new sst.aws.Cluster('MyCluster', { vpc });
 
 // env variables for the service
-const elasticSearchNode = new sst.Secret('ELASTICSEARCH_NODE');
-const elasticSearchKey = new sst.Secret('ELASTICSEARCH_API_KEY');
+export const elasticSearchNode = new sst.Secret('ELASTICSEARCH_NODE');
+export const elasticSearchKey = new sst.Secret('ELASTICSEARCH_API_KEY');
 
 const domainName =
   $app.stage === 'production'
     ? 'api.vbdhub.org'
     : `api-${$app.stage}.vbdhub.org`;
 
-export const service = new sst.aws.Service('Service', {
+export const service = new sst.aws.Service('ServiceNestJS', {
   cluster,
   environment: {
     ELASTICSEARCH_NODE: elasticSearchNode.value,
@@ -19,7 +19,7 @@ export const service = new sst.aws.Service('Service', {
     PORT: '3001'
   },
   image: {
-    context: '.',
+    context: '.', // do not change, the Dockerfile uses relative paths
     dockerfile: 'packages/service/Dockerfile'
   },
   capacity: {
