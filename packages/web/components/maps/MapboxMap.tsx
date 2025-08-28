@@ -83,8 +83,7 @@ export default memo(function MapboxMap({
           pitch: 0
         }}
         mapStyle='mapbox://styles/mapbox/light-v9'
-        // TODO look at whether secure
-        mapboxAccessToken='pk.eyJ1Ijoic3RhbmxleTg4OCIsImEiOiJjbWM5YXhzbDMxNmxzMmlzM2Q5YWxyeGV1In0.9v3vYrXvdRLkdszC5Jwodw'
+        mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
       >
         {geoLocateControl && <GeolocateControl />}
         {fullscreenControl && <FullscreenControl />}

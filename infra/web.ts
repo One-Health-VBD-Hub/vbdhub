@@ -15,6 +15,8 @@ export const web = new sst.aws.Nextjs('Web', {
   },
   environment: {
     NEXT_PUBLIC_API_URL: service.url,
+    NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
+      'pk.eyJ1Ijoic3RhbmxleTg4OCIsImEiOiJjbWM5YXhzbDMxNmxzMmlzM2Q5YWxyeGV1In0.9v3vYrXvdRLkdszC5Jwodw',
     NEXT_PUBLIC_LOGIN_REDIRECT_URL: $dev
       ? 'http://localhost:3000/auth'
       : `https://${domainName}/auth`,
