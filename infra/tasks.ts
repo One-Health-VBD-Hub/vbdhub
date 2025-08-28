@@ -64,7 +64,7 @@ for (const taskSpec of taskSpecs) {
     image: {
       context: '.', // do not change, the Dockerfile uses relative paths
       dockerfile: 'packages/service/src/jobs/Dockerfile'
-    },
+    } as const,
     cpu: '0.5 vCPU',
     memory: '1 GB',
     environment: {

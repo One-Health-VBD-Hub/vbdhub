@@ -1,2 +1,76 @@
-# sst
+# compiled output
+dist
+**/dist
+build
+**/build
+
+# dependencies
+node_modules
+**/node_modules
+
+# logs
+logs
+**/*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS cruft
+**/.DS_Store
+
+# coverage / test artifacts
+coverage
+.nyc_output
+**/__tests__
+**/__mocks__
+**/__snapshots__
+
+# editors/IDEs
+.vscode
+.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# env files (don’t bake secrets)
+**/.env*
+
+# temp dirs
+.temp
+.tmp
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# SST
 .sst
+
+# git & GitHub
+.git
+.gitattributes
+.gitignore
+.github
+
+# Next.js / Turborepo
+**/.next
+**/out
+**/.turbo
+**/.opennext
+
+# package manager caches
+.pnpm-store
+**/.pnpm-store
+.npm
+**/.npm
+.yarn
+**/.yarn
+.pnp.*

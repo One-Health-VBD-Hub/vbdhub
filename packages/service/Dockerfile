@@ -1,5 +1,5 @@
 # --- dev deps for build (has @swc/*, typescript, nest cli, etc.) ---
-FROM node:22-alpine AS deps-dev
+FROM node:20-slim AS deps-dev
 WORKDIR /app
 # root lockfile + target workspace manifest
 COPY package.json package-lock.json ./
@@ -8,7 +8,7 @@ COPY packages/service/package.json packages/service/package.json
 RUN npm ci --workspaces --include-workspace-root=false
 
 # --- build the service ---
-FROM node:22-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 # source code
 COPY . .
@@ -18,14 +18,14 @@ COPY --from=deps-dev /app/node_modules /app/node_modules
 RUN npm run --workspace @vbdhub/service build
 
 # --- prod deps only for runtime (small image) ---
-FROM node:22-alpine AS deps-prod
+FROM node:20-slim AS deps-prod
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/service/package.json packages/service/package.json
 RUN npm ci --omit=dev --workspaces --include-workspace-root=false
 
 # --- runtime image ---
-FROM node:22-alpine AS runtime
+FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 # hoisted prod node_modules

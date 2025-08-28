@@ -1,26 +1,35 @@
 # compiled output
-/dist
-/node_modules
-/build
+dist
+**/dist
+build
+**/build
 
-# Logs
+# dependencies
+node_modules
+**/node_modules
+
+# logs
 logs
-*.log
+**/*.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# OS
-.DS_Store
+# OS cruft
+**/.DS_Store
 
-# Tests
-/coverage
-/.nyc_output
+# coverage / test artifacts
+coverage
+.nyc_output
+**/__tests__
+**/__mocks__
+**/__snapshots__
 
-# IDEs and editors
-/.idea
+# editors/IDEs
+.vscode
+.idea
 .project
 .classpath
 .c9/
@@ -28,33 +37,40 @@ lerna-debug.log*
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# env files (don’t bake secrets)
+**/.env*
 
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-
-# temp directory
+# temp dirs
 .temp
 .tmp
 
-# Runtime data
+# runtime data
 pids
 *.pid
 *.seed
 *.pid.lock
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-
-# sst
+# SST
 .sst
+
+# git & GitHub
+.git
+.gitattributes
+.gitignore
+.github
+
+# Next.js / Turborepo
+**/.next
+**/out
+**/.turbo
+**/.opennext
+
+# package manager caches
+.pnpm-store
+**/.pnpm-store
+.npm
+**/.npm
+.yarn
+**/.yarn
+.pnp.*
