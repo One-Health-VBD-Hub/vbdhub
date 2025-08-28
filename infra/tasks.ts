@@ -70,7 +70,7 @@ for (const taskSpec of taskSpecs) {
     environment: {
       ELASTICSEARCH_NODE: elasticSearchNode.value,
       ELASTICSEARCH_API_KEY: elasticSearchKey.value,
-      NODE_ENV: 'production',
+      NODE_ENV: $dev ? 'development' : 'production',
       DB: taskSpec.DB,
       CONCURRENCY: taskSpec.CONCURRENCY,
       MODE: taskSpec.MODE ?? ''
@@ -78,8 +78,7 @@ for (const taskSpec of taskSpecs) {
     dev: {
       directory: 'packages/service',
       command: taskSpec.devCommand
-    },
-    link: [elasticSearchNode, elasticSearchKey]
+    }
   });
 
   // schedule the task to run weekly

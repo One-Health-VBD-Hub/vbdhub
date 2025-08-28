@@ -6,7 +6,6 @@ const domainName =
 // instantiate your Next.js site
 export const web = new sst.aws.Nextjs('Web', {
   path: 'packages/web', // wherever your Next.js lives
-  link: [service], // give the site access to your bucket
   domain: {
     name: domainName,
     redirects: [`www.${domainName}`],
@@ -15,7 +14,17 @@ export const web = new sst.aws.Nextjs('Web', {
     })
   },
   environment: {
-    NEXT_PUBLIC_API_URL: service.url
+    NEXT_PUBLIC_API_URL: service.url,
+    NEXT_PUBLIC_LOGIN_REDIRECT_URL: $dev
+      ? 'http://localhost:3000/auth'
+      : `https://${domainName}/auth`,
+    NEXT_PUBLIC_SIGNUP_REDIRECT_URL: $dev
+      ? 'http://localhost:3000/auth'
+      : `https://${domainName}/auth`,
+    NEXT_PUBLIC_STYTCH_PUBLIC_TOKEN:
+      $app.stage === 'production'
+        ? 'public-token-live-e8a590ee-0e4c-4fd1-8aab-d1a4cc4da322'
+        : 'public-token-test-c62e6a10-a61e-4b00-9a7b-d6dccef49d07'
   },
   dev: {
     command: 'npm run --workspace @vbdhub/web dev',

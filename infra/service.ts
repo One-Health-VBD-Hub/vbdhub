@@ -15,7 +15,7 @@ export const service = new sst.aws.Service('ServiceNestJS', {
   environment: {
     ELASTICSEARCH_NODE: elasticSearchNode.value,
     ELASTICSEARCH_API_KEY: elasticSearchKey.value,
-    NODE_ENV: $app.stage === 'production' ? 'production' : 'development',
+    NODE_ENV: $dev ? 'development' : 'production',
     PORT: '3001'
   },
   image: {
@@ -47,6 +47,5 @@ export const service = new sst.aws.Service('ServiceNestJS', {
   dev: {
     command: 'npm run --workspace @vbdhub/service start:dev',
     url: 'http://localhost:3001/'
-  },
-  link: [elasticSearchNode, elasticSearchKey]
+  }
 });
