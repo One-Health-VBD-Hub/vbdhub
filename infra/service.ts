@@ -1,5 +1,14 @@
 const vpc = new sst.aws.Vpc('MyVpc');
-export const cluster = new sst.aws.Cluster('MyCluster', { vpc });
+export const cluster = new sst.aws.Cluster('MyCluster', {
+  vpc,
+  transform: {
+    // mutate the underlying aws.ecs.Cluster args
+    cluster: (args) => {
+      // enable CloudWatch Container Insights
+      args.settings = [{ name: 'containerInsights', value: 'enabled' }];
+    }
+  }
+});
 
 // env variables for the service
 export const elasticSearchNode = new sst.Secret('ELASTICSEARCH_NODE');
