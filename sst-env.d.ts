@@ -5,6 +5,10 @@
 
 declare module "sst" {
   export interface Resource {
+    "DISCOURSE_SSO_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "ELASTICSEARCH_API_KEY": {
       "type": "sst.sst.Secret"
       "value": string
@@ -15,6 +19,14 @@ declare module "sst" {
     }
     "MyVpc": {
       "type": "sst.aws.Vpc"
+    }
+    "STYTCH_PROJECT_ID": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "STYTCH_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "ServiceNestJS": {
       "service": string
