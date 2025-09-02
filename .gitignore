@@ -5,11 +5,13 @@ node_modules
 .sst
 
 # tmp files
-.#*
+.#*s
 
 # env 
 .env*.local
 .env
+
+!env.example
 
 # opennext
 .open-next
@@ -19,3 +21,6 @@ node_modules
 
 # JetBrains IDEs
 .idea
+
+# repomix
+repomix*

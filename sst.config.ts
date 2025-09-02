@@ -7,6 +7,7 @@ export default $config({
       removal: input?.stage === 'production' ? 'retain' : 'remove',
       protect: ['production'].includes(input?.stage),
       home: 'aws',
+      region: 'eu-west-2', // AWS London
       // production vs dev accounts (based on ~/.aws/config)
       providers: {
         aws: {
@@ -20,8 +21,13 @@ export default $config({
     };
   },
   async run() {
-    await import('./infra/web');
-    await import('./infra/service');
+    const web = await import('./infra/web');
+    const service = await import('./infra/service');
     await import('./infra/tasks');
+
+    return {
+      web: web.web.url,
+      service: service.service.url
+    }
   }
 });
