@@ -7,12 +7,22 @@ import {
   Checkbox,
   CheckboxGroup,
   Form,
+  Loading,
   TextInput
 } from '@carbon/react';
-import React, { SyntheticEvent, useEffect, useState } from 'react';
+import React, { Suspense, SyntheticEvent, useEffect, useState } from 'react';
 import Heading from '@/components/Heading';
 
-export default function Register() {
+// TODO: look at if necessary
+export default function RegisterWrapper() {
+  return (
+    <Suspense fallback={<Loading withOverlay={true} />}>
+      <Register />
+    </Suspense>
+  );
+}
+
+function Register() {
   const { user, isInitialized } = useStytchUser();
   const stytch = useStytch();
   const router = useRouter();
