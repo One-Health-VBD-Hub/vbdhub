@@ -19,12 +19,6 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'media.licdn.com',
-        port: '',
-        pathname: '/dms/image/v2/**'
-      },
-      {
         hostname: 'pxl-imperialacuk.terminalfour.net'
       },
       {
