@@ -10,6 +10,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication
 } from '@nestjs/platform-fastify';
+import cookie from '@fastify/cookie';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
@@ -29,6 +30,7 @@ async function bootstrap() {
 
   // add helmet.js to secure the app by setting various HTTP headers
   await app.register(helmet);
+  await app.register(cookie);
 
   // get the ConfigService instance that loads the .env file
   const configService = app.get(ConfigService);

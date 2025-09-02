@@ -1,21 +1,33 @@
 'use client';
 
 import { useStytch, useStytchUser } from '@stytch/nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Button,
   Checkbox,
   CheckboxGroup,
   Form,
+  Loading,
   TextInput
 } from '@carbon/react';
-import React, { SyntheticEvent, useEffect, useState } from 'react';
+import React, { Suspense, SyntheticEvent, useEffect, useState } from 'react';
 import Heading from '@/components/Heading';
 
-export default function Register() {
+// TODO: look at if necessary
+export default function RegisterWrapper() {
+  return (
+    <Suspense fallback={<Loading withOverlay={true} />}>
+      <Register />
+    </Suspense>
+  );
+}
+
+function Register() {
   const { user, isInitialized } = useStytchUser();
   const stytch = useStytch();
   const router = useRouter();
+  const params = useSearchParams();
+  const nextParam = params.get('next');
   const [status, setStatus] = useState<
     'writing' | 'submitted' | 'pending' | 'error'
   >('writing');
@@ -56,10 +68,14 @@ export default function Register() {
         </p>
         <Button
           onClick={() => {
-            router.replace('/');
+            if (nextParam && nextParam.startsWith('http')) {
+              window.location.href = nextParam;
+            } else {
+              router.replace(nextParam || '/');
+            }
           }}
         >
-          Go to home page
+          Continue
         </Button>
       </div>
     );

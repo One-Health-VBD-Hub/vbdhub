@@ -23,6 +23,7 @@ function Auth() {
   const stytch = useStytch();
   const params = useSearchParams();
   const router = useRouter();
+  const nextParam = params.get('next');
 
   // tries to authenticate the user with a magic link token
   useEffect(() => {
@@ -43,13 +44,18 @@ function Auth() {
     if (isInitialized && user) {
       // redirect the user to the registration page if they haven't provided their name yet
       if (!user.name.first_name) {
-        router.replace('/register');
+        const next = nextParam ? `?next=${encodeURIComponent(nextParam)}` : '';
+        router.replace(`/register${next}`);
       } else {
         // Redirect the user to an authenticated page if they are already logged in
-        router.replace('/'); // TODO: redirect to the page they came from
+        if (nextParam && nextParam.startsWith('http')) {
+          window.location.href = nextParam;
+        } else {
+          router.replace(nextParam || '/');
+        }
       }
     }
-  }, [user, isInitialized, router]);
+  }, [user, isInitialized, router, nextParam]);
 
   return (
     <>

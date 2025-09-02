@@ -20,6 +20,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "^9",
     "@fastify/helmet": "^13",
+    "@fastify/cookie": "^11",
     "@fastify/static": "^8.2",
     "@nestjs/axios": "^4",
     "@nestjs/cache-manager": "^3",
@@ -47,7 +48,8 @@
     "rxjs": "^7",
     "string-strip-html": "^13",
     "wellknown": "^0.5",
-    "xml-class-transformer": "^3"
+    "xml-class-transformer": "^3",
+    "stytch": "^9"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

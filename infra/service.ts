@@ -14,6 +14,11 @@ export const cluster = new sst.aws.Cluster('MyCluster', {
 export const elasticSearchNode = new sst.Secret('ELASTICSEARCH_NODE');
 export const elasticSearchKey = new sst.Secret('ELASTICSEARCH_API_KEY');
 
+// Discourse secrets
+const discourseSsoSecret = new sst.Secret('DISCOURSE_SSO_SECRET');
+const stytchProjectId = new sst.Secret('STYTCH_PROJECT_ID');
+const stytchSecret = new sst.Secret('STYTCH_SECRET');
+
 const domainName =
   $app.stage === 'production'
     ? 'api.vbdhub.org'
@@ -25,7 +30,15 @@ export const service = new sst.aws.Service('ServiceNestJS', {
     ELASTICSEARCH_NODE: elasticSearchNode.value,
     ELASTICSEARCH_API_KEY: elasticSearchKey.value,
     NODE_ENV: $dev ? 'development' : 'production',
-    PORT: '3001'
+    PORT: '3001',
+    STYTCH_PROJECT_ID: stytchProjectId.value,
+    STYTCH_SECRET: stytchSecret.value,
+    STYTCH_ENV:
+      process.env.STYTCH_ENV ?? ($app.stage === 'production' ? 'live' : 'test'),
+    DISCOURSE_SSO_SECRET: discourseSsoSecret.value,
+    WEB_ORIGIN: $dev
+      ? 'http://localhost:3000'
+      : `https://${$app.stage === 'production' ? 'vbdhub.org' : `${$app.stage}.vbdhub.org`}`
   },
   image: {
     context: '.', // do not change, the Dockerfile uses relative paths
