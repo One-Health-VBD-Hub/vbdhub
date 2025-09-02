@@ -5,6 +5,11 @@
     "packages/*"
   ],
   "scripts": {},
+  "prettier": {
+    "singleQuote": true,
+    "jsxSingleQuote": true,
+    "trailingComma": "none"
+  },
   "devDependencies": {
     "@tsconfig/node22": "^22",
     "typescript": "^5"

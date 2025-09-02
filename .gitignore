@@ -5,11 +5,13 @@ node_modules
 .sst
 
 # tmp files
-.#*
+.#*s
 
 # env 
 .env*.local
 .env
+
+!env.example
 
 # opennext
 .open-next
