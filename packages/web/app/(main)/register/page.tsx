@@ -1,7 +1,7 @@
 'use client';
 
 import { useStytch, useStytchUser } from '@stytch/nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Button,
   Checkbox,
@@ -16,6 +16,8 @@ export default function Register() {
   const { user, isInitialized } = useStytchUser();
   const stytch = useStytch();
   const router = useRouter();
+  const params = useSearchParams();
+  const nextParam = params.get('next');
   const [status, setStatus] = useState<
     'writing' | 'submitted' | 'pending' | 'error'
   >('writing');
@@ -56,10 +58,14 @@ export default function Register() {
         </p>
         <Button
           onClick={() => {
-            router.replace('/');
+            if (nextParam && nextParam.startsWith('http')) {
+              window.location.href = nextParam;
+            } else {
+              router.replace(nextParam || '/');
+            }
           }}
         >
-          Go to home page
+          Continue
         </Button>
       </div>
     );

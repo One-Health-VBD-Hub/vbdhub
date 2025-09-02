@@ -25,7 +25,16 @@ export const service = new sst.aws.Service('ServiceNestJS', {
     ELASTICSEARCH_NODE: elasticSearchNode.value,
     ELASTICSEARCH_API_KEY: elasticSearchKey.value,
     NODE_ENV: $dev ? 'development' : 'production',
-    PORT: '3001'
+    PORT: '3001',
+    STYTCH_PROJECT_ID: process.env.STYTCH_PROJECT_ID ?? '',
+    STYTCH_SECRET: process.env.STYTCH_SECRET ?? '',
+    STYTCH_ENV:
+      process.env.STYTCH_ENV ??
+      ($app.stage === 'production' ? 'live' : 'test'),
+    DISCOURSE_SSO_SECRET: process.env.DISCOURSE_SSO_SECRET ?? '',
+    WEB_ORIGIN: $dev
+      ? 'http://localhost:3000'
+      : `https://${$app.stage === 'production' ? 'vbdhub.org' : `${$app.stage}.vbdhub.org`}`
   },
   image: {
     context: '.', // do not change, the Dockerfile uses relative paths

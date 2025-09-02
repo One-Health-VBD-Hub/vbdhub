@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import { SearchModule } from './search/search.module';
+import { DiscourseModule } from './discourse/discourse.module';
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -16,7 +17,7 @@ import { APP_FILTER } from '@nestjs/core';
         ]
       : [],
   imports: [
-    ...[ConfigModule.forRoot(), SearchModule],
+    ...[ConfigModule.forRoot(), SearchModule, DiscourseModule],
     ...(process.env.NODE_ENV !== 'development' ? [SentryModule.forRoot()] : [])
   ],
   controllers: [AppController]

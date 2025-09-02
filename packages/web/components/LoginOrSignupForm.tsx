@@ -1,5 +1,6 @@
 import { StytchLogin } from '@stytch/nextjs';
 import { Products } from '@stytch/vanilla-js';
+import { useSearchParams } from 'next/navigation';
 
 const LOGIN_REDIRECT_URL =
   process.env.NEXT_PUBLIC_LOGIN_REDIRECT_URL ?? 'http://localhost:3000/auth';
@@ -8,12 +9,21 @@ const SIGNUP_REDIRECT_URL =
 
 // built according to https://stytch.com/docs/quickstarts/nextjs on 11/11/2024
 export const LoginOrSignupForm = () => {
+  const params = useSearchParams();
+  const nextParam = params.get('next');
+  const loginRedirectURL = nextParam
+    ? `${LOGIN_REDIRECT_URL}?next=${encodeURIComponent(nextParam)}`
+    : LOGIN_REDIRECT_URL;
+  const signupRedirectURL = nextParam
+    ? `${SIGNUP_REDIRECT_URL}?next=${encodeURIComponent(nextParam)}`
+    : SIGNUP_REDIRECT_URL;
+
   const config = {
     products: [Products.emailMagicLinks],
     emailMagicLinksOptions: {
-      loginRedirectURL: LOGIN_REDIRECT_URL,
+      loginRedirectURL,
       loginExpirationMinutes: 60,
-      signupRedirectURL: SIGNUP_REDIRECT_URL,
+      signupRedirectURL,
       signupExpirationMinutes: 1440
     }
   };
