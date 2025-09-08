@@ -24,10 +24,12 @@ export default $config({
     const web = await import('./infra/web');
     const service = await import('./infra/service');
     await import('./infra/tasks');
+    // const storage = await import('./infra/storage');
 
     return {
       web: web.web.url,
       service: service.service.url
-    }
+      // repositoryBucketName: storage.publicHubRepositoryBucket.name
+    };
   }
 });

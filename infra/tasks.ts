@@ -1,8 +1,13 @@
 import { Input } from '../.sst/platform/src/components/input';
-import { cluster, elasticSearchKey, elasticSearchNode } from './service';
+import {
+  cluster,
+  elasticSearchKeySrvLss,
+  elasticSearchNodeSrvLss
+} from './service';
 
 // define tasks
-// trigger with `npx sst shell tsx packages/scripts/src/tasks`
+// trigger with `sst shell tsx packages/scripts/src/tasks`
+// or just `sst shell -- ts-node packages/service/src/jobs/sync gbif 10`
 const taskSpecs: {
   name: string;
   DB: string;
@@ -16,14 +21,14 @@ const taskSpecs: {
     DB: 'vt',
     CONCURRENCY: '10', // ignored
     MODE: 'data',
-    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync.ts vt 10 data`,
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync vt 10 data`,
     schedule: 'cron(0 2 ? * SUN *)' // every Sunday at 02:00 UTC
   },
   {
     name: 'SyncVt',
     DB: 'vt',
     CONCURRENCY: '10',
-    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync.ts vt 10`,
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync vt 10`,
     schedule: 'cron(0 4 ? * SUN *)' // every Sunday at 04:00 UTC
   },
   {
@@ -31,28 +36,28 @@ const taskSpecs: {
     DB: 'vd',
     CONCURRENCY: '10', // ignored
     MODE: 'data',
-    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync.ts vd 10 data`,
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync vd 10 data`,
     schedule: 'cron(0 2 ? * SAT *)' // every Saturday at 02:00 UTC
   },
   {
     name: 'SyncVd',
     DB: 'vd',
     CONCURRENCY: '10', // ignored
-    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync.ts vd 10`,
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync vd 10`,
     schedule: 'cron(0 4 ? * SAT *)' // every Saturday at 04:00 UTC
   },
   {
     name: 'SyncPx',
     DB: 'px',
     CONCURRENCY: '20',
-    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync.ts px 20`,
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync px 20`,
     schedule: 'cron(0 2 ? * MON *)' // every Monday at 02:00 UTC
   },
   {
     name: 'SyncGbif',
     DB: 'gbif',
     CONCURRENCY: '10',
-    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync.ts gbif 10`,
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync gbif 10`,
     schedule: 'cron(0 2 ? * FRI *)' // every Friday at 02:00 UTC
   }
 ];
@@ -67,9 +72,8 @@ for (const taskSpec of taskSpecs) {
     } as const,
     cpu: '0.5 vCPU',
     memory: '1 GB',
+    link: [elasticSearchNodeSrvLss, elasticSearchKeySrvLss],
     environment: {
-      ELASTICSEARCH_NODE: elasticSearchNode.value,
-      ELASTICSEARCH_API_KEY: elasticSearchKey.value,
       NODE_ENV: $dev ? 'development' : 'production',
       DB: taskSpec.DB,
       CONCURRENCY: taskSpec.CONCURRENCY,

@@ -47,7 +47,8 @@
     "rxjs": "^7",
     "string-strip-html": "^13",
     "wellknown": "^0.5",
-    "xml-class-transformer": "^3"
+    "xml-class-transformer": "^3",
+    "sst": "*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

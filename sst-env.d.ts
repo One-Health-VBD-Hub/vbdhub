@@ -9,7 +9,15 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "ELASTICSEARCH_API_KEY_LESS": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "ELASTICSEARCH_NODE": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "ELASTICSEARCH_NODE_LESS": {
       "type": "sst.sst.Secret"
       "value": string
     }
