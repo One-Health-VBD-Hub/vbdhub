@@ -12,6 +12,8 @@ import {
   taxonomyPathTokenizerSettings,
   TaxonomyService
 } from '../../taxonomy/taxonomy.service';
+import { firstValueFrom } from 'rxjs';
+import { Agent } from 'https';
 
 interface TermsAgg {
   dataset_ids: {
@@ -33,70 +35,32 @@ export class VectraitsSyncService {
   ) {}
 
   async syncDatasets() {
-    // get all IDs
-    const response = await this.elasticSearchService
-      .getClient()
-      .search<Record<string, unknown>, TermsAgg>({
-        index: vecTraitsDataIndexName,
-        size: 0,
-        aggs: {
-          dataset_ids: {
-            terms: {
-              field: 'DatasetID',
-              size: 10000000
-            }
-          }
+    // get all dataset IDs
+    const res = await firstValueFrom(
+      this.httpService.get<{
+        ids: number[];
+      }>(
+        `https://vectorbyte.crc.nd.edu/portal/api/vectraits-explorer/?page=1&keywords=&sort_column=DatasetID&sort_dir=asc`,
+        {
+          httpsAgent: new Agent({ rejectUnauthorized: false })
         }
-      });
-
-    const ids = response.aggregations?.dataset_ids.buckets.map(
-      (bucket) => bucket.key
+      )
     );
 
-    if (!ids) throw new Error('No ids found for VecTraits');
+    const ids = res.data.ids;
 
     for (const id of ids) {
-      const client = this.elasticSearchService.getClient();
-
-      const scrollResponse = await client.search<EsVtDatapointDoc>({
-        index: vecTraitsDataIndexName,
-        scroll: '1m', // Keep the scroll context alive for 1 minute
-        size: 5000, // Get 5000 documents per batch
-        query: {
-          term: {
-            DatasetID: id
+      const res = await firstValueFrom(
+        this.httpService.get<{ results: EsVtDatapointDoc[] }>(
+          `https://vectorbyte.crc.nd.edu/portal/api/vectraits-dataset/${id}/`,
+          {
+            httpsAgent: new Agent({ rejectUnauthorized: false })
           }
-        }
-      });
-
-      let documents = scrollResponse.hits.hits.map((hit) => hit._source);
-      let scrollId = scrollResponse._scroll_id;
-
-      // Keep fetching until no more results
-      while (scrollId) {
-        const nextScroll = await client.scroll<EsVtDatapointDoc>({
-          scroll_id: scrollId,
-          scroll: '1m'
-        });
-
-        if (nextScroll.hits.hits.length === 0) {
-          break; // Exit the loop when there are no more documents
-        }
-
-        documents = documents.concat(
-          nextScroll.hits.hits.map((hit) => hit._source)
-        );
-        scrollId = nextScroll._scroll_id;
-      }
-
-      // Cleanup the scroll context
-      await client.clearScroll({ scroll_id: scrollId });
+        )
+      );
 
       // Sync dataset
-      await this.syncDataset(
-        id,
-        documents.filter((doc) => !!doc)
-      );
+      await this.syncDataset(id, res.data.results);
     }
   }
 
@@ -105,8 +69,10 @@ export class VectraitsSyncService {
 
     const speciesList = [];
     for (const doc of documents) {
-      if (doc.Interactor1) speciesList.push(doc.Interactor1);
-      if (doc.Interactor2) speciesList.push(doc.Interactor2);
+      if (doc.Interactor1 && doc.Interactor1 !== 'None None')
+        speciesList.push(doc.Interactor1);
+      if (doc.Interactor2 && doc.Interactor2 !== 'None None')
+        speciesList.push(doc.Interactor2);
     }
 
     const taxonomy =
@@ -130,7 +96,14 @@ export class VectraitsSyncService {
     esVtDatasetDoc.longitude = documents[0].Longitude;
     esVtDatasetDoc.latitude = documents[0].Latitude;
     esVtDatasetDoc.locationDate = documents[0].LocationDate;
-    esVtDatasetDoc.geoCoverage = documents[0].geoCoverage;
+    // make a GeoJSON POINT if we have both lat and lon
+    esVtDatasetDoc.geoCoverage =
+      documents[0].Longitude && documents[0].Latitude
+        ? {
+            type: 'Point',
+            coordinates: [documents[0].Longitude, documents[0].Latitude]
+          }
+        : undefined;
 
     await this.elasticSearchService.getClient().index({
       index: vecTraitsIndexName,

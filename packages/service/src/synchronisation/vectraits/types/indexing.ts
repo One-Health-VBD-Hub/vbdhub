@@ -625,13 +625,10 @@ export const dataMappings: MappingTypeMapping = {
       type: 'float',
       index: false
     },
-    StandardisedTraitName: {
-      type: 'keyword',
-      index: false
-    },
-    StandardisedTraitDef: {
-      type: 'keyword',
-      index: false
-    }
+    StandardisedTraitName: { type: 'keyword', index: false },
+    StandardisedTraitDef: { type: 'keyword', index: false },
+    Interactor1OrigTempNotes: { type: 'keyword', index: false },
+    Interactor2TempUnit: { type: 'keyword', index: false },
+    Interactor2Temp: { type: 'keyword', index: false }
   }
 };

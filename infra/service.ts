@@ -4,8 +4,8 @@ export const cluster = new sst.aws.Cluster('MyCluster', {
   transform: {
     // mutate the underlying aws.ecs.Cluster args
     cluster: (args) => {
-      // enable CloudWatch Container Insights
-      args.settings = [{ name: 'containerInsights', value: 'enabled' }];
+      // enable CloudWatch Container Insights (enhanced)
+      args.settings = [{ name: 'containerInsights', value: 'enhanced' }];
     }
   }
 });

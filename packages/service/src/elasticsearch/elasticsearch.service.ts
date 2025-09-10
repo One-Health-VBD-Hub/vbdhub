@@ -306,7 +306,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     // This helper will:
     //  • serialize your docs into bulk‐API format
     //  • flush whenever the body ≥ 90 MB
-    //  • retry 3× on 429/5xx with a 200 ms backoff
+    //  • retry 3× on 429/5xx with a 1 s backoff
     //  • run up to 2 concurrent bulk requests
     const result = await this.client.helpers.bulk({
       datasource: docs,
@@ -321,7 +321,9 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (result.failed > 0) {
-      if (errors.length) this.logger.error('Detailed failures:', errors);
+      // print only the first error to avoid log flooding
+      if (errors.length)
+        this.logger.error('Detailed failures:', errors.slice(0, 1));
       throw new Error(`Bulk ingest had ${result.failed} failures`);
     }
   }

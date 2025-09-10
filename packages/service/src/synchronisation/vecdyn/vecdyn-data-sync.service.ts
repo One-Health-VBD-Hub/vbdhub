@@ -102,13 +102,7 @@ export class VecdynDataSyncService implements OnModuleInit {
               'curatedbycitation',
               'figuretable',
               'notes',
-              'subsampling_details',
-              'time_shift_possible',
-              'date_uncertainty_due_to_graph',
-              'additional_location_info',
-              'genus',
-              'subsampling_details',
-              'additional_sample_info'
+              'subsampling_details'
             ],
             ignore_missing: false,
             trim: true
