@@ -43,7 +43,7 @@ const taskSpecs: {
     name: 'SyncPx',
     DB: 'px',
     CONCURRENCY: '20',
-    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync px 20`,
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync px 15`,
     schedule: 'cron(0 2 ? * MON *)' // every Monday at 02:00 UTC
   },
   {

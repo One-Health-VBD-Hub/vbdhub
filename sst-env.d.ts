@@ -56,25 +56,7 @@ declare module "sst" {
       "taskDefinition": string
       "type": "sst.aws.Task"
     }
-    "SyncVdData": {
-      "assignPublicIp": boolean
-      "cluster": string
-      "containers": any
-      "securityGroups": any
-      "subnets": any
-      "taskDefinition": string
-      "type": "sst.aws.Task"
-    }
     "SyncVt": {
-      "assignPublicIp": boolean
-      "cluster": string
-      "containers": any
-      "securityGroups": any
-      "subnets": any
-      "taskDefinition": string
-      "type": "sst.aws.Task"
-    }
-    "SyncVtData": {
       "assignPublicIp": boolean
       "cluster": string
       "containers": any
