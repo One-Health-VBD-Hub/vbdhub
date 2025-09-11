@@ -16,6 +16,9 @@ export default $config({
         },
         cloudflare: {
           apiToken: process.env.CLOUDFLARE_API_TOKEN
+        },
+        neon: {
+          apiKey: process.env.NEON_API_KEY
         }
       }
     };
@@ -24,12 +27,12 @@ export default $config({
     const web = await import('./infra/web');
     const service = await import('./infra/service');
     await import('./infra/tasks');
-    // const storage = await import('./infra/storage');
+    const storage = await import('./infra/storage');
 
     return {
       web: web.web.url,
-      service: service.service.url
-      // repositoryBucketName: storage.publicHubRepositoryBucket.name
+      service: service.service.url,
+      repositoryBucketName: storage.publicHubRepositoryBucket.name
     };
   }
 });

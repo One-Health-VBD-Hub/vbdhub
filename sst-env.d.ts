@@ -24,6 +24,10 @@ declare module "sst" {
     "MyVpc": {
       "type": "sst.aws.Vpc"
     }
+    "PublicHubRepository": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
     "ServiceNestJS": {
       "service": string
       "type": "sst.aws.Service"
