@@ -72,6 +72,7 @@ export class SynchronisationService implements OnModuleInit {
             if (done) break;
 
             this.logger.log(`Fetching ${url}`);
+            if (!url) throw new Error('No url');
             const result = await this.fetchAndIngestPageFromDb(url, db);
             completionTimes.push(Date.now());
 

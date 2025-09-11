@@ -5,7 +5,7 @@ const domainName =
 
 // instantiate your Next.js site
 export const web = new sst.aws.Nextjs('Web', {
-  path: 'packages/web', // wherever your Next.js lives
+  path: 'packages/web', // wherever Next.js lives
   domain: {
     name: domainName,
     redirects: [`www.${domainName}`],

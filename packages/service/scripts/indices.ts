@@ -9,6 +9,7 @@ import { VecdynSyncService } from '../src/synchronisation/vecdyn/vecdyn-sync.ser
 import { GbifSyncService } from '../src/synchronisation/gbif/gbif-sync.service';
 import { Index, INDICES, isIndex } from '../src/synchronisation/types/indexing';
 
+// run with `sst shell -- ts-node packages/service/scripts/indices.ts <INDEX>`
 async function main() {
   const args = process.argv.slice(2); // Skip the first two arguments (node and script path)l
 

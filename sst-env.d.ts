@@ -9,7 +9,15 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "ELASTICSEARCH_API_KEY_LESS": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "ELASTICSEARCH_NODE": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "ELASTICSEARCH_NODE_LESS": {
       "type": "sst.sst.Secret"
       "value": string
     }
@@ -48,25 +56,7 @@ declare module "sst" {
       "taskDefinition": string
       "type": "sst.aws.Task"
     }
-    "SyncVdData": {
-      "assignPublicIp": boolean
-      "cluster": string
-      "containers": any
-      "securityGroups": any
-      "subnets": any
-      "taskDefinition": string
-      "type": "sst.aws.Task"
-    }
     "SyncVt": {
-      "assignPublicIp": boolean
-      "cluster": string
-      "containers": any
-      "securityGroups": any
-      "subnets": any
-      "taskDefinition": string
-      "type": "sst.aws.Task"
-    }
-    "SyncVtData": {
       "assignPublicIp": boolean
       "cluster": string
       "containers": any

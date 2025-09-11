@@ -4,8 +4,8 @@ export const cluster = new sst.aws.Cluster('MyCluster', {
   transform: {
     // mutate the underlying aws.ecs.Cluster args
     cluster: (args) => {
-      // enable CloudWatch Container Insights
-      args.settings = [{ name: 'containerInsights', value: 'enabled' }];
+      // enable CloudWatch Container Insights (enhanced)
+      args.settings = [{ name: 'containerInsights', value: 'enhanced' }];
     }
   }
 });
@@ -14,6 +14,13 @@ export const cluster = new sst.aws.Cluster('MyCluster', {
 export const elasticSearchNode = new sst.Secret('ELASTICSEARCH_NODE');
 export const elasticSearchKey = new sst.Secret('ELASTICSEARCH_API_KEY');
 
+export const elasticSearchNodeSrvLss = new sst.Secret(
+  'ELASTICSEARCH_NODE_LESS'
+);
+export const elasticSearchKeySrvLss = new sst.Secret(
+  'ELASTICSEARCH_API_KEY_LESS'
+);
+
 const domainName =
   $app.stage === 'production'
     ? 'api.vbdhub.org'
@@ -21,9 +28,8 @@ const domainName =
 
 export const service = new sst.aws.Service('ServiceNestJS', {
   cluster,
+  link: [elasticSearchNodeSrvLss, elasticSearchKeySrvLss],
   environment: {
-    ELASTICSEARCH_NODE: elasticSearchNode.value,
-    ELASTICSEARCH_API_KEY: elasticSearchKey.value,
     NODE_ENV: $dev ? 'development' : 'production',
     PORT: '3001'
   },

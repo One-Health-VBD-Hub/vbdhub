@@ -5,7 +5,6 @@ import { GeoJSON } from 'geojson';
 import {
   mappings,
   EsVdDatapointDoc,
-  vecDynDataIndexName,
   vecDynIndexName,
   EsVdDatasetDoc
 } from './types/indexing';
@@ -13,15 +12,10 @@ import {
   taxonomyPathTokenizerSettings,
   TaxonomyService
 } from '../../taxonomy/taxonomy.service';
+import { firstValueFrom } from 'rxjs';
+import { Agent } from 'https';
 
-interface TermsAgg {
-  dataset_ids: {
-    buckets: Array<{
-      key: number;
-      doc_count: number;
-    }>;
-  };
-}
+type Position = [number, number];
 
 @Injectable()
 export class VecdynSyncService {
@@ -34,69 +28,68 @@ export class VecdynSyncService {
   ) {}
 
   async syncDatasets() {
-    // get all IDs
-    const response = await this.elasticSearchService
-      .getClient()
-      .search<Record<string, unknown>, TermsAgg>({
-        index: vecDynDataIndexName,
-        size: 0,
-        aggs: {
-          dataset_ids: {
-            terms: {
-              field: 'DatasetID',
-              size: 10000000
-            }
-          }
+    // get all dataset IDs
+    const res = await firstValueFrom(
+      this.httpService.get<{
+        ids: number[];
+      }>(
+        `https://vectorbyte.crc.nd.edu/portal/api/vecdynbyprovider/?page=1&keywords=&sort_column=Id&sort_dir=asc`,
+        {
+          httpsAgent: new Agent({ rejectUnauthorized: false })
         }
-      });
-
-    const ids = response.aggregations?.dataset_ids.buckets.map(
-      (bucket) => bucket.key
+      )
     );
 
-    if (!ids) throw new Error('No ids found for VecDyn');
+    const ids = res.data.ids;
 
     for (const id of ids) {
-      const client = this.elasticSearchService.getClient();
-
-      const scrollResponse = await client.search<EsVdDatapointDoc>({
-        index: vecDynDataIndexName,
-        scroll: '1m', // Keep the scroll context alive for 1 minute
-        size: 5000, // Get 5000 documents per batch
-        query: {
-          term: {
-            DatasetID: id
+      const res = await firstValueFrom(
+        this.httpService.get<{
+          consistent_data: {
+            contributoremail: string;
+            citation?: string;
+            sample_location: string;
+            location_description: string;
+            title?: string;
+            doi?: string;
+            submittedby: string;
+            sample_lat_dd?: string;
+            sample_long_dd?: string;
+          };
+          results: {
+            species: string;
+            sample_lat_dd: string;
+            sample_long_dd: string;
+          }[];
+        }>(
+          `https://vectorbyte.crc.nd.edu/portal/api/vecdyncsv/?page=1&piids=${id}`,
+          {
+            httpsAgent: new Agent({ rejectUnauthorized: false })
           }
-        }
-      });
-
-      let documents = scrollResponse.hits.hits.map((hit) => hit._source);
-      let scrollId = scrollResponse._scroll_id;
-
-      // Keep fetching until no more results
-      while (scrollId) {
-        const nextScroll = await client.scroll<EsVdDatapointDoc>({
-          scroll_id: scrollId,
-          scroll: '1m'
-        });
-
-        if (nextScroll.hits.hits.length === 0) {
-          break; // Exit the loop when there are no more documents
-        }
-
-        documents = documents.concat(
-          nextScroll.hits.hits.map((hit) => hit._source)
-        );
-        scrollId = nextScroll._scroll_id;
-      }
-
-      // Cleanup the scroll context
-      await client.clearScroll({ scroll_id: scrollId });
+        )
+      );
 
       // Sync dataset
       await this.syncDataset(
         id,
-        documents.filter((doc) => !!doc)
+        res.data.results.map((item) => {
+          return {
+            ...item,
+            DatasetID: id,
+            contributoremail: res.data.consistent_data.contributoremail,
+            citation: res.data.consistent_data.citation,
+            location_description: res.data.consistent_data.location_description,
+            title: res.data.consistent_data.title,
+            doi: res.data.consistent_data.doi,
+            submittedby: res.data.consistent_data.submittedby,
+            sample_lat_dd: Number(
+              item.sample_lat_dd ?? res.data.consistent_data.sample_lat_dd
+            ),
+            sample_long_dd: Number(
+              item.sample_long_dd ?? res.data.consistent_data.sample_long_dd
+            )
+          };
+        })
       );
     }
   }
@@ -104,13 +97,26 @@ export class VecdynSyncService {
   async syncDataset(id: number, documents: EsVdDatapointDoc[]) {
     this.logger.log(`Syncing dataset ${id}`);
 
-    const geoCoverage: GeoJSON = {
-      type: 'MultiPoint',
-      coordinates: documents.map((doc) => [
-        doc.sample_long_dd,
-        doc.sample_lat_dd
-      ])
-    };
+    // build GeoJSON MultiPoint of all unique valid coordinates
+    const seen = new Set<string>();
+    const coordinates: Position[] = [];
+
+    for (const doc of documents) {
+      const lon = doc.sample_long_dd;
+      const lat = doc.sample_lat_dd;
+
+      const key = `${lon},${lat}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        coordinates.push([lon, lat]);
+      }
+    }
+
+    if (!coordinates.length)
+      throw new Error(`No coordinates found for VecDyn (dataset ${id})`);
+
+    // return GeoJSON MultiPoint
+    const geoCoverage: GeoJSON = { type: 'MultiPoint', coordinates };
 
     // remove duplicates
     let names = Array.from(
@@ -118,12 +124,13 @@ export class VecdynSyncService {
         documents.map((doc) => (doc.genus ?? '') + ' ' + (doc.species ?? ''))
       )
     );
+
     // some names are in non-standard form (e.g. "genus Culex" or "Mansonia genus sp."), normalise these
     names = names.map(
       (s) => s.replace(/\b(?:subgenus|genus)\b\s*/gi, '').trim() // will strip out any occurrence of "genus" or "subgenus" and collapse whitespace
     );
     // filter out "BLANK"s
-    names = names.filter((s) => s !== 'BLANK');
+    names = names.filter((s) => s !== 'BLANK' && s !== '');
 
     const taxonomy = await this.taxonomyService.getTaxonomyFromNamesList(names);
 

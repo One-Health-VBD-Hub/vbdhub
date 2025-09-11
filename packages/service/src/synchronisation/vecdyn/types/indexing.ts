@@ -153,8 +153,6 @@ export interface EsVdDatapointDoc {
   description?: string;
   doi?: string;
   ocation_description?: string;
-  location: string;
-  geoCoverage: GeoJSON;
   submittedby: string;
   species?: string;
   genus?: string;
