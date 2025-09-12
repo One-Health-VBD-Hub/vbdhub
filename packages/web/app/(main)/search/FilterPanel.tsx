@@ -278,6 +278,10 @@ export default function FilterPanel({
                 kind='ghost'
                 type='button'
                 className='mx-3.5'
+                // TODO: remove once weird right padding bug fixed
+                style={{
+                  padding: 'unset'
+                }}
                 size='md'
                 hasIconOnly
                 iconDescription='Reset'
@@ -368,6 +372,10 @@ export default function FilterPanel({
                 kind='ghost'
                 type='button'
                 className='mx-3.5'
+                // TODO: remove once weird right padding bug fixed
+                style={{
+                  padding: 'unset'
+                }}
                 size='md'
                 hasIconOnly
                 iconDescription='Reset'
@@ -410,6 +418,10 @@ export default function FilterPanel({
                 kind='ghost'
                 type='button'
                 className='mx-3.5'
+                // TODO: remove once weird right padding bug fixed
+                style={{
+                  padding: 'unset'
+                }}
                 size='md'
                 hasIconOnly
                 iconDescription='Reset'
