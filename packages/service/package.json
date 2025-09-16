@@ -17,6 +17,11 @@
     "knip": "knip",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org imperial-college-london-ls --project hub-backend ./dist && sentry-cli sourcemaps upload --org imperial-college-london-ls --project hub-backend ./dist"
   },
+  "prettier": {
+    "singleQuote": true,
+    "jsxSingleQuote": true,
+    "trailingComma": "none"
+  },
   "dependencies": {
     "@elastic/elasticsearch": "^9",
     "@fastify/helmet": "^13",

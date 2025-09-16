@@ -9,6 +9,22 @@
     "lint": "eslint",
     "knip": "knip"
   },
+  "prettier": {
+    "singleQuote": true,
+    "jsxSingleQuote": true,
+    "trailingComma": "none",
+    "plugins": [
+      "prettier-plugin-tailwindcss"
+    ],
+    "tailwindFunctions": [
+      "clsx",
+      "cva",
+      "tw",
+      "tv",
+      "cn",
+      "twMerge"
+    ]
+  },
   "dependencies": {
     "@carbon/react": "^1",
     "@formbricks/js": "^3",
