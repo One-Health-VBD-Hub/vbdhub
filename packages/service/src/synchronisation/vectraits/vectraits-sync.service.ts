@@ -5,7 +5,6 @@ import {
   mappings,
   EsVtDatapointDoc,
   EsVtDatasetDoc,
-  vecTraitsDataIndexName,
   vecTraitsIndexName
 } from './types/indexing';
 import {
@@ -14,15 +13,6 @@ import {
 } from '../../taxonomy/taxonomy.service';
 import { firstValueFrom } from 'rxjs';
 import { Agent } from 'https';
-
-interface TermsAgg {
-  dataset_ids: {
-    buckets: Array<{
-      key: number;
-      doc_count: number;
-    }>;
-  };
-}
 
 @Injectable()
 export class VectraitsSyncService {

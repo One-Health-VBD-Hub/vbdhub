@@ -52,6 +52,13 @@ const taskSpecs: {
     CONCURRENCY: '10',
     devCommand: `${process.execPath} -r ts-node/register src/jobs/sync gbif 10`,
     schedule: 'cron(0 2 ? * FRI *)' // every Friday at 02:00 UTC
+  },
+  {
+    name: 'SyncVbdhub',
+    DB: 'hub',
+    CONCURRENCY: '10',
+    devCommand: `${process.execPath} -r ts-node/register src/jobs/sync hub 10`,
+    schedule: 'cron(0 2 ? * SUN *)' // every Sunday at 02:00 UTC
   }
 ];
 

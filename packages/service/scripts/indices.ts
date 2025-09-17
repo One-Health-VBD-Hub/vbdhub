@@ -1,13 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { SynchronisationModule } from '../src/synchronisation/synchronisation.module';
-import { VecdynDataSyncService } from '../src/synchronisation/vecdyn/vecdyn-data-sync.service';
 import { Logger } from '@nestjs/common';
 import { VectraitsSyncService } from '../src/synchronisation/vectraits/vectraits-sync.service';
 import { ProteomexchangeSyncService } from '../src/synchronisation/proteomexchange/proteomexchange-sync.service';
-import { VectraitsDataSyncService } from '../src/synchronisation/vectraits/vectraits-data-sync.service';
 import { VecdynSyncService } from '../src/synchronisation/vecdyn/vecdyn-sync.service';
 import { GbifSyncService } from '../src/synchronisation/gbif/gbif-sync.service';
 import { Index, INDICES, isIndex } from '../src/synchronisation/types/indexing';
+import { VbdhubSyncService } from '../src/synchronisation/vbdhub/vbdhub-sync.service';
 
 // run with `sst shell -- ts-node packages/service/scripts/indices.ts <INDEX>`
 async function main() {
@@ -35,16 +34,8 @@ async function main() {
         syncService = app.get(VecdynSyncService);
         await syncService.createElasticSearchIndex();
         return;
-      case 'vddata':
-        syncService = app.get(VecdynDataSyncService);
-        await syncService.createElasticSearchIndex();
-        return;
       case 'vt':
         syncService = app.get(VectraitsSyncService);
-        await syncService.createElasticSearchIndex();
-        return;
-      case 'vtdata':
-        syncService = app.get(VectraitsDataSyncService);
         await syncService.createElasticSearchIndex();
         return;
       case 'px':
@@ -52,7 +43,8 @@ async function main() {
         await syncService.createElasticSearchIndex();
         return;
       case 'hub':
-        throw new Error('Index hub not implemented');
+        syncService = app.get(VbdhubSyncService);
+        await syncService.createElasticSearchIndex();
     }
   } finally {
     Logger.log('Index created', 'indices');

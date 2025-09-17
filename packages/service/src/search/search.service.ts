@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
-import { EsAnyDatasetDoc } from '../synchronisation/types/indexing';
+import {
+  EsAnyDatasetDoc,
+  SYNCED_DATABASES
+} from '../synchronisation/types/indexing';
 import { SearchTotalHits } from '@elastic/elasticsearch/lib/api/types';
 import { SearchDto } from './search.controller';
 import { HttpService } from '@nestjs/axios';
@@ -51,7 +54,7 @@ export class SearchService {
     ) {
       const esResults = await this.elasticSearchService.search({
         ...dto,
-        indices: ['px', 'vd', 'vt'],
+        indices: [...SYNCED_DATABASES].filter((db) => db !== 'gbif'),
         gbifDatasetKeys: [],
         from: (dto.page - 1) * dto.limit,
         limit: dto.limit,
@@ -78,7 +81,7 @@ export class SearchService {
 
     const esResults = await this.elasticSearchService.search({
       ...dto,
-      indices: ['px', 'vd', 'vt', 'gbif'],
+      indices: [...SYNCED_DATABASES],
       // cap to 65 536 (ES default terms limit) to avoid too many results
       gbifDatasetKeys: gbifDatasetKeys.slice(0, 65_536),
       from: (dto.page - 1) * dto.limit,

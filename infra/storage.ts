@@ -1,5 +1,5 @@
-export const publicHubRepositoryBucket = new sst.aws.Bucket(
-  'PublicHubRepository',
+export const hubRepositoryBucket = new sst.aws.Bucket(
+  'HubRepositoryBucket',
   {
     versioning: true
   }

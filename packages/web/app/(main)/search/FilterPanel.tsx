@@ -159,6 +159,13 @@ export default function FilterPanel({
               checked={filters.category.includes('proteomic')}
               onChange={handleCategoryChange}
             />
+            <Checkbox
+              id={'epidemiological' + baseId}
+              value='epidemiological'
+              labelText='Epidemiological'
+              checked={filters.category.includes('epidemiological')}
+              onChange={handleCategoryChange}
+            />
             <div className='cds--form-item'>
               <Tooltip align='right' label='Coming soon.'>
                 <div>
@@ -191,18 +198,6 @@ export default function FilterPanel({
                     value='transcriptomic'
                     labelText='Transcriptomic'
                     checked={filters.category.includes('transcriptomic')}
-                    onChange={handleCategoryChange}
-                    disabled
-                  />
-                </div>
-              </Tooltip>
-              <Tooltip align='right' label='Coming soon.'>
-                <div>
-                  <Checkbox
-                    id={'epidemiological' + baseId}
-                    value='epidemiological'
-                    labelText='Epidemiological'
-                    checked={filters.category.includes('epidemiological')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -241,6 +236,13 @@ export default function FilterPanel({
               checked={filters.database.includes('px')}
               onChange={handleDbChange}
             />
+            <Checkbox
+              id={'hub' + baseId}
+              value='hub'
+              labelText='VBD Hub'
+              checked={filters.database.includes('hub')}
+              onChange={handleDbChange}
+            />
             <div className='cds--form-item'>
               <Tooltip align='right' label='Coming soon.'>
                 <div>
@@ -250,18 +252,6 @@ export default function FilterPanel({
                     labelText='NCBI'
                     disabled
                     checked={filters.database.includes('ncbi')}
-                    onChange={handleDbChange}
-                  />
-                </div>
-              </Tooltip>
-              <Tooltip align='right' label='Coming soon.'>
-                <div>
-                  <Checkbox
-                    id={'hub' + baseId}
-                    value='hub'
-                    labelText='VBD Hub'
-                    disabled
-                    checked={filters.database.includes('hub')}
                     onChange={handleDbChange}
                   />
                 </div>

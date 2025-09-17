@@ -12,8 +12,7 @@ import {
 } from './proteomexchange/proteomexchange-sync.service';
 import { VecdynSyncService } from './vecdyn/vecdyn-sync.service';
 import { VectraitsSyncService } from './vectraits/vectraits-sync.service';
-import { VectraitsDataSyncService } from './vectraits/vectraits-data-sync.service';
-import { VecdynDataSyncService } from './vecdyn/vecdyn-data-sync.service';
+import { VbdhubSyncService } from './vbdhub/vbdhub-sync.service';
 
 @Injectable()
 export class SynchronisationService implements OnModuleInit {
@@ -29,8 +28,7 @@ export class SynchronisationService implements OnModuleInit {
     private readonly pxSyncService: ProteomexchangeSyncService,
     private readonly vecDynSyncService: VecdynSyncService,
     private readonly vecTraitsSyncService: VectraitsSyncService,
-    private readonly vectraitsDataSyncService: VectraitsDataSyncService,
-    private readonly vecdynDataSyncService: VecdynDataSyncService
+    private readonly vbdhubSyncService: VbdhubSyncService
   ) {}
 
   async fetchAndIngestPageFromDb(
@@ -91,16 +89,6 @@ export class SynchronisationService implements OnModuleInit {
     }
   }
 
-  async syncCompleteData(db: SyncedDatabase) {
-    if (db === 'vd') {
-      await this.vecdynDataSyncService.syncCompleteData();
-    } else if (db === 'vt') {
-      await this.vectraitsDataSyncService.syncCompleteData();
-    } else {
-      throw new Error(`Invalid database name ${db} for complete data sync`);
-    }
-  }
-
   async syncDatabase(db: SyncedDatabase, concurrency = 10) {
     if (db === 'px') {
       await this.processWithConcurrency(concurrency, db);
@@ -110,6 +98,8 @@ export class SynchronisationService implements OnModuleInit {
       await this.vecDynSyncService.syncDatasets();
     } else if (db === 'vt') {
       await this.vecTraitsSyncService.syncDatasets();
+    } else if (db === 'hub') {
+      await this.vbdhubSyncService.syncDatasets();
     }
   }
 }

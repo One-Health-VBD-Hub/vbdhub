@@ -1,3 +1,5 @@
+import { hubRepositoryBucket } from './storage';
+
 const vpc = new sst.aws.Vpc('MyVpc');
 export const cluster = new sst.aws.Cluster('MyCluster', {
   vpc,
@@ -28,7 +30,7 @@ const domainName =
 
 export const service = new sst.aws.Service('ServiceNestJS', {
   cluster,
-  link: [elasticSearchNodeSrvLss, elasticSearchKeySrvLss],
+  link: [elasticSearchNodeSrvLss, elasticSearchKeySrvLss, hubRepositoryBucket],
   environment: {
     NODE_ENV: $dev ? 'development' : 'production',
     PORT: '3001'

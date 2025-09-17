@@ -21,12 +21,12 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "MyVpc": {
-      "type": "sst.aws.Vpc"
-    }
-    "PublicHubRepository": {
+    "HubRepositoryBucket": {
       "name": string
       "type": "sst.aws.Bucket"
+    }
+    "MyVpc": {
+      "type": "sst.aws.Vpc"
     }
     "ServiceNestJS": {
       "service": string
@@ -43,6 +43,15 @@ declare module "sst" {
       "type": "sst.aws.Task"
     }
     "SyncPx": {
+      "assignPublicIp": boolean
+      "cluster": string
+      "containers": any
+      "securityGroups": any
+      "subnets": any
+      "taskDefinition": string
+      "type": "sst.aws.Task"
+    }
+    "SyncVbdhub": {
       "assignPublicIp": boolean
       "cluster": string
       "containers": any

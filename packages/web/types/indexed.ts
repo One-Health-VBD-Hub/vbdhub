@@ -2,10 +2,14 @@
 
 import type { GeoJSON } from 'geojson';
 
-export type Database = 'gbif' | 'px' | 'vd' | 'vt' | 'hub' | 'ncbi';
+export const SYNCED_DATABASES = ['gbif', 'px', 'vd', 'vt', 'hub'] as const;
+export type SyncedDatabase = (typeof SYNCED_DATABASES)[number];
+
+export const DATABASES = [...SYNCED_DATABASES, 'ncbi'] as const;
+export type Database = (typeof DATABASES)[number];
 
 export function isDatabase(value: string): value is Database {
-  return ['gbif', 'px', 'vd', 'vt', 'ncbi'].includes(value);
+  return DATABASES.includes(value as Database);
 }
 
 export type DataCategory =

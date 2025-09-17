@@ -28,11 +28,12 @@ export default $config({
     const service = await import('./infra/service');
     await import('./infra/tasks');
     const storage = await import('./infra/storage');
+    // const db = await import('./infra/neon');
 
     return {
       web: web.web.url,
       service: service.service.url,
-      repositoryBucketName: storage.publicHubRepositoryBucket.name
+      bucket: storage.hubRepositoryBucket.domain
     };
   }
 });

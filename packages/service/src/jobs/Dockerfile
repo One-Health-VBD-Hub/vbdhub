@@ -37,6 +37,6 @@ WORKDIR /app/packages/service
 
 # Default command uses environment variables with defaults
 # When the container starts, it will run:
-#   node dist/jobs/sync <DB> <CONCURRENCY> <MODE>
+#   node dist/jobs/sync <DB> <CONCURRENCY>
 # with DB defaulting to 'gbif' and CONCURRENCY defaulting to 1 if not set.
-CMD ["sh", "-c", "node dist/jobs/sync ${DB:-gbif} ${CONCURRENCY:-1} ${MODE}"]
+CMD ["sh", "-c", "node dist/jobs/sync ${DB:-gbif} ${CONCURRENCY:-1}"]
