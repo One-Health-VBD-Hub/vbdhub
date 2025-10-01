@@ -4,6 +4,7 @@ import {
   elasticSearchKeySrvLss,
   elasticSearchNodeSrvLss
 } from './service';
+import { hubRepositoryBucket } from './storage';
 
 // define tasks
 // trigger with `sst shell tsx packages/scripts/src/tasks`
@@ -73,7 +74,11 @@ for (const taskSpec of taskSpecs) {
     } as const,
     cpu: taskSpec.cpu ?? '0.5 vCPU',
     memory: taskSpec.memory ?? '1 GB',
-    link: [elasticSearchNodeSrvLss, elasticSearchKeySrvLss],
+    link: [
+      elasticSearchNodeSrvLss,
+      elasticSearchKeySrvLss,
+      hubRepositoryBucket
+    ],
     environment: {
       NODE_ENV: $dev ? 'development' : 'production',
       DB: taskSpec.DB,

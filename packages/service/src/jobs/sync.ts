@@ -48,10 +48,7 @@ async function main() {
     {
       logger:
         process.env.NODE_ENV !== 'development'
-          ? new ConsoleLogger({
-              logLevels: ['warn'], // hide non-warn or lower logs in production
-              json: true // necessary for production logging
-            })
+          ? new ConsoleLogger({ json: true }) // necessary for production logging
           : undefined
     }
   );

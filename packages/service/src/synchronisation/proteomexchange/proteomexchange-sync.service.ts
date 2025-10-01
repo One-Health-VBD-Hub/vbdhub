@@ -8,15 +8,14 @@ import {
   TaxonomyService
 } from '../../taxonomy/taxonomy.service';
 import {
-  mappings,
   EsPxDatasetDoc,
+  mappings,
   proteomeXchangeIndexName
 } from './types/indexing';
 import { AxiosError } from 'axios';
 import { xmlToClass } from 'xml-class-transformer';
 import { getIdentifiers, ProteomeXchangeDatasetType } from './types/xml';
 import { validate } from 'class-validator';
-import { ok } from 'node:assert/strict';
 import { EsAnyDatasetDoc } from '../types/indexing';
 
 @Injectable()
@@ -50,13 +49,21 @@ export class ProteomexchangeSyncService implements OnModuleInit {
   ): Promise<'success' | 'last-page' | 'not-yet-released'> {
     const response = await firstValueFrom(
       this.httpService.get<string>(url, {
-        responseType: 'text'
+        validateStatus: (status) => status === 200 || status === 404
       })
     ).catch((e: AxiosError) => {
-      if (e.response?.status === 404) {
-        return e.response;
-      }
-      throw e; // Re-throw the error if it's not a 404
+      const summary = {
+        msg: e.message,
+        code: e.code,
+        url: e.config?.url,
+        method: e.config?.method,
+        status: e.response?.status,
+        statusText: e.response?.statusText
+      };
+
+      throw new Error(
+        `Failed to fetch PX dataset. Summary: ${JSON.stringify(summary)}`
+      );
     });
 
     // check if last page
@@ -75,7 +82,8 @@ export class ProteomexchangeSyncService implements OnModuleInit {
     }
 
     // response must be string at this point because of responseType: 'text'
-    ok(typeof response.data === 'string');
+    if (typeof response.data !== 'string')
+      throw new Error('Response is not string');
 
     const jsonObj = xmlToClass(response.data, ProteomeXchangeDatasetType);
     const errs = await validate(jsonObj);
@@ -91,7 +99,7 @@ export class ProteomexchangeSyncService implements OnModuleInit {
     const repository = jsonObj.DatasetSummary.hostingRepository;
 
     const { pxId, doi } = getIdentifiers(jsonObj);
-    ok(pxId !== undefined); // pxId is always defined
+    if (!pxId) throw new Error('PX ID not found');
 
     const record: EsPxDatasetDoc = {
       id: pxId,
@@ -130,6 +138,7 @@ export function* pxSingleNextPageUrlGenerator() {
   while (true) {
     yield `https://proteomecentral.proteomexchange.org/cgi/GetDataset?ID=${page}&outputMode=XML`;
     page++;
+    if (page === 4729) page = 4730; // TODO fix later (unknown Axios issue)
     if (page === 466) page = 467; // TODO fix later (not possible right now)
   }
 }

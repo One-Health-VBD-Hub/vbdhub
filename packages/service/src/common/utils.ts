@@ -60,6 +60,7 @@ export function configureAxiosRetry(axios: AxiosInstance) {
     retryDelay: (retryCount) => {
       return retryCount * 1000; // Delay between retries in milliseconds
     },
+    shouldResetTimeout: true, // Reset timeout between retries
     retryCondition: (error) => {
       // Retry on network errors and 5xx HTTP errors
       return (
