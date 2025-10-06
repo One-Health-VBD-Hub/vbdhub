@@ -124,6 +124,9 @@ export class ProteomexchangeSyncService implements OnModuleInit {
     return 'success';
   }
 
+  /**
+   * Create the ElasticSearch index for ProteomeXchange datasets
+   */
   async createElasticSearchIndex() {
     await this.elasticSearchService.createIndex(
       proteomeXchangeIndexName,
@@ -133,6 +136,9 @@ export class ProteomexchangeSyncService implements OnModuleInit {
   }
 }
 
+/**
+ * Generator function to yield the next PX single dataset URL
+ */
 export function* pxSingleNextPageUrlGenerator() {
   let page = 1;
   while (true) {
