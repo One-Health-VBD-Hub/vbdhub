@@ -21,7 +21,7 @@ import axiosRetry from 'axios-retry';
 @Injectable()
 export class ProteomexchangeSyncService implements OnModuleInit {
   private readonly logger = new Logger(ProteomexchangeSyncService.name);
-  private readonly customAxios = axios.create();
+  private readonly customAxios = axios.create({ timeout: 5_000 });
   private readonly httpService = new HttpService(this.customAxios);
 
   onModuleInit() {
