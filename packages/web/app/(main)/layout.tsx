@@ -91,7 +91,7 @@ export default function Layout({
               width={125}
               height={144}
               className='mr-1.5 h-7 w-auto'
-              src='/logo-lgbtq.svg'
+              src='/logo.svg'
               alt='logo of the One Health Vector-Borne Diseases Hub'
             />
             <span className='font-normal'>VBD Hub -&nbsp;</span>
