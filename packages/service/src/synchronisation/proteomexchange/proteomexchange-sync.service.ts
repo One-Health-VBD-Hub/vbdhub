@@ -1,6 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { configureAxiosRetry } from '../../common/utils';
 import { HttpService } from '@nestjs/axios';
 import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
 import {
@@ -12,26 +11,49 @@ import {
   mappings,
   proteomeXchangeIndexName
 } from './types/indexing';
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import { xmlToClass } from 'xml-class-transformer';
 import { getIdentifiers, ProteomeXchangeDatasetType } from './types/xml';
 import { validate } from 'class-validator';
 import { EsAnyDatasetDoc } from '../types/indexing';
+import axiosRetry from 'axios-retry';
 
 @Injectable()
 export class ProteomexchangeSyncService implements OnModuleInit {
   private readonly logger = new Logger(ProteomexchangeSyncService.name);
+  private readonly customAxios = axios.create();
+  private readonly httpService = new HttpService(this.customAxios);
 
   onModuleInit() {
-    configureAxiosRetry(this.httpService.axiosRef);
+    axiosRetry(this.httpService.axiosRef, {
+      retries: 3, // Number of retry attempts
+      retryDelay(retryCount) {
+        return axiosRetry.exponentialDelay(retryCount);
+      },
+      // Retry on network errors or 5xx responses
+      retryCondition(error) {
+        return (
+          axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+          (error.response?.status !== undefined &&
+            error.response?.status >= 500)
+        );
+      },
+      onRetry: (retryCount, error, requestConfig) => {
+        this.logger.warn(
+          `Retry attempt #${retryCount} for request to ${requestConfig.url} due to ${error.code}: ${error.message}`
+        );
+      }
+    });
   }
 
   constructor(
-    private readonly httpService: HttpService,
     private readonly elasticSearchService: ElasticsearchService,
     private readonly taxonomyService: TaxonomyService
   ) {}
 
+  /**
+   * Fetch the list of weekly PX IDs from the Google Apps Script endpoint
+   */
   async getWeeklyPxIds(): Promise<string[]> {
     const response = await firstValueFrom(
       this.httpService.get<{
@@ -80,10 +102,6 @@ export class ProteomexchangeSyncService implements OnModuleInit {
     } else if (response.status === 404) {
       throw new Error('Unexpected 404 error');
     }
-
-    // response must be string at this point because of responseType: 'text'
-    if (typeof response.data !== 'string')
-      throw new Error('Response is not string');
 
     const jsonObj = xmlToClass(response.data, ProteomeXchangeDatasetType);
     const errs = await validate(jsonObj);
