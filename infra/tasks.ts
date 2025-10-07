@@ -65,6 +65,9 @@ const taskSpecs: {
 
 // create a task for each spec
 for (const taskSpec of taskSpecs) {
+  // only create tasks in production
+  if ($app.stage !== 'production') break;
+
   const task = new sst.aws.Task(taskSpec.name, {
     cluster,
     logging: { retention: '2 weeks' },
