@@ -2,6 +2,7 @@ import { DateRange } from '../synchronisation/types/indexing';
 import { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 import { Logger } from '@nestjs/common';
+import { Agent, fetch as undiciFetch } from 'undici';
 
 // Exponential backoff function (attempt >= 1)
 export async function backoff(
@@ -81,4 +82,54 @@ export function configureAxiosRetry(axios: AxiosInstance) {
       );
     }
   });
+}
+
+const agent = new Agent();
+
+export async function undiciFetchWithRetry(
+  url: string,
+  {
+    dispatcher = agent,
+    ...rest
+  }: { dispatcher?: Agent; headers?: Record<string, string> } = {},
+  retries = 3,
+  delayMs = 500
+) {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await undiciFetch(url, { ...rest, dispatcher: dispatcher });
+      if (!res.ok && res.status >= 500 && attempt < retries) {
+        // Server 5xx – retry
+        Logger.warn(
+          `Retry attempt #${attempt} for request to ${url} due to HTTP ${res.status}`
+        );
+        await new Promise((r) => setTimeout(r, delayMs * attempt));
+        continue;
+      }
+      return res; // success or non-retryable status
+    } catch (err: unknown) {
+      // Network errors (UND_ERR_SOCKET, ECONNRESET, etc.)
+      lastErr = err;
+
+      if (typeof err === 'object') {
+        const e = err as { code?: string; cause?: { code?: string } };
+
+        const code = e.code || e.cause?.code || '';
+        if (
+          attempt < retries &&
+          ['UND_ERR_SOCKET', 'ECONNRESET', 'ETIMEDOUT'].includes(code)
+        ) {
+          Logger.warn(
+            `Retry attempt #${attempt} for request to ${url} due to ${code}`
+          );
+          await new Promise((r) => setTimeout(r, delayMs * attempt));
+          continue;
+        }
+      }
+
+      throw err;
+    }
+  }
+  throw lastErr;
 }

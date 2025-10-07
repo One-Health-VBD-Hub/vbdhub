@@ -11,12 +11,13 @@ import {
   mappings,
   proteomeXchangeIndexName
 } from './types/indexing';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { xmlToClass } from 'xml-class-transformer';
 import { getIdentifiers, ProteomeXchangeDatasetType } from './types/xml';
 import { validate } from 'class-validator';
 import { EsAnyDatasetDoc } from '../types/indexing';
 import axiosRetry from 'axios-retry';
+import { undiciFetchWithRetry } from '../../common/utils';
 
 @Injectable()
 export class ProteomexchangeSyncService implements OnModuleInit {
@@ -27,6 +28,7 @@ export class ProteomexchangeSyncService implements OnModuleInit {
   onModuleInit() {
     axiosRetry(this.httpService.axiosRef, {
       retries: 3, // Number of retry attempts
+      shouldResetTimeout: true,
       retryDelay(retryCount) {
         return axiosRetry.exponentialDelay(retryCount);
       },
@@ -69,23 +71,12 @@ export class ProteomexchangeSyncService implements OnModuleInit {
   async pxSingleFetchAndIngestPage(
     url: string
   ): Promise<'success' | 'last-page' | 'not-yet-released'> {
-    const response = await firstValueFrom(
-      this.httpService.get<string>(url, {
-        validateStatus: (status) => status === 200 || status === 404
-      })
-    ).catch((e: AxiosError) => {
-      const summary = {
-        msg: e.message,
-        code: e.code,
-        url: e.config?.url,
-        method: e.config?.method,
-        status: e.response?.status,
-        statusText: e.response?.statusText
-      };
-
-      throw new Error(
-        `Failed to fetch PX dataset. Summary: ${JSON.stringify(summary)}`
-      );
+    const response = await undiciFetchWithRetry(url, {
+      headers: {
+        'accept-encoding': 'identity',
+        connection: 'close',
+        accept: 'application/xml,text/xml,*/*;q=0.9'
+      }
     });
 
     // check if last page
@@ -103,7 +94,16 @@ export class ProteomexchangeSyncService implements OnModuleInit {
       throw new Error('Unexpected 404 error');
     }
 
-    const jsonObj = xmlToClass(response.data, ProteomeXchangeDatasetType);
+    if (!response.ok) {
+      throw new Error(
+        `Fetch failed: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const jsonObj = xmlToClass(
+      await response.text(),
+      ProteomeXchangeDatasetType
+    );
     const errs = await validate(jsonObj);
     if (errs.length > 0) throw new Error('Validation error');
 
@@ -162,7 +162,6 @@ export function* pxSingleNextPageUrlGenerator() {
   while (true) {
     yield `https://proteomecentral.proteomexchange.org/cgi/GetDataset?ID=${page}&outputMode=XML`;
     page++;
-    if (page === 4729) page = 4730; // TODO fix later (unknown Axios issue)
     if (page === 466) page = 467; // TODO fix later (not possible right now)
   }
 }
