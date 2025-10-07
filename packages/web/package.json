@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1",
-    "@formbricks/js": "^3",
+    "@formbricks/js": "^4",
     "@iframe-resizer/react": "^5",
     "@mapbox/mapbox-gl-draw": "^1",
     "@sentry/nextjs": "^9",
@@ -35,7 +35,7 @@
     "@stytch/vanilla-js": "^5",
     "@tanstack/react-query": "^5",
     "clsx": "^2",
-    "mapbox-gl": "^3.13",
+    "mapbox-gl": "^3",
     "next": "^15",
     "react": "^19",
     "react-dom": "^19",

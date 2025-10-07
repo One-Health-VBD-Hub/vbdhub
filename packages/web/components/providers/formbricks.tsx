@@ -9,10 +9,9 @@ export default function FormbricksProvider() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    formbricks.init({
+    formbricks.setup({
       environmentId: 'cm5y6i7mr000rmb03vutldcwu',
-      apiHost: 'https://app.formbricks.com'
-      // userId: '<user-id>' //optional
+      appUrl: 'https://app.formbricks.com'
     });
   }, []);
 
