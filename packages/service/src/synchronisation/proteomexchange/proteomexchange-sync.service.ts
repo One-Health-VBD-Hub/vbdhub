@@ -11,46 +11,24 @@ import {
   mappings,
   proteomeXchangeIndexName
 } from './types/indexing';
-import axios from 'axios';
 import { xmlToClass } from 'xml-class-transformer';
 import { getIdentifiers, ProteomeXchangeDatasetType } from './types/xml';
 import { validate } from 'class-validator';
 import { EsAnyDatasetDoc } from '../types/indexing';
-import axiosRetry from 'axios-retry';
-import { undiciFetchWithRetry } from '../../common/utils';
+import { configureAxiosRetry, undiciFetchWithRetry } from '../../common/utils';
 
 @Injectable()
 export class ProteomexchangeSyncService implements OnModuleInit {
   private readonly logger = new Logger(ProteomexchangeSyncService.name);
-  private readonly customAxios = axios.create({ timeout: 5_000 });
-  private readonly httpService = new HttpService(this.customAxios);
 
   onModuleInit() {
-    axiosRetry(this.httpService.axiosRef, {
-      retries: 3, // Number of retry attempts
-      shouldResetTimeout: true,
-      retryDelay(retryCount) {
-        return axiosRetry.exponentialDelay(retryCount);
-      },
-      // Retry on network errors or 5xx responses
-      retryCondition(error) {
-        return (
-          axiosRetry.isNetworkOrIdempotentRequestError(error) ||
-          (error.response?.status !== undefined &&
-            error.response?.status >= 500)
-        );
-      },
-      onRetry: (retryCount, error, requestConfig) => {
-        this.logger.warn(
-          `Retry attempt #${retryCount} for request to ${requestConfig.url} due to ${error.code}: ${error.message}`
-        );
-      }
-    });
+    configureAxiosRetry(this.httpService.axiosRef);
   }
 
   constructor(
     private readonly elasticSearchService: ElasticsearchService,
-    private readonly taxonomyService: TaxonomyService
+    private readonly taxonomyService: TaxonomyService,
+    private readonly httpService: HttpService
   ) {}
 
   /**
