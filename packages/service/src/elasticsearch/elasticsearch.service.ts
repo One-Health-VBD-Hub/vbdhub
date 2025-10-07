@@ -109,30 +109,28 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   }) {
     const filters = [];
 
-    if (gbifDatasetKeys.length > 0) {
-      filters.push({
-        bool: {
-          should: [
-            // allow all documents that are not from gbif
-            {
-              bool: {
-                must_not: { term: { db: 'gbif' } }
-              }
-            },
-            // allow gbif documents only if their datasetKey is in gbifDatasetKeys
-            {
-              bool: {
-                must: [
-                  { term: { db: 'gbif' } },
-                  { terms: { id: gbifDatasetKeys } }
-                ]
-              }
+    filters.push({
+      bool: {
+        should: [
+          // allow all documents that are not from gbif
+          {
+            bool: {
+              must_not: { term: { db: 'gbif' } }
             }
-          ],
-          minimum_should_match: 1
-        }
-      });
-    }
+          },
+          // allow gbif documents only if their datasetKey is in gbifDatasetKeys
+          {
+            bool: {
+              must: [
+                { term: { db: 'gbif' } },
+                { terms: { id: gbifDatasetKeys } }
+              ]
+            }
+          }
+        ],
+        minimum_should_match: 1
+      }
+    });
 
     // filters for various data categories (occurrence, abundance, etc)
     if (category && category.length > 0) {
