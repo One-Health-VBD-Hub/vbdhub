@@ -14,6 +14,8 @@ import {
   taxonomyPathTokenizerSettings,
   TaxonomyService
 } from '../../taxonomy/taxonomy.service';
+import { GeoJSON } from 'geojson';
+import { buildUniqueMultiPoint } from '../../common/geo';
 
 interface EpidemiologicalLineCSV {
   TaxonIdNCBI?: string;
@@ -69,6 +71,8 @@ export class VbdhubSyncService {
   }
 
   async processCSV(csvText: Readable, datasetKey: string) {
+    this.logger.log(`Processing dataset ${datasetKey}`);
+
     const iterator = streamCsv<EpidemiologicalLineCSV>(csvText);
     const firstRecord = (await iterator.next()).value;
 
@@ -76,11 +80,18 @@ export class VbdhubSyncService {
       throw new Error('CSV file is empty or has no valid records');
 
     const species = [`${firstRecord.Genus} ${firstRecord.Species}`.trim()];
+    const coordinates: { lat: string; lng: string }[] = [];
 
     // iterate over each record in the CSV
     for await (const record of iterator) {
       species.push(`${record.Genus} ${record.Species}`.trim());
+      if (record.Latitude && record.Longitude) {
+        coordinates.push({ lat: record.Latitude, lng: record.Longitude });
+      }
     }
+
+    const geoCoverage: GeoJSON = buildUniqueMultiPoint(coordinates);
+    this.logger.warn(geoCoverage);
 
     const taxonomy =
       await this.taxonomyService.getTaxonomyFromNamesList(species);
@@ -91,6 +102,7 @@ export class VbdhubSyncService {
       description: firstRecord.Description,
       db: 'hub',
       type: 'epidemiological',
+      geoCoverage,
       ...taxonomy
     };
 

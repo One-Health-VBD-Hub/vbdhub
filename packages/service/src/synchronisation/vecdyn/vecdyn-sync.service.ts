@@ -14,8 +14,7 @@ import {
 } from '../../taxonomy/taxonomy.service';
 import { firstValueFrom } from 'rxjs';
 import { Agent } from 'https';
-
-type Position = [number, number];
+import { buildUniqueMultiPoint } from '../../common/geo';
 
 @Injectable()
 export class VecdynSyncService {
@@ -97,26 +96,12 @@ export class VecdynSyncService {
   async syncDataset(id: number, documents: EsVdDatapointDoc[]) {
     this.logger.log(`Syncing dataset ${id}`);
 
-    // build GeoJSON MultiPoint of all unique valid coordinates
-    const seen = new Set<string>();
-    const coordinates: Position[] = [];
-
-    for (const doc of documents) {
-      const lon = doc.sample_long_dd;
-      const lat = doc.sample_lat_dd;
-
-      const key = `${lon},${lat}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        coordinates.push([lon, lat]);
-      }
-    }
-
-    if (!coordinates.length)
-      throw new Error(`No coordinates found for VecDyn (dataset ${id})`);
-
-    // return GeoJSON MultiPoint
-    const geoCoverage: GeoJSON = { type: 'MultiPoint', coordinates };
+    const geoCoverage: GeoJSON = buildUniqueMultiPoint(
+      documents.map((document) => ({
+        lat: document.sample_lat_dd?.toString() ?? '',
+        lng: document.sample_long_dd?.toString() ?? ''
+      }))
+    );
 
     // remove duplicates
     let names = Array.from(
@@ -141,7 +126,7 @@ export class VecdynSyncService {
       contactEmail: documents[0].contributoremail,
       citation: documents[0].citation,
       locationDescription: documents[0].location_description,
-      geoCoverage: geoCoverage,
+      geoCoverage,
       title:
         documents[0].title ??
         (documents[0].citation
