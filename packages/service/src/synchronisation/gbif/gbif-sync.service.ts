@@ -1,6 +1,5 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { configureAxiosRetry } from '../../common/utils';
 import { HttpService } from '@nestjs/axios';
 import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
 import { TaxonomyService } from '../../taxonomy/taxonomy.service';
@@ -11,12 +10,8 @@ import { EsAnyDatasetDoc } from '../types/indexing';
 import { stripHtml } from 'string-strip-html';
 
 @Injectable()
-export class GbifSyncService implements OnModuleInit {
+export class GbifSyncService {
   private readonly logger = new Logger(GbifSyncService.name);
-
-  onModuleInit() {
-    configureAxiosRetry(this.httpService.axiosRef);
-  }
 
   constructor(
     private readonly httpService: HttpService,

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
@@ -15,15 +15,11 @@ import { xmlToClass } from 'xml-class-transformer';
 import { getIdentifiers, ProteomeXchangeDatasetType } from './types/xml';
 import { validate } from 'class-validator';
 import { EsAnyDatasetDoc } from '../types/indexing';
-import { configureAxiosRetry, undiciFetchWithRetry } from '../../common/utils';
+import { undiciFetchWithRetry } from '../../common/utils';
 
 @Injectable()
-export class ProteomexchangeSyncService implements OnModuleInit {
+export class ProteomexchangeSyncService {
   private readonly logger = new Logger(ProteomexchangeSyncService.name);
-
-  onModuleInit() {
-    configureAxiosRetry(this.httpService.axiosRef);
-  }
 
   constructor(
     private readonly elasticSearchService: ElasticsearchService,
@@ -49,13 +45,17 @@ export class ProteomexchangeSyncService implements OnModuleInit {
   async pxSingleFetchAndIngestPage(
     url: string
   ): Promise<'success' | 'last-page' | 'not-yet-released'> {
-    const response = await undiciFetchWithRetry(url, {
-      headers: {
-        'accept-encoding': 'identity',
-        connection: 'close',
-        accept: 'application/xml,text/xml,*/*;q=0.9'
-      }
-    });
+    const response = await undiciFetchWithRetry(
+      url,
+      {
+        headers: {
+          'accept-encoding': 'identity',
+          connection: 'close',
+          accept: 'application/xml,text/xml,*/*;q=0.9'
+        }
+      },
+      4
+    );
 
     // check if last page
     if (

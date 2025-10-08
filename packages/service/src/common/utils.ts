@@ -60,8 +60,7 @@ export async function undiciFetchWithRetry(
     dispatcher = agent,
     ...rest
   }: { dispatcher?: Agent; headers?: Record<string, string> } = {},
-  retries = 3,
-  delayMs = 500
+  retries = 3
 ) {
   let lastErr: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -72,7 +71,9 @@ export async function undiciFetchWithRetry(
         Logger.warn(
           `Retry attempt #${attempt} for request to ${url} due to HTTP ${res.status}`
         );
-        await new Promise((r) => setTimeout(r, delayMs * attempt));
+        await new Promise((r) =>
+          setTimeout(r, axiosRetry.exponentialDelay(attempt))
+        );
         continue;
       }
       return res; // success or non-retryable status
@@ -91,7 +92,9 @@ export async function undiciFetchWithRetry(
           Logger.warn(
             `Retry attempt #${attempt} for request to ${url} due to ${code}`
           );
-          await new Promise((r) => setTimeout(r, delayMs * attempt));
+          await new Promise((r) =>
+            setTimeout(r, axiosRetry.exponentialDelay(attempt))
+          );
           continue;
         }
       }
