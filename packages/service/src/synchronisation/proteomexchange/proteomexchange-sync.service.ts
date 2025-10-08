@@ -89,6 +89,15 @@ export class ProteomexchangeSyncService {
       .filter((r) => r.name === 'taxonomy: scientific name')
       .map((r) => r.value)
       .filter((r) => r !== undefined);
+
+    // do not ingest human only records
+    if (
+      speciesList.length === 1 &&
+      (speciesList.includes('Homo sapiens (Human)') ||
+        speciesList.includes('Homo sapiens'))
+    )
+      return 'success';
+
     const taxonomy =
       await this.taxonomyService.getTaxonomyFromNamesList(speciesList);
 
