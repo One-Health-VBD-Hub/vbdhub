@@ -59,7 +59,18 @@ export const service = new sst.aws.Service('ServiceNestJS', {
     ports: [
       { listen: '80/http', redirect: '443/https' }, // optional redirect
       { listen: '443/https', forward: '3001/http' }
-    ]
+    ],
+    health: {
+      // target group health check for 3001/http
+      '3001/http': {
+        path: '/health', // backend health route
+        successCodes: '200-299',
+        interval: '30 seconds',
+        timeout: '5 seconds',
+        healthyThreshold: 2,
+        unhealthyThreshold: 2
+      }
+    }
   },
   dev: {
     command: 'npm run --workspace @vbdhub/service start:dev',
