@@ -1,8 +1,9 @@
 import React from 'react';
 import { AnyRecord } from '@/types/indexed';
-import { Tile } from '@carbon/react';
 import Link from 'next/link';
 import HighlightedText from '@/components/HighlightedText';
+import { Checkbox } from '@carbon/react';
+import { Launch } from '@carbon/icons-react';
 
 function dbToFullName(db: string) {
   switch (db) {
@@ -21,40 +22,48 @@ function dbToFullName(db: string) {
 
 export default function ResultCard({
   result,
-  query = ''
+  query = '',
+  selected = false
 }: {
   result: AnyRecord;
   query?: string;
+  selected?: boolean;
 }) {
   const dbUrl = buildUrlForDb(result.id, result.db);
 
   return (
-    <Tile key={result.id}>
-      <span className='font-medium'>
-        {<HighlightedText text={result.title} query={query} />}
-      </span>
-      <p className='my-2 line-clamp-3'>
-        {<HighlightedText text={result.description ?? ''} query={query} />}
-      </p>
-      {result.pubDate && (
-        <p>
-          <span className='font-medium'>publication date:</span>{' '}
-          <span>{new Date(result.pubDate).toDateString()}</span>
+    <div
+      key={result.id}
+      className={`flex justify-between gap-4 bg-[#f4f4f4] p-4 text-sm ${selected ? 'border-1' : ''}`}
+    >
+      <div>
+        <span className='font-medium'>
+          {<HighlightedText text={result.title} query={query} />}
+        </span>
+
+        <p className='my-2 line-clamp-3'>
+          {<HighlightedText text={result.description ?? ''} query={query} />}
         </p>
-      )}
-      <p>
-        <span className='font-medium'>source:</span>{' '}
-        <span>{dbToFullName(result.db)}</span>
-      </p>
-      <Link
-        className='break-words text-blue-500 hover:text-blue-700'
-        href={dbUrl}
-        target='_blank'
-        rel='nofollow noopener'
-      >
-        {dbUrl}
-      </Link>
-    </Tile>
+
+        {result.pubDate && (
+          <p>
+            <span className='font-medium'>publication date:</span>{' '}
+            <span>{new Date(result.pubDate).toDateString()}</span>
+          </p>
+        )}
+
+        <p>
+          <span className='font-medium'>source:</span>{' '}
+          <span>{dbToFullName(result.db)}</span>
+        </p>
+      </div>
+      <div className='flex flex-col'>
+        <Checkbox id={result.id} labelText='' />
+        <Link href={dbUrl} target='_blank' title='Open details in new tab'>
+          <Launch size={18} className='hover:text-blue-700' />
+        </Link>
+      </div>
+    </div>
   );
 }
 
