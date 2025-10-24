@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
-import { TaxonomyService } from '../../taxonomy/taxonomy.service';
+import {
+  taxonomyPathTokenizerSettings,
+  TaxonomyService
+} from '../../taxonomy/taxonomy.service';
 import { GbifRawDataset, GbifRawDatasetsResponse } from './types/gbif-api/gbif';
 import { EsGbifDatasetDoc, gbifIndexName, mappings } from './types/indexing';
 import * as https from 'node:https';
@@ -97,7 +100,11 @@ export class GbifSyncService {
   }
 
   async createElasticSearchIndex() {
-    await this.elasticSearchService.createIndex(gbifIndexName, mappings);
+    await this.elasticSearchService.createIndex(
+      gbifIndexName,
+      mappings,
+      taxonomyPathTokenizerSettings
+    );
   }
 }
 

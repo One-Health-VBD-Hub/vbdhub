@@ -13,9 +13,6 @@ export const cluster = new sst.aws.Cluster('MyCluster', {
 });
 
 // env variables for the service
-export const elasticSearchNode = new sst.Secret('ELASTICSEARCH_NODE');
-export const elasticSearchKey = new sst.Secret('ELASTICSEARCH_API_KEY');
-
 export const elasticSearchNodeSrvLss = new sst.Secret(
   'ELASTICSEARCH_NODE_LESS'
 );
