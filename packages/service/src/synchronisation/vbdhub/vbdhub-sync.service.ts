@@ -91,7 +91,6 @@ export class VbdhubSyncService {
     }
 
     const geoCoverage: GeoJSON = buildUniqueMultiPoint(coordinates);
-    this.logger.warn(geoCoverage);
 
     const taxonomy =
       await this.taxonomyService.getTaxonomyFromNamesList(species);
