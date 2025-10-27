@@ -31,14 +31,14 @@ const taskSpecs: {
     DB: 'vt',
     CONCURRENCY: '10',
     devCommand: `${process.execPath} -r ts-node/register src/jobs/sync vt 10`,
-    schedule: 'cron(0 4 ? * SUN *)' // every Sunday at 04:00 UTC
+    schedule: 'cron(0 6 ? * SAT *)' // every Saturday at 06:00 UTC
   },
   {
     name: 'SyncVd',
     DB: 'vd',
     CONCURRENCY: '10', // ignored
     devCommand: `${process.execPath} -r ts-node/register src/jobs/sync vd 10`,
-    schedule: 'cron(0 4 ? * SAT *)' // every Saturday at 04:00 UTC
+    schedule: 'cron(0 2 ? * SAT *)' // every Saturday at 02:00 UTC
   },
   {
     name: 'SyncPx',
