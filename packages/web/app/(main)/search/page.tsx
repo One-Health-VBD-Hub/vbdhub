@@ -15,7 +15,6 @@ import {
 } from '@carbon/react';
 import Image from 'next/image';
 import waitingImage from '@/public/surreal-hourglass.svg';
-import { useLocalStorage } from 'usehooks-ts';
 import FilterPanel, { type Filters } from '@/app/(main)/search/FilterPanel';
 import { Filter } from '@carbon/icons-react';
 import { getFiltersFromUrl, getFilterUrlQuery } from '@/lib/utils/filters';
@@ -29,10 +28,6 @@ export default function SearchPageWrapper() {
 }
 
 function SearchPage() {
-  const [hideBanner, setHideBanner] = useLocalStorage<boolean>(
-    'hide-banner-search',
-    false
-  );
   const router = useRouter();
   const path = usePathname();
   const searchParams = useSearchParams();
@@ -109,18 +104,6 @@ function SearchPage() {
 
   return (
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
-      {/* TODO: improve hiding the banner */}
-      <div style={{ display: hideBanner ? 'none' : 'initial' }}>
-        <InlineNotification
-          className='mb-6'
-          style={{ maxInlineSize: 'fit-content' }}
-          lowContrast={true}
-          onClose={() => setHideBanner(true)}
-          kind='warning'
-          title='Warning'
-          subtitle='This is an early stage development version. Use at your own risk. Features may be incomplete, incorrect or disabled.'
-        />
-      </div>
       <h1 className='sr-only'>Search data</h1>
       <div className='gap-4 lg:flex'>
         <div className='hidden xl:block'>
