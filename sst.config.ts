@@ -4,7 +4,7 @@ export default $config({
   app(input) {
     return {
       name: 'vbdhub',
-      removal: input?.stage === 'production' ? 'retain' : 'remove',
+      removal: 'remove', // !IMPORTANT: set `retainOnDelete` manually on resources to be preserved
       protect: ['production'].includes(input?.stage),
       home: 'aws',
       region: 'eu-west-2', // AWS London

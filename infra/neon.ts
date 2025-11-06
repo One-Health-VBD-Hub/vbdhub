@@ -33,13 +33,20 @@ const branch =
 
 const endpoint =
   $app.stage !== 'production'
-    ? new neon.Endpoint(`sst-endpoint-${$app.stage}`, {
-        projectId,
-        branchId: branch.id,
-        type: 'read_write',
-        poolerEnabled: true,
-        poolerMode: 'transaction'
-      })
+    ? new neon.Endpoint(
+        `sst-endpoint-${$app.stage}`,
+        {
+          projectId,
+          branchId: branch.id,
+          type: 'read_write',
+          poolerEnabled: true,
+          poolerMode: 'transaction'
+        },
+        {
+          protect: $app.protect,
+          retainOnDelete: $app.removal === 'retain'
+        }
+      )
     : neon // TODO: this gives non-pooling endpoint!
         .getBranchEndpointsOutput({
           projectId,
