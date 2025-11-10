@@ -11,12 +11,12 @@ import { MappingTypeMapping } from '@elastic/elasticsearch/lib/api/types';
 export const SYNCED_DATABASES = ['gbif', 'px', 'vd', 'vt', 'hub'] as const;
 export type SyncedDatabase = (typeof SYNCED_DATABASES)[number];
 
+export function isSyncedDatabase(value: string): value is SyncedDatabase {
+  return SYNCED_DATABASES.includes(value as SyncedDatabase);
+}
+
 export const DATABASES = [...SYNCED_DATABASES, 'ncbi'] as const;
 export type Database = (typeof DATABASES)[number];
-
-export function isSyncedDatabase(value: string): value is SyncedDatabase {
-  return DATABASES.includes(value as SyncedDatabase);
-}
 
 export function isDatabase(value: string): value is Database {
   return DATABASES.includes(value as Database);

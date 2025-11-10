@@ -1,4 +1,4 @@
-import { service } from './service'; // import your S3 bucket construct
+import { service } from './service';
 
 const domainName =
   $app.stage === 'production' ? 'vbdhub.org' : `${$app.stage}.vbdhub.org`;

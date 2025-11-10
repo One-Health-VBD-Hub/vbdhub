@@ -5,7 +5,12 @@ import {
   OnModuleInit
 } from '@nestjs/common';
 import { Client } from '@elastic/elasticsearch';
-import { EsAnyDatasetDoc, Index } from '../synchronisation/types/indexing';
+import {
+  EsAnyDatasetDoc,
+  Index,
+  SYNCED_DATABASES,
+  SyncedDatabase
+} from '../synchronisation/types/indexing';
 import {
   MappingTypeMapping,
   QueryDslGeoShapeFieldQuery,
@@ -268,6 +273,18 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
           filter: filters
         }
       }
+    });
+  }
+
+  async getDocById(id: string, db: SyncedDatabase) {
+    return this.client.search<EsAnyDatasetDoc>({
+      index: [...SYNCED_DATABASES],
+      query: {
+        bool: {
+          must: [{ term: { id: id } }, { term: { db: db } }] // exact match on both id and db
+        }
+      },
+      size: 1
     });
   }
 

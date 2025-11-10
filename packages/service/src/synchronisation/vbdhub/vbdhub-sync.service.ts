@@ -16,6 +16,7 @@ import {
 } from '../../taxonomy/taxonomy.service';
 import { GeoJSON } from 'geojson';
 import { buildUniqueMultiPoint } from '../../common/geo';
+import { createHash } from 'node:crypto';
 
 interface EpidemiologicalLineCSV {
   TaxonIdNCBI?: string;
@@ -96,7 +97,7 @@ export class VbdhubSyncService {
       await this.taxonomyService.getTaxonomyFromNamesList(species);
 
     const datasetRecord: EsHubDatasetDoc = {
-      id: datasetKey,
+      id: sha1Hex(datasetKey),
       title: firstRecord.Title,
       description: firstRecord.Description,
       db: 'hub',
@@ -146,4 +147,8 @@ async function* streamCsv<T = Record<string, string>>(src: Readable) {
     // record is an object keyed by header names (all strings)
     yield record as T;
   }
+}
+
+function sha1Hex(str: string) {
+  return createHash('sha1').update(str).digest('hex');
 }

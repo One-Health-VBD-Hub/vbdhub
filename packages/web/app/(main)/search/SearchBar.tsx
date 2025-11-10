@@ -44,7 +44,9 @@ const SearchBar = memo(
             closeButtonLabelText='Clear search input'
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Button type='submit'>Search</Button>
+          <Button type='submit' title='Search for datasets'>
+            Search
+          </Button>
         </form>
         <Checkbox
           id='exact-only'

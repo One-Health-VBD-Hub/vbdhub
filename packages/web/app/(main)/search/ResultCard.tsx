@@ -1,19 +1,22 @@
 import React from 'react';
 import { AnyRecord } from '@/types/indexed';
-import { Tile } from '@carbon/react';
 import Link from 'next/link';
 import HighlightedText from '@/components/HighlightedText';
+import { Checkbox } from '@carbon/react';
+import { ArrowRight } from '@carbon/icons-react';
 
-function dbToFullName(db: string) {
+export function dbToFullName(db: string) {
   switch (db) {
     case 'gbif':
-      return 'Global Biodiversity Information Facility';
+      return 'GBIF';
     case 'px':
       return 'ProteomeXchange';
     case 'vd':
       return 'VecDyn (VectorByte)';
     case 'vt':
       return 'VecTraits (VectorByte)';
+    case 'hub':
+      return 'VBD Hub repository';
     default:
       return db;
   }
@@ -21,54 +24,51 @@ function dbToFullName(db: string) {
 
 export default function ResultCard({
   result,
-  query = ''
+  query = '',
+  selected = false
 }: {
   result: AnyRecord;
   query?: string;
+  selected?: boolean;
 }) {
-  const dbUrl = buildUrlForDb(result.id, result.db);
+  const id = `${result.db}-${result.id}`;
 
   return (
-    <Tile key={result.id}>
-      <span className='font-medium'>
-        {<HighlightedText text={result.title} query={query} />}
-      </span>
-      <p className='my-2 line-clamp-3'>
-        {<HighlightedText text={result.description ?? ''} query={query} />}
-      </p>
-      {result.pubDate && (
-        <p>
-          <span className='font-medium'>publication date:</span>{' '}
-          <span>{new Date(result.pubDate).toDateString()}</span>
-        </p>
-      )}
-      <p>
-        <span className='font-medium'>source:</span>{' '}
-        <span>{dbToFullName(result.db)}</span>
-      </p>
-      <Link
-        className='break-words text-blue-500 hover:text-blue-700'
-        href={dbUrl}
-        target='_blank'
-        rel='nofollow noopener'
-      >
-        {dbUrl}
-      </Link>
-    </Tile>
-  );
-}
+    <div
+      key={result.id}
+      className={`flex justify-between gap-4 bg-[#f4f4f4] p-4 text-sm ${selected ? 'border' : ''}`}
+    >
+      <div className='min-w-0'>
+        <span className='line-clamp-2 font-medium break-words'>
+          {<HighlightedText text={result.title} query={query} />}
+        </span>
 
-function buildUrlForDb(id: string, db: string) {
-  switch (db) {
-    case 'gbif':
-      return `https://www.gbif.org/dataset/${id}`;
-    case 'px':
-      return `https://proteomecentral.proteomexchange.org/cgi/GetDataset?ID=${id}`;
-    case 'vd':
-      return `https://vectorbyte.crc.nd.edu/vecdyn-detail/${id}`;
-    case 'vt':
-      return `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
-    default:
-      return '';
-  }
+        <p className='my-2 line-clamp-3 break-words'>
+          {<HighlightedText text={result.description ?? ''} query={query} />}
+        </p>
+
+        {result.pubDate && (
+          <p>
+            <span className='font-medium'>publication date:</span>{' '}
+            <span>{new Date(result.pubDate).toDateString()}</span>
+          </p>
+        )}
+
+        <p>
+          <span className='font-medium'>source:</span>{' '}
+          <span>{dbToFullName(result.db)}</span>
+        </p>
+      </div>
+      <div className='flex flex-col'>
+        <Checkbox id={result.id} labelText='' title='Select' />
+        <Link
+          href={`/dataset/${id}`}
+          target='_blank'
+          title='Open details in new tab'
+        >
+          <ArrowRight size={18} className='ml-[2.4px] hover:text-blue-800' />
+        </Link>
+      </div>
+    </div>
+  );
 }
