@@ -3,18 +3,20 @@ import { AnyRecord } from '@/types/indexed';
 import Link from 'next/link';
 import HighlightedText from '@/components/HighlightedText';
 import { Checkbox } from '@carbon/react';
-import { Launch } from '@carbon/icons-react';
+import { ArrowRight } from '@carbon/icons-react';
 
-function dbToFullName(db: string) {
+export function dbToFullName(db: string) {
   switch (db) {
     case 'gbif':
-      return 'Global Biodiversity Information Facility';
+      return 'GBIF';
     case 'px':
       return 'ProteomeXchange';
     case 'vd':
       return 'VecDyn (VectorByte)';
     case 'vt':
       return 'VecTraits (VectorByte)';
+    case 'hub':
+      return 'VBD Hub repository';
     default:
       return db;
   }
@@ -29,19 +31,19 @@ export default function ResultCard({
   query?: string;
   selected?: boolean;
 }) {
-  const dbUrl = buildUrlForDb(result.id, result.db);
+  const id = `${result.db}-${result.id}`;
 
   return (
     <div
       key={result.id}
-      className={`flex justify-between gap-4 bg-[#f4f4f4] p-4 text-sm ${selected ? 'border-1' : ''}`}
+      className={`flex justify-between gap-4 bg-[#f4f4f4] p-4 text-sm ${selected ? 'border' : ''}`}
     >
-      <div>
-        <span className='font-medium'>
+      <div className='min-w-0'>
+        <span className='line-clamp-2 font-medium break-words'>
           {<HighlightedText text={result.title} query={query} />}
         </span>
 
-        <p className='my-2 line-clamp-3'>
+        <p className='my-2 line-clamp-3 break-words'>
           {<HighlightedText text={result.description ?? ''} query={query} />}
         </p>
 
@@ -58,26 +60,15 @@ export default function ResultCard({
         </p>
       </div>
       <div className='flex flex-col'>
-        <Checkbox id={result.id} labelText='' />
-        <Link href={dbUrl} target='_blank' title='Open details in new tab'>
-          <Launch size={18} className='hover:text-blue-700' />
+        <Checkbox id={result.id} labelText='' title='Select' />
+        <Link
+          href={`/dataset/${id}`}
+          target='_blank'
+          title='Open details in new tab'
+        >
+          <ArrowRight size={18} className='ml-[2.4px] hover:text-blue-800' />
         </Link>
       </div>
     </div>
   );
-}
-
-function buildUrlForDb(id: string, db: string) {
-  switch (db) {
-    case 'gbif':
-      return `https://www.gbif.org/dataset/${id}`;
-    case 'px':
-      return `https://proteomecentral.proteomexchange.org/cgi/GetDataset?ID=${id}`;
-    case 'vd':
-      return `https://vectorbyte.crc.nd.edu/vecdyn-detail/${id}`;
-    case 'vt':
-      return `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
-    default:
-      return '';
-  }
 }

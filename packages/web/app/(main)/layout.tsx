@@ -43,6 +43,7 @@ export default function Layout({
   let lastComponent = path.split('/').filter(Boolean).pop();
   if (path.includes('blog')) lastComponent = 'blog';
   if (path.includes('learn')) lastComponent = 'learn';
+  if (path.includes('dataset')) lastComponent = 'dataset';
   const page = lastComponent
     ? lastComponent.charAt(0).toUpperCase() + lastComponent.slice(1)
     : lastComponent;
