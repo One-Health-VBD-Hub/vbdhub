@@ -2,7 +2,7 @@
   "name": "@vbdhub/web",
   "version": "0.1.0",
   "scripts": {
-    "dev": "next dev --turbopack ",
+    "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "sitemap": "next-sitemap",
     "start": "next start",
@@ -26,7 +26,7 @@
     ]
   },
   "dependencies": {
-    "@carbon/react": "^1",
+    "@carbon/react": "^1.95.0",
     "@formbricks/js": "^4",
     "@iframe-resizer/react": "^5",
     "@mapbox/mapbox-gl-draw": "^1",
