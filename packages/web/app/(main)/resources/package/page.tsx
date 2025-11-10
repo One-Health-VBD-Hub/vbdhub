@@ -47,7 +47,7 @@ export default function Package() {
           className='text-[#0f62fe] hover:underline'
           target='_blank'
           rel='noopener'
-          href='https://fwimp.github.io/ohvbd/'
+          href='https://ohvbd.vbdhub.org'
         >
           ohvbd
         </Link>{' '}
@@ -79,9 +79,9 @@ export default function Package() {
           className='text-[#0f62fe] hover:underline'
           target='_blank'
           rel='noopener'
-          href='https://fwimp.github.io/ohvbd/'
+          href='https://ohvbd.vbdhub.org'
         >
-          fwimp.github.io/ohvbd
+          ohvbd.vbdhub.org
         </Link>
         .
       </p>
