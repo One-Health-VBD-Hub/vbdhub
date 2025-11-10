@@ -7,7 +7,10 @@ const GAP_CLASSES = {
   3: 'gap-3',
   4: 'gap-4',
   5: 'gap-5',
-  6: 'gap-6'
+  6: 'gap-6',
+  7: 'gap-7',
+  8: 'gap-8',
+  9: 'gap-9'
 } as const;
 
 type GapSize = keyof typeof GAP_CLASSES;
