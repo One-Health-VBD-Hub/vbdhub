@@ -10,7 +10,6 @@ import React from 'react';
 import { Metadata } from 'next';
 import { Button, Tag } from '@carbon/react';
 import { Download, IbmCloudDatabases } from '@carbon/react/icons';
-import Link from 'next/link';
 import { dbToFullName } from '@/app/(main)/search/ResultCard';
 
 async function getDataset(id: string) {
@@ -54,7 +53,6 @@ function DatasetBar({ id, db }: { id: string; db: Database }) {
       </Tag>
       <Button
         href={buildUrlForDb(id, db)}
-        as={Link}
         target='_blank'
         rel='noopener nofollow'
         size='sm'

@@ -13,9 +13,6 @@ const nextConfig: NextConfig = {
       }
     ];
   },
-  sassOptions: {
-    silenceDeprecations: ['mixed-decls', 'legacy-js-api'] // TODO: remove when fixed on the Carbon Design System side
-  },
   images: {
     remotePatterns: [
       {

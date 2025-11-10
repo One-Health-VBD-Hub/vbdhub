@@ -5,15 +5,7 @@
 
 declare module "sst" {
   export interface Resource {
-    "ELASTICSEARCH_API_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "ELASTICSEARCH_API_KEY_LESS": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "ELASTICSEARCH_NODE": {
       "type": "sst.sst.Secret"
       "value": string
     }
