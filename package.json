@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace=@vbdhub/web",
-    "dev:service": "npm run dev --workspace=@vbdhub/service"
+    "dev:service": "npm run start:dev --workspace=@vbdhub/service"
   },
   "prettier": {
     "singleQuote": true,

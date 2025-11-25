@@ -27,7 +27,7 @@ export const useSearchResults = ({
         : '';
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}search?${query ? `&query=${query}` : ''}&page=${page}${fQ}&limit=${limit}`
+        `${process.env.NEXT_PUBLIC_API_URL}/search?${query ? `&query=${query}` : ''}&page=${page}${fQ}&limit=${limit}`
       );
       if (!response.ok) throw new Error('Network response was not ok');
 
