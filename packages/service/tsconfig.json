@@ -26,7 +26,5 @@
     // from generated source code references.
     // This improves issue grouping in Sentry.
     "sourceRoot": "/",
-  },
-  "files": ["./sst-env.d.ts"],
-  "include": ["./**/*.ts"]
+  }
 }
