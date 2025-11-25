@@ -24,8 +24,13 @@ async function getDataset(id: string) {
     { next: { revalidate: 60 * 60 * 24 * 2 } } // revalidate every 48 hours
   );
 
+
+  if (!r.ok) {
+    if (r.status === 404) notFound();
+    throw new Error(`Dataset API error: ${r.status}`);
+  }
+
   const datasetData: AnyRecord = await r.json();
-  if (!r.ok || !datasetData) throw new Error('Failed to fetch dataset details');
 
   return datasetData;
 }
