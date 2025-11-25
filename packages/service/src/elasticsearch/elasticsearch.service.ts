@@ -17,7 +17,6 @@ import {
   TasksGetResponse
 } from '@elastic/elasticsearch/lib/api/types';
 import { SearchDto } from '../search/search.controller';
-import { Resource } from 'sst';
 
 export type Action = {
   index: { _index: string; _id?: string; pipeline?: string };
@@ -27,8 +26,8 @@ export type Action = {
 export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ElasticsearchService.name);
   private client: Client;
-  private nodeUrl = Resource.ELASTICSEARCH_NODE_LESS.value;
-  private apiKey = Resource.ELASTICSEARCH_API_KEY_LESS.value;
+  private nodeUrl = process.env.ELASTICSEARCH_NODE_LESS;
+  private apiKey = process.env.ELASTICSEARCH_API_KEY_LESS;
 
   async onModuleDestroy() {
     if (this.client) {

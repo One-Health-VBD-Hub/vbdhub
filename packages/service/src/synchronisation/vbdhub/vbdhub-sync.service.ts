@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Resource } from 'sst';
 import {
   GetObjectCommand,
   ListObjectsV2Command,
@@ -34,7 +33,7 @@ interface EpidemiologicalLineCSV {
 export class VbdhubSyncService {
   private readonly logger = new Logger(VbdhubSyncService.name);
   private readonly s3 = new S3Client({});
-  private readonly bucket = Resource.HubRepositoryBucket.name;
+  private readonly bucket = 'xyz'; // TODO: add bucket
 
   constructor(
     private readonly taxonomyService: TaxonomyService,

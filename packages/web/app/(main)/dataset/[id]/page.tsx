@@ -20,7 +20,7 @@ async function getDataset(id: string) {
   if (!datasetId) notFound();
 
   const r = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}dataset/${datasetId}?db=${db}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/dataset/${datasetId}?db=${db}`,
     { next: { revalidate: 60 * 60 * 24 * 2 } } // revalidate every 48 hours
   );
 

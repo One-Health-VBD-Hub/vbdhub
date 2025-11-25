@@ -4,7 +4,10 @@
   "workspaces": [
     "packages/*"
   ],
-  "scripts": {},
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@vbdhub/web",
+    "dev:service": "npm run start:dev --workspace=@vbdhub/service"
+  },
   "prettier": {
     "singleQuote": true,
     "jsxSingleQuote": true,
@@ -13,8 +16,5 @@
   "devDependencies": {
     "@tsconfig/node22": "^22",
     "typescript": "^5"
-  },
-  "dependencies": {
-    "sst": "^3.17.23"
   }
 }
