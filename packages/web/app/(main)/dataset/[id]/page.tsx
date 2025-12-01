@@ -11,6 +11,7 @@ import { Metadata } from 'next';
 import { Button, Tag } from '@carbon/react';
 import { Download, IbmCloudDatabases } from '@carbon/react/icons';
 import { dbToFullName } from '@/app/(main)/search/ResultCard';
+import Link from 'next/link';
 
 async function getDataset(id: string) {
   const db = id.split('-')[0];
@@ -23,7 +24,6 @@ async function getDataset(id: string) {
     `${process.env.NEXT_PUBLIC_API_URL}/dataset/${datasetId}?db=${db}`,
     { next: { revalidate: 60 * 60 * 24 * 2 } } // revalidate every 48 hours
   );
-
 
   if (!r.ok) {
     if (r.status === 404) notFound();
@@ -80,14 +80,15 @@ export default async function DatasetPage(props: PageProps<'/dataset/[id]'>) {
     <Stack gap={4} as='main' className='mx-auto mt-24 sm:mt-32'>
       <header>
         <DatasetBar id={id} db={datasetData.db} />
-        <Heading link={false} id='heading'>
+        <Heading link={false} id='heading' className='lg:pr-60'>
           {datasetData.title}
         </Heading>
       </header>
       <Heading link={false} as='h2'>
         About Dataset
       </Heading>
-      <div className='flex flex-col gap-8 md:flex-row'>
+      <div className='flex flex-col gap-8 lg:flex-row'>
+        {/* DESCRIPTION */}
         <div className='flex flex-1 flex-col gap-3'>
           <Heading link={false} as='h3'>
             Description
@@ -97,7 +98,8 @@ export default async function DatasetPage(props: PageProps<'/dataset/[id]'>) {
               'No description provided by the author.'}
           </p>
         </div>
-        <div className='flex w-40 flex-col gap-3'>
+        {/* TAGS */}
+        <div className='flex w-60 flex-col gap-3'>
           <Heading link={false} as='h3' title='Type of data'>
             Category of data
           </Heading>
@@ -106,6 +108,23 @@ export default async function DatasetPage(props: PageProps<'/dataset/[id]'>) {
             Database
           </Heading>
           <p>{dbToFullName(datasetData.db)}</p>
+          <Heading link={false} as='h3' title='DOI'>
+            DOI
+          </Heading>
+          <p>
+            {datasetData.doi ? (
+              <Link
+                className='text-[#0f62fe] hover:underline'
+                rel='noopener nofollow'
+                target='_blank'
+                href={`https://doi.org/${datasetData.doi}`}
+              >
+                {datasetData.doi}
+              </Link>
+            ) : (
+              'N/A'
+            )}
+          </p>
         </div>
       </div>
     </Stack>
