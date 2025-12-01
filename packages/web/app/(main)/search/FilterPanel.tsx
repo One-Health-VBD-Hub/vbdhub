@@ -23,8 +23,16 @@ import {
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { UseComboboxInputValueChange } from 'downshift';
-import MapboxMap from '@/components/maps/MapboxMap';
 import { Feature as GeoJSONFeature } from 'geojson';
+import dynamic from 'next/dynamic';
+
+// dynamically import the map component to avoid large bundle size
+const MapboxMap = dynamic(() => import('@/components/maps/MapboxMap'), {
+  ssr: false,
+  loading: () => (
+    <div className='mb-4 aspect-square animate-pulse bg-gray-100 lg:aspect-square lg:h-72' />
+  )
+});
 
 export const defaultFilters: Filters = {
   category: [],
@@ -57,8 +65,7 @@ export default function FilterPanel({
     filters.taxonomy.length > 0 ||
     !!filters.publishedFrom ||
     !!filters.publishedTo ||
-    Object.keys(filters.geometry).length > 0 ||
-    filters.taxonomy.length > 0;
+    Object.keys(filters.geometry).length > 0;
   const baseId = useId();
 
   const handleReset = () => onFilterChange(defaultFilters);
@@ -99,9 +106,7 @@ export default function FilterPanel({
     queryKey: ['selectedTaxItems', filters.taxonomy],
     placeholderData: keepPreviousData,
     staleTime: Infinity, // enable request caching
-    queryFn: async (): Promise<TaxonomyItem[]> => {
-      return await getTaxonomyNamesFromIDs(filters.taxonomy);
-    }
+    queryFn: ({ signal }) => getTaxonomyNamesFromIDs(filters.taxonomy, signal)
   });
 
   const numOfFilters =
@@ -159,6 +164,13 @@ export default function FilterPanel({
               checked={filters.category.includes('proteomic')}
               onChange={handleCategoryChange}
             />
+            <Checkbox
+              id={'epidemiological' + baseId}
+              value='epidemiological'
+              labelText='Epidemiological'
+              checked={filters.category.includes('epidemiological')}
+              onChange={handleCategoryChange}
+            />
             <div className='cds--form-item'>
               <Tooltip align='right' label='Coming soon.'>
                 <div>
@@ -191,18 +203,6 @@ export default function FilterPanel({
                     value='transcriptomic'
                     labelText='Transcriptomic'
                     checked={filters.category.includes('transcriptomic')}
-                    onChange={handleCategoryChange}
-                    disabled
-                  />
-                </div>
-              </Tooltip>
-              <Tooltip align='right' label='Coming soon.'>
-                <div>
-                  <Checkbox
-                    id={'epidemiological' + baseId}
-                    value='epidemiological'
-                    labelText='Epidemiological'
-                    checked={filters.category.includes('epidemiological')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -241,6 +241,13 @@ export default function FilterPanel({
               checked={filters.database.includes('px')}
               onChange={handleDbChange}
             />
+            <Checkbox
+              id={'hub' + baseId}
+              value='hub'
+              labelText='VBD Hub'
+              checked={filters.database.includes('hub')}
+              onChange={handleDbChange}
+            />
             <div className='cds--form-item'>
               <Tooltip align='right' label='Coming soon.'>
                 <div>
@@ -250,18 +257,6 @@ export default function FilterPanel({
                     labelText='NCBI'
                     disabled
                     checked={filters.database.includes('ncbi')}
-                    onChange={handleDbChange}
-                  />
-                </div>
-              </Tooltip>
-              <Tooltip align='right' label='Coming soon.'>
-                <div>
-                  <Checkbox
-                    id={'hub' + baseId}
-                    value='hub'
-                    labelText='VBD Hub'
-                    disabled
-                    checked={filters.database.includes('hub')}
                     onChange={handleDbChange}
                   />
                 </div>
@@ -278,6 +273,10 @@ export default function FilterPanel({
                 kind='ghost'
                 type='button'
                 className='mx-3.5'
+                // TODO: remove once weird right padding bug fixed
+                style={{
+                  padding: 'unset'
+                }}
                 size='md'
                 hasIconOnly
                 iconDescription='Reset'
@@ -368,6 +367,10 @@ export default function FilterPanel({
                 kind='ghost'
                 type='button'
                 className='mx-3.5'
+                // TODO: remove once weird right padding bug fixed
+                style={{
+                  padding: 'unset'
+                }}
                 size='md'
                 hasIconOnly
                 iconDescription='Reset'
@@ -410,6 +413,10 @@ export default function FilterPanel({
                 kind='ghost'
                 type='button'
                 className='mx-3.5'
+                // TODO: remove once weird right padding bug fixed
+                style={{
+                  padding: 'unset'
+                }}
                 size='md'
                 hasIconOnly
                 iconDescription='Reset'
@@ -534,32 +541,24 @@ export function TaxonomyMultiSelect({
 /**
  * Fetches taxonomy names from GBIF API using a list of GBIF IDs.
  * @param gbifIDs - An array of GBIF IDs to fetch taxonomy names for.
+ * @param signal - An optional AbortSignal to cancel the request if needed.
  * @returns A promise that resolves to an array of TaxonomyItem objects.
  */
 async function getTaxonomyNamesFromIDs(
-  gbifIDs: string[]
-): Promise<TaxonomyItem[]> {
-  const fetchPromises = gbifIDs.map((id) =>
-    fetch(`https://api.gbif.org/v1/species/${id}`)
-      .then((response) => {
-        if (!response.ok) {
-          // Handle potential errors for individual requests, e.g., 404 Not Found
-          console.error(
-            `Failed to fetch species ${id}: ${response.statusText}`
-          );
-          return null; // Return null or a specific error object
-        }
-        return response.json();
-      })
-      .catch((error) => {
-        // Handle network errors
-        console.error(`Network error fetching species ${id}:`, error);
-        return null;
-      })
+  gbifIDs: string[],
+  signal?: AbortSignal
+) {
+  const settled = await Promise.allSettled(
+    gbifIDs.map((id) =>
+      fetch(`https://api.gbif.org/v1/species/${id}`, { signal }).then((r) =>
+        r.ok ? r.json() : Promise.reject(r.statusText)
+      )
+    )
   );
 
-  const results = await Promise.all(fetchPromises);
-
-  // Filter out any null results from failed requests if needed
-  return results.filter((result: TaxonomyItem) => result !== null);
+  return settled
+    .filter(
+      (r): r is PromiseFulfilledResult<TaxonomyItem> => r.status === 'fulfilled'
+    )
+    .map((r) => r.value);
 }

@@ -14,7 +14,6 @@ const IBMPlexSans = IBM_Plex_Sans({
   style: ['normal', 'italic'],
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-ibm-plex-sans',
   preload: true
 });
 

@@ -5,18 +5,24 @@ import { EsGbifDatasetDoc } from '../gbif/types/indexing';
 import { EsVdDatasetDoc } from '../vecdyn/types/indexing';
 import { EsVtDatasetDoc } from '../vectraits/types/indexing';
 import { EsPxDatasetDoc } from '../proteomexchange/types/indexing';
+import { EsHubDatasetDoc } from '../vbdhub/types/indexing';
+import { MappingTypeMapping } from '@elastic/elasticsearch/lib/api/types';
 
 export const SYNCED_DATABASES = ['gbif', 'px', 'vd', 'vt', 'hub'] as const;
 export type SyncedDatabase = (typeof SYNCED_DATABASES)[number];
 
+export function isSyncedDatabase(value: string): value is SyncedDatabase {
+  return SYNCED_DATABASES.includes(value as SyncedDatabase);
+}
+
 export const DATABASES = [...SYNCED_DATABASES, 'ncbi'] as const;
 export type Database = (typeof DATABASES)[number];
 
-export function isSyncedDatabase(value: string): value is SyncedDatabase {
-  return DATABASES.includes(value as SyncedDatabase);
+export function isDatabase(value: string): value is Database {
+  return DATABASES.includes(value as Database);
 }
 
-export const INDICES = [...SYNCED_DATABASES, 'vddata', 'vtdata'] as const;
+export const INDICES = [...SYNCED_DATABASES] as const;
 export type Index = (typeof INDICES)[number];
 
 export function isIndex(value: string): value is Index {
@@ -61,7 +67,8 @@ export type EsAnyDatasetDoc =
   | EsVdDatasetDoc
   | EsVtDatasetDoc
   | EsPxDatasetDoc
-  | EsGbifDatasetDoc;
+  | EsGbifDatasetDoc
+  | EsHubDatasetDoc;
 
 export interface EsDatasetDoc extends TaxonomyWithLineage {
   id: string; // unique identifier for the record (e.g., GBIF dataset key, VecDyn ID)
@@ -80,3 +87,110 @@ export interface EsDatasetDoc extends TaxonomyWithLineage {
   modDate?: Date;
   citation?: string;
 }
+
+export const sharedMappingsProperties: MappingTypeMapping['properties'] = {
+  id: { type: 'keyword' },
+  title: {
+    type: 'text',
+    analyzer: 'english'
+  },
+  description: {
+    type: 'text',
+    analyzer: 'english'
+  },
+  db: { type: 'keyword' }, // e.g. GBIF, VecTraits, etc
+  dbUrl: {
+    type: 'keyword',
+    index: false
+  },
+  authorUrl: { type: 'keyword', index: false },
+  author: { type: 'text' },
+  contactEmail: { type: 'keyword', index: false },
+  type: { type: 'keyword' }, // e.g., trait, abundance, occurrence, etc
+  doi: { type: 'keyword' },
+  language: { type: 'keyword' },
+  geoCoverage: { type: 'geo_shape' },
+  countryCoverage: { type: 'keyword' },
+  temporalCoverage: {
+    type: 'object',
+    properties: {
+      start: { type: 'date' },
+      end: { type: 'date' }
+    }
+  },
+  pubDate: { type: 'date' },
+  modDate: { type: 'date' },
+  citation: { type: 'text' },
+  // taxonomic coverage
+  taxonomy_paths: {
+    type: 'text',
+    analyzer: 'taxonomy_analyzer',
+    fields: {
+      raw: { type: 'keyword' }
+    }
+  },
+  kingdom: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  },
+  phylum: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  },
+  class: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  },
+  order: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  },
+  family: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  },
+  genus: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  },
+  species: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  },
+  unknown: {
+    type: 'text',
+    fields: {
+      raw: {
+        type: 'keyword'
+      }
+    }
+  }
+};

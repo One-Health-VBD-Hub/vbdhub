@@ -13,17 +13,8 @@ const nextConfig: NextConfig = {
       }
     ];
   },
-  sassOptions: {
-    silenceDeprecations: ['mixed-decls', 'legacy-js-api'] // TODO: remove when fixed on the Carbon Design System side
-  },
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'media.licdn.com',
-        port: '',
-        pathname: '/dms/image/v2/**'
-      },
       {
         hostname: 'pxl-imperialacuk.terminalfour.net'
       },

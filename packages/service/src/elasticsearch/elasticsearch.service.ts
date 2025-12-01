@@ -5,7 +5,12 @@ import {
   OnModuleInit
 } from '@nestjs/common';
 import { Client } from '@elastic/elasticsearch';
-import { EsAnyDatasetDoc, Index } from '../synchronisation/types/indexing';
+import {
+  EsAnyDatasetDoc,
+  Index,
+  SYNCED_DATABASES,
+  SyncedDatabase
+} from '../synchronisation/types/indexing';
 import {
   MappingTypeMapping,
   QueryDslGeoShapeFieldQuery,
@@ -21,8 +26,8 @@ export type Action = {
 export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ElasticsearchService.name);
   private client: Client;
-  private nodeUrl = process.env.ELASTICSEARCH_NODE;
-  private apiKey = process.env.ELASTICSEARCH_API_KEY;
+  private nodeUrl = process.env.ELASTICSEARCH_NODE_LESS;
+  private apiKey = process.env.ELASTICSEARCH_API_KEY_LESS;
 
   async onModuleDestroy() {
     if (this.client) {
@@ -31,42 +36,25 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async onModuleInit() {
+  onModuleInit() {
     if (!this.nodeUrl || !this.apiKey)
       throw new Error('Elasticsearch configuration is missing');
 
     this.client = new Client({
       node: this.nodeUrl,
-      auth: { apiKey: this.apiKey }
+      auth: { apiKey: this.apiKey },
+      serverMode: 'serverless'
     });
-
-    const isAlive = await this.client.cluster.health();
-
-    if (isAlive.status.toLowerCase() == 'red') {
-      this.logger.error(
-        'Elasticsearch cluster is not healthy:',
-        isAlive.status
-      );
-    } else {
-      this.logger.log(`Elasticsearch cluster health: ${isAlive.status}`);
-    }
   }
 
   getClient() {
     return this.client;
   }
 
-  async createIndex(
-    index: Index,
-    mappings: MappingTypeMapping,
-    settings = {},
-    shards = 2
-  ) {
+  async createIndex(index: Index, mappings: MappingTypeMapping, settings = {}) {
     await this.client.indices.create({
       index,
       settings: {
-        number_of_shards: shards,
-        number_of_replicas: 0,
         ...settings
       },
       mappings
@@ -125,30 +113,28 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   }) {
     const filters = [];
 
-    if (gbifDatasetKeys.length > 0) {
-      filters.push({
-        bool: {
-          should: [
-            // allow all documents that are not from gbif
-            {
-              bool: {
-                must_not: { term: { db: 'gbif' } }
-              }
-            },
-            // allow gbif documents only if their datasetKey is in gbifDatasetKeys
-            {
-              bool: {
-                must: [
-                  { term: { db: 'gbif' } },
-                  { terms: { id: gbifDatasetKeys } }
-                ]
-              }
+    filters.push({
+      bool: {
+        should: [
+          // allow all documents that are not from gbif
+          {
+            bool: {
+              must_not: { term: { db: 'gbif' } }
             }
-          ],
-          minimum_should_match: 1
-        }
-      });
-    }
+          },
+          // allow gbif documents only if their datasetKey is in gbifDatasetKeys
+          {
+            bool: {
+              must: [
+                { term: { db: 'gbif' } },
+                { terms: { id: gbifDatasetKeys } }
+              ]
+            }
+          }
+        ],
+        minimum_should_match: 1
+      }
+    });
 
     // filters for various data categories (occurrence, abundance, etc)
     if (category && category.length > 0) {
@@ -231,7 +217,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     }
 
     // build the text‐match clause
-    let textQueryClause: Record<string, any> | undefined;
+    let textQueryClause: Record<string, unknown> | undefined;
     if (query) {
       // https://chatgpt.com/c/684712c0-c624-8003-97db-be08474634a8
       if (exact) {
@@ -253,6 +239,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
               {
                 multi_match: {
                   query,
+                  operator: 'AND', // all terms must appear
                   fuzziness: 'AUTO',
                   fields: ['title^2', '*'],
                   type: 'most_fields'
@@ -285,6 +272,18 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
           filter: filters
         }
       }
+    });
+  }
+
+  async getDocById(id: string, db: SyncedDatabase) {
+    return this.client.search<EsAnyDatasetDoc>({
+      index: [...SYNCED_DATABASES],
+      query: {
+        bool: {
+          must: [{ term: { id: id } }, { term: { db: db } }] // exact match on both id and db
+        }
+      },
+      size: 1
     });
   }
 
@@ -321,7 +320,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     // This helper will:
     //  • serialize your docs into bulk‐API format
     //  • flush whenever the body ≥ 90 MB
-    //  • retry 3× on 429/5xx with a 200 ms backoff
+    //  • retry 3× on 429/5xx with a 1 s backoff
     //  • run up to 2 concurrent bulk requests
     const result = await this.client.helpers.bulk({
       datasource: docs,
@@ -336,7 +335,9 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (result.failed > 0) {
-      if (errors.length) this.logger.error('Detailed failures:', errors);
+      // print only the first error to avoid log flooding
+      if (errors.length)
+        this.logger.error('Detailed failures:', errors.slice(0, 1));
       throw new Error(`Bulk ingest had ${result.failed} failures`);
     }
   }

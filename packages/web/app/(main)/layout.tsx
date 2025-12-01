@@ -43,6 +43,7 @@ export default function Layout({
   let lastComponent = path.split('/').filter(Boolean).pop();
   if (path.includes('blog')) lastComponent = 'blog';
   if (path.includes('learn')) lastComponent = 'learn';
+  if (path.includes('dataset')) lastComponent = 'dataset';
   const page = lastComponent
     ? lastComponent.charAt(0).toUpperCase() + lastComponent.slice(1)
     : lastComponent;
@@ -91,7 +92,7 @@ export default function Layout({
               width={125}
               height={144}
               className='mr-1.5 h-7 w-auto'
-              src='/logo-lgbtq.svg'
+              src='/logo-teal.svg'
               alt='logo of the One Health Vector-Borne Diseases Hub'
             />
             <span className='font-normal'>VBD Hub -&nbsp;</span>

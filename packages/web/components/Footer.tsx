@@ -35,7 +35,7 @@ export default function Footer() {
           </div>
 
           {/* Right-aligned CarbonBadge */}
-          <CarbonBadge co2={0.41} percentage={57} url='vbdhub.org' />
+          <CarbonBadge co2={0.1} percentage={76} url='vbdhub.org' />
         </div>
       </div>
     </footer>

@@ -91,18 +91,12 @@ export default function Training2025() {
               name='Instructor-Led Workshop'
               text='Instructor-Led Workshop'
               className='text-base'
-              style={{
-                fontFamily: 'var(--font-ibm-plex-sans)'
-              }}
             />
             <Switch
               title='Switch to Self-Paced Training version'
               name='Self-Paced Training'
               text='Self-Paced Training'
               className='text-base'
-              style={{
-                fontFamily: 'var(--font-ibm-plex-sans)'
-              }}
             />
           </ContentSwitcher>
 

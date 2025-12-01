@@ -1,6 +1,5 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { configureAxiosRetry } from '../../common/utils';
 import { HttpService } from '@nestjs/axios';
 import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
 import {
@@ -8,31 +7,29 @@ import {
   TaxonomyService
 } from '../../taxonomy/taxonomy.service';
 import {
-  mappings,
   EsPxDatasetDoc,
+  mappings,
   proteomeXchangeIndexName
 } from './types/indexing';
-import { AxiosError } from 'axios';
 import { xmlToClass } from 'xml-class-transformer';
 import { getIdentifiers, ProteomeXchangeDatasetType } from './types/xml';
 import { validate } from 'class-validator';
-import { ok } from 'node:assert/strict';
 import { EsAnyDatasetDoc } from '../types/indexing';
+import { undiciFetchWithRetry } from '../../common/utils';
 
 @Injectable()
-export class ProteomexchangeSyncService implements OnModuleInit {
+export class ProteomexchangeSyncService {
   private readonly logger = new Logger(ProteomexchangeSyncService.name);
 
-  onModuleInit() {
-    configureAxiosRetry(this.httpService.axiosRef);
-  }
-
   constructor(
-    private readonly httpService: HttpService,
     private readonly elasticSearchService: ElasticsearchService,
-    private readonly taxonomyService: TaxonomyService
+    private readonly taxonomyService: TaxonomyService,
+    private readonly httpService: HttpService
   ) {}
 
+  /**
+   * Fetch the list of weekly PX IDs from the Google Apps Script endpoint
+   */
   async getWeeklyPxIds(): Promise<string[]> {
     const response = await firstValueFrom(
       this.httpService.get<{
@@ -48,16 +45,17 @@ export class ProteomexchangeSyncService implements OnModuleInit {
   async pxSingleFetchAndIngestPage(
     url: string
   ): Promise<'success' | 'last-page' | 'not-yet-released'> {
-    const response = await firstValueFrom(
-      this.httpService.get<string>(url, {
-        responseType: 'text'
-      })
-    ).catch((e: AxiosError) => {
-      if (e.response?.status === 404) {
-        return e.response;
-      }
-      throw e; // Re-throw the error if it's not a 404
-    });
+    const response = await undiciFetchWithRetry(
+      url,
+      {
+        headers: {
+          'accept-encoding': 'identity',
+          connection: 'close',
+          accept: 'application/xml,text/xml,*/*;q=0.9'
+        }
+      },
+      4
+    );
 
     // check if last page
     if (
@@ -74,10 +72,16 @@ export class ProteomexchangeSyncService implements OnModuleInit {
       throw new Error('Unexpected 404 error');
     }
 
-    // response must be string at this point because of responseType: 'text'
-    ok(typeof response.data === 'string');
+    if (!response.ok) {
+      throw new Error(
+        `Fetch failed: ${response.status} ${response.statusText}`
+      );
+    }
 
-    const jsonObj = xmlToClass(response.data, ProteomeXchangeDatasetType);
+    const jsonObj = xmlToClass(
+      await response.text(),
+      ProteomeXchangeDatasetType
+    );
     const errs = await validate(jsonObj);
     if (errs.length > 0) throw new Error('Validation error');
 
@@ -85,13 +89,22 @@ export class ProteomexchangeSyncService implements OnModuleInit {
       .filter((r) => r.name === 'taxonomy: scientific name')
       .map((r) => r.value)
       .filter((r) => r !== undefined);
+
+    // do not ingest human only records
+    if (
+      speciesList.length === 1 &&
+      (speciesList.includes('Homo sapiens (Human)') ||
+        speciesList.includes('Homo sapiens'))
+    )
+      return 'success';
+
     const taxonomy =
       await this.taxonomyService.getTaxonomyFromNamesList(speciesList);
 
     const repository = jsonObj.DatasetSummary.hostingRepository;
 
     const { pxId, doi } = getIdentifiers(jsonObj);
-    ok(pxId !== undefined); // pxId is always defined
+    if (!pxId) throw new Error('PX ID not found');
 
     const record: EsPxDatasetDoc = {
       id: pxId,
@@ -116,6 +129,9 @@ export class ProteomexchangeSyncService implements OnModuleInit {
     return 'success';
   }
 
+  /**
+   * Create the ElasticSearch index for ProteomeXchange datasets
+   */
   async createElasticSearchIndex() {
     await this.elasticSearchService.createIndex(
       proteomeXchangeIndexName,
@@ -125,6 +141,9 @@ export class ProteomexchangeSyncService implements OnModuleInit {
   }
 }
 
+/**
+ * Generator function to yield the next PX single dataset URL
+ */
 export function* pxSingleNextPageUrlGenerator() {
   let page = 1;
   while (true) {

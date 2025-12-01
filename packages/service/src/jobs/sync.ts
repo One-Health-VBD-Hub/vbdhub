@@ -12,40 +12,34 @@ import { pidInterval } from '../common/pidusage';
 function parseArguments(): {
   concurrency: number;
   db: SyncedDatabase;
-  mode?: string;
 } {
   const args = process.argv.slice(2); // Skip the first two arguments (node and script path)
 
   if (args.length < 2) {
-    throw new Error('Usage: ts-node sync.ts <db> <concurrency> <mode>');
+    throw new Error('Usage: ts-node sync.ts <db> <concurrency>');
   }
 
   const db = args[0];
   if (!isSyncedDatabase(db)) {
     throw new Error(
-      `Invalid db: ${db}. Valid dbs are 'gbif', 'px', 'vd', 'vt'.`
+      `Invalid db: ${db}. Valid dbs are 'gbif', 'px', 'vd', 'vt', 'hub'.`
     );
-  }
-
-  const mode = args[2];
-  if (mode && mode !== 'data') {
-    throw new Error(`Invalid mode: ${mode}. Valid modes are 'data'.`);
   }
 
   const concurrency = parseInt(args[1], 10);
   if (isNaN(concurrency)) throw new Error('Concurrency must be a number');
 
-  return { concurrency, db, mode };
+  return { concurrency, db };
 }
 
-// run with 'ts-node sync <db> <concurrency> <mode>' or 'node dist/jobs/sync <db> <concurrency> <mode>'
+// run with 'ts-node sync <db> <concurrency>' or 'node dist/jobs/sync <db> <concurrency>'
 async function main() {
   const start = performance.now();
   Logger.log('Starting job and parsing arguments', 'sync');
   Logger.warn(`Running in ${process.env.NODE_ENV} mode`, 'sync');
 
   // Parse arguments
-  const { concurrency, db, mode } = parseArguments();
+  const { concurrency, db } = parseArguments();
 
   Logger.log(`Fetching and ingesting data from ${db}`, 'sync');
 
@@ -54,10 +48,7 @@ async function main() {
     {
       logger:
         process.env.NODE_ENV !== 'development'
-          ? new ConsoleLogger({
-              logLevels: ['warn'], // hide non-warn or lower logs in production
-              json: true // necessary for production logging
-            })
+          ? new ConsoleLogger({ json: true }) // necessary for production logging
           : undefined
     }
   );
@@ -68,11 +59,7 @@ async function main() {
   if (process.env.NODE_ENV === 'development') pidInterval(15_000);
 
   try {
-    if (mode === 'data') {
-      await tasksService.syncCompleteData(db);
-    } else {
-      await tasksService.syncDatabase(db, concurrency);
-    }
+    await tasksService.syncDatabase(db, concurrency);
 
     const end = performance.now();
     Logger.warn(`Execution time: ${end - start} ms`, 'sync');

@@ -14,8 +14,18 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "sync:gbif": "node dist/jobs/sync gbif 15",
+    "sync:vt": "node dist/jobs/sync vt 10",
+    "sync:vd": "node dist/jobs/sync vd 10",
+    "sync:hub": "node dist/jobs/sync hub 10",
+    "sync:px": "node dist/jobs/sync px 15",
     "knip": "knip",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org imperial-college-london-ls --project hub-backend ./dist && sentry-cli sourcemaps upload --org imperial-college-london-ls --project hub-backend ./dist"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "jsxSingleQuote": true,
+    "trailingComma": "none"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9",
@@ -29,8 +39,8 @@
     "@nestjs/platform-fastify": "^11",
     "@nestjs/swagger": "^11.2.0",
     "@sentry/cli": "^2",
-    "@sentry/nestjs": "^9",
-    "@sentry/profiling-node": "^9",
+    "@sentry/nestjs": "^10",
+    "@sentry/profiling-node": "^10",
     "@turf/buffer": "^7.2.0",
     "@turf/kinks": "^7.2.0",
     "@turf/rewind": "^7.2.0",
@@ -47,7 +57,9 @@
     "rxjs": "^7",
     "string-strip-html": "^13",
     "wellknown": "^0.5",
-    "xml-class-transformer": "^3"
+    "xml-class-transformer": "^3",
+    "@aws-sdk/client-s3": "^3",
+    "csv-parse": "^6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

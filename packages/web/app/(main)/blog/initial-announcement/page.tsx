@@ -169,8 +169,8 @@ export default function Page() {
             <Image
               src='/mosquito.webp'
               alt='A mosquito on a leaf'
-              width={800}
-              height={600}
+              width={1400}
+              height={966}
               priority
               className='object-cover shadow lg:min-w-[600px]'
             />

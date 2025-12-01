@@ -1,9 +1,11 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { configureAxiosRetry } from '../../common/utils';
 import { HttpService } from '@nestjs/axios';
 import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
-import { TaxonomyService } from '../../taxonomy/taxonomy.service';
+import {
+  taxonomyPathTokenizerSettings,
+  TaxonomyService
+} from '../../taxonomy/taxonomy.service';
 import { GbifRawDataset, GbifRawDatasetsResponse } from './types/gbif-api/gbif';
 import { EsGbifDatasetDoc, gbifIndexName, mappings } from './types/indexing';
 import * as https from 'node:https';
@@ -11,12 +13,8 @@ import { EsAnyDatasetDoc } from '../types/indexing';
 import { stripHtml } from 'string-strip-html';
 
 @Injectable()
-export class GbifSyncService implements OnModuleInit {
+export class GbifSyncService {
   private readonly logger = new Logger(GbifSyncService.name);
-
-  onModuleInit() {
-    configureAxiosRetry(this.httpService.axiosRef);
-  }
 
   constructor(
     private readonly httpService: HttpService,
@@ -102,7 +100,11 @@ export class GbifSyncService implements OnModuleInit {
   }
 
   async createElasticSearchIndex() {
-    await this.elasticSearchService.createIndex(gbifIndexName, mappings);
+    await this.elasticSearchService.createIndex(
+      gbifIndexName,
+      mappings,
+      taxonomyPathTokenizerSettings
+    );
   }
 }
 

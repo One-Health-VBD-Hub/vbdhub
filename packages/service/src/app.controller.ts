@@ -1,4 +1,4 @@
-import { Controller, Head } from '@nestjs/common';
+import { Controller, Get, Head } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller()
@@ -21,5 +21,11 @@ export class AppController {
   @Head()
   ping(): void {
     // No need to return a body, this is just to confirm availability
+  }
+
+  // Simple health check endpoint for monitoring purposes (e.g. AWS)
+  @Get('health')
+  health() {
+    return { status: 'ok' };
   }
 }
