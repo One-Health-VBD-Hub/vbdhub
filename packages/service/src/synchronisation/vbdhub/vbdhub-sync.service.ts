@@ -1,10 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  GetObjectCommand,
-  ListObjectsV2Command,
-  ListObjectsV2CommandOutput,
-  S3Client
-} from '@aws-sdk/client-s3';
+import * as Minio from 'minio';
 import { Readable } from 'node:stream';
 import { parse } from 'csv-parse';
 import { EsHubDatasetDoc, hubIndexName, mappings } from './types/indexing';
@@ -16,6 +11,7 @@ import {
 import { GeoJSON } from 'geojson';
 import { buildUniqueMultiPoint } from '../../common/geo';
 import { createHash } from 'node:crypto';
+import { BucketItem } from 'minio';
 
 interface EpidemiologicalLineCSV {
   TaxonIdNCBI?: string;
@@ -32,8 +28,13 @@ interface EpidemiologicalLineCSV {
 @Injectable()
 export class VbdhubSyncService {
   private readonly logger = new Logger(VbdhubSyncService.name);
-  private readonly s3 = new S3Client({});
-  private readonly bucket = 'xyz'; // TODO: add bucket
+  private readonly s3Client = new Minio.Client({
+    endPoint: 'storage.railway.app',
+    useSSL: true,
+    accessKey: process.env.S3_ACCESS_KEY_ID,
+    secretKey: process.env.S3_SECRET_ACCESS_KEY
+  });
+  private readonly bucketName = process.env.S3_BUCKET_NAME ?? '';
 
   constructor(
     private readonly taxonomyService: TaxonomyService,
@@ -43,35 +44,26 @@ export class VbdhubSyncService {
   async syncDatasets() {
     this.logger.log('Syncing VBD Hub repository');
 
-    await this.iterateAllCSVs(this.bucket);
+    await this.iterateAllCSVs();
   }
 
-  async iterateAllCSVs(bucket: string, prefix = '') {
-    let continuationToken: string | undefined;
+  async iterateAllCSVs() {
+    const objectsStream = this.s3Client.listObjectsV2(
+      this.bucketName,
+      'epidemiological',
+      true
+    );
 
-    do {
-      const listResp: ListObjectsV2CommandOutput = await this.s3.send(
-        new ListObjectsV2Command({
-          Bucket: bucket,
-          Prefix: prefix,
-          ContinuationToken: continuationToken
-        })
-      );
+    for await (const obj of objectsStream as AsyncIterable<BucketItem>) {
+      if (!obj.name || !obj.name.endsWith('.csv')) continue;
 
-      continuationToken = listResp.NextContinuationToken;
-
-      // iterate over all CSV files in the bucket with the given prefix (or all)
-      for (const bucketObject of listResp.Contents || []) {
-        if (!bucketObject.Key || !bucketObject.Key.endsWith('.csv')) continue;
-
-        const csvText = await this.getObjectText(bucket, bucketObject.Key);
-        await this.processCSV(csvText, bucketObject.Key);
-      }
-    } while (continuationToken);
+      const stream = await this.s3Client.getObject(this.bucketName, obj.name);
+      await this.processCSV(stream, obj.name);
+    }
   }
 
-  async processCSV(csvText: Readable, datasetKey: string) {
-    this.logger.log(`Processing dataset ${datasetKey}`);
+  async processCSV(csvText: Readable, datasetName: string) {
+    this.logger.log(`Processing dataset ${datasetName}`);
 
     const iterator = streamCsv<EpidemiologicalLineCSV>(csvText);
     const firstRecord = (await iterator.next()).value;
@@ -96,7 +88,7 @@ export class VbdhubSyncService {
       await this.taxonomyService.getTaxonomyFromNamesList(species);
 
     const datasetRecord: EsHubDatasetDoc = {
-      id: sha1Hex(datasetKey),
+      id: sha1Hex(datasetName), // unique ID based on dataset name
       title: firstRecord.Title,
       description: firstRecord.Description,
       db: 'hub',
@@ -107,7 +99,7 @@ export class VbdhubSyncService {
 
     await this.elasticSearchService.getClient().index({
       index: hubIndexName,
-      id: datasetKey,
+      id: datasetName,
       document: datasetRecord
     });
   }
@@ -118,17 +110,6 @@ export class VbdhubSyncService {
       mappings,
       taxonomyPathTokenizerSettings
     );
-  }
-
-  async getObjectText(bucket: string, key: string): Promise<Readable> {
-    const resp = await this.s3.send(
-      new GetObjectCommand({ Bucket: bucket, Key: key })
-    );
-
-    if (!(resp.Body instanceof Readable))
-      throw new Error('Expected response body to be a Readable stream');
-
-    return resp.Body;
   }
 }
 
@@ -148,6 +129,7 @@ async function* streamCsv<T = Record<string, string>>(src: Readable) {
   }
 }
 
+// Simple SHA-1 hash function to create unique IDs
 function sha1Hex(str: string) {
   return createHash('sha1').update(str).digest('hex');
 }

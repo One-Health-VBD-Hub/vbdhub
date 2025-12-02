@@ -60,7 +60,8 @@ export default function ResultCard({
         </p>
       </div>
       <div className='flex flex-col'>
-        <Checkbox id={result.id} labelText='' title='Select' />
+        {/* TODO: unhide once complete */}
+        <Checkbox id={result.id} labelText='' title='Select' className='hidden' />
         <Link
           href={`/dataset/${id}`}
           target='_blank'
