@@ -19,6 +19,7 @@ import { useLocalStorage } from 'usehooks-ts';
 import FilterPanel, { type Filters } from '@/app/(main)/search/FilterPanel';
 import { Filter } from '@carbon/icons-react';
 import { getFiltersFromUrl, getFilterUrlQuery } from '@/lib/utils/filters';
+import Pagination from '@/app/(main)/search/Pagination';
 
 export default function SearchPageWrapper() {
   return (
@@ -220,41 +221,11 @@ function SearchPage() {
           )}
 
           {!!data?.count && currentPage <= totalPages && (
-            <>
-              {/* for XS screen */}
-              <PaginationNav
-                className='mt-6 sm:hidden'
-                page={currentPage - 1}
-                itemsShown={4}
-                onChange={(page) => {
-                  const newPage = page + 1;
-                  setCurrentPage(newPage);
-                }}
-                totalItems={totalPages}
-              />
-              {/* for SM screen */}
-              <PaginationNav
-                className='mt-6 hidden sm:block lg:hidden'
-                page={currentPage - 1}
-                itemsShown={8}
-                onChange={(page) => {
-                  const newPage = page + 1;
-                  setCurrentPage(newPage);
-                }}
-                totalItems={totalPages}
-              />
-              {/* for LG or larger screen */}
-              <PaginationNav
-                className='mt-6 hidden lg:block'
-                page={currentPage - 1}
-                itemsShown={10}
-                onChange={(page) => {
-                  const newPage = page + 1;
-                  setCurrentPage(newPage);
-                }}
-                totalItems={totalPages}
-              />
-            </>
+            <Pagination
+              totalPages={totalPages}
+              setCurrentPage={setCurrentPage}
+              currentPage={currentPage}
+            />
           )}
         </div>
       </div>
