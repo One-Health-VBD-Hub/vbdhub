@@ -1,7 +1,7 @@
 'use client';
 
 import { useStytch, useStytchUser } from '@stytch/nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Button,
   Checkbox,
@@ -16,6 +16,11 @@ export default function Register() {
   const { user, isInitialized } = useStytchUser();
   const stytch = useStytch();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
+  const redirectTarget = redirectParam
+    ? decodeURIComponent(redirectParam)
+    : '/';
   const [status, setStatus] = useState<
     'writing' | 'submitted' | 'pending' | 'error'
   >('writing');
@@ -36,13 +41,20 @@ export default function Register() {
     });
   };
 
-  // redirect the user to the home page if they are not logged in
-  if (isInitialized && !user) router.replace('/');
+  // redirect the user to the auth page if they are not logged in
+  if (isInitialized && !user)
+    router.replace(`/auth${redirectParam ? `?redirect=${redirectParam}` : ''}`);
 
   useEffect(() => {
     // if user is logged in and has provided their name previously
     if (isInitialized && user?.name.first_name) setStatus('submitted');
   }, [isInitialized, user]);
+
+  useEffect(() => {
+    if (status === 'submitted') {
+      router.replace(redirectTarget);
+    }
+  }, [redirectTarget, router, status]);
 
   const disabled = status === 'pending' || status === 'submitted';
 
@@ -56,7 +68,7 @@ export default function Register() {
         </p>
         <Button
           onClick={() => {
-            router.replace('/');
+            router.replace(redirectTarget);
           }}
         >
           Go to home page

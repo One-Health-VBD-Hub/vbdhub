@@ -24,6 +24,11 @@ function Auth() {
   const params = useSearchParams();
   const router = useRouter();
 
+  const redirectParam = params.get('redirect');
+  const redirectTarget = redirectParam
+    ? decodeURIComponent(redirectParam)
+    : '/';
+
   // tries to authenticate the user with a magic link token
   useEffect(() => {
     if (stytch && !user && isInitialized) {
@@ -43,13 +48,15 @@ function Auth() {
     if (isInitialized && user) {
       // redirect the user to the registration page if they haven't provided their name yet
       if (!user.name.first_name) {
-        router.replace('/register');
+        router.replace(
+          `/register${redirectParam ? `?redirect=${redirectParam}` : ''}`
+        );
       } else {
         // Redirect the user to an authenticated page if they are already logged in
-        router.replace('/'); // TODO: redirect to the page they came from
+        router.replace(redirectTarget);
       }
     }
-  }, [user, isInitialized, router]);
+  }, [user, isInitialized, router, redirectParam, redirectTarget]);
 
   return (
     <>
