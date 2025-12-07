@@ -1,6 +1,6 @@
-import stytch, { envs } from 'stytch';
+import { envs, Client } from 'stytch';
 
-let cachedClient: stytch.Client | null = null;
+let cachedClient: Client | null = null;
 
 export function getStytchClient() {
   if (cachedClient) return cachedClient;
@@ -17,7 +17,7 @@ export function getStytchClient() {
   const environment =
     process.env.STYTCH_PROJECT_ENV === 'live' ? envs.live : envs.test;
 
-  cachedClient = new stytch.Client({
+  cachedClient = new Client({
     project_id: projectId,
     secret,
     env: environment
