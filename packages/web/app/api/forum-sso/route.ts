@@ -4,19 +4,20 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getStytchClient } from '@/lib/server/stytch';
 
+// this is required to bypass all Next.js caches
 export const dynamic = 'force-dynamic';
 
+// Constant-time comparison to prevent timing attacks
 function timingSafeEqual(a: string, b: string) {
   const aBuffer = Buffer.from(a, 'hex');
   const bBuffer = Buffer.from(b, 'hex');
 
-  if (aBuffer.length !== bBuffer.length) {
-    return false;
-  }
+  if (aBuffer.length !== bBuffer.length) return false;
 
   return crypto.timingSafeEqual(aBuffer, bBuffer);
 }
 
+// Redirect unauthenticated users to login, preserving the original request URL
 function buildLoginRedirect(request: NextRequest) {
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = '/auth';
@@ -163,9 +164,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!user) {
-    return buildLoginRedirect(request);
-  }
+  // Redirect to login if not authenticated
+  if (!user) return buildLoginRedirect(request);
 
   const emailRecord = pickEmail(user);
 
