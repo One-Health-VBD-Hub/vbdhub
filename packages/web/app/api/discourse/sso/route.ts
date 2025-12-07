@@ -36,7 +36,9 @@ function validateReturnUrl(rawUrl: string) {
   if (expectedBase) {
     const allowedHost = new URL(expectedBase);
     if (parsedUrl.host !== allowedHost.host) {
-      throw new Error('Return URL host does not match configured Discourse host.');
+      throw new Error(
+        'Return URL host does not match configured Discourse host.'
+      );
     }
   }
 
@@ -77,7 +79,7 @@ function buildOutgoingPayload(params: URLSearchParams) {
 }
 
 async function authenticateCurrentUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionToken = cookieStore.get('stytch_session')?.value;
   const sessionJwt = cookieStore.get('stytch_session_jwt')?.value;
 
@@ -154,7 +156,9 @@ export async function GET(request: NextRequest) {
     user = await authenticateCurrentUser();
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Authentication failed.' },
+      {
+        error: error instanceof Error ? error.message : 'Authentication failed.'
+      },
       { status: 500 }
     );
   }
