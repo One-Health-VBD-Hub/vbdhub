@@ -1,7 +1,7 @@
 'use client';
 
 import { useStytch, useStytchUser } from '@stytch/nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Button,
   Checkbox,
@@ -16,6 +16,9 @@ export default function Register() {
   const { user, isInitialized } = useStytchUser();
   const stytch = useStytch();
   const router = useRouter();
+  const params = useSearchParams();
+  const rawNext = params.get('next');
+  const safeNext = rawNext && rawNext.startsWith('/') ? rawNext : null;
   const [status, setStatus] = useState<
     'writing' | 'submitted' | 'pending' | 'error'
   >('writing');
@@ -37,7 +40,12 @@ export default function Register() {
   };
 
   // redirect the user to the home page if they are not logged in
-  if (isInitialized && !user) router.replace('/');
+  if (isInitialized && !user) {
+    const authPath = safeNext
+      ? `/auth?next=${encodeURIComponent(safeNext)}`
+      : '/auth';
+    router.replace(authPath);
+  }
 
   useEffect(() => {
     // if user is logged in and has provided their name previously
@@ -45,6 +53,12 @@ export default function Register() {
   }, [isInitialized, user]);
 
   const disabled = status === 'pending' || status === 'submitted';
+
+  useEffect(() => {
+    if (status === 'submitted') {
+      router.replace(safeNext ?? '/');
+    }
+  }, [router, safeNext, status]);
 
   if (status === 'submitted') {
     return (
@@ -56,7 +70,7 @@ export default function Register() {
         </p>
         <Button
           onClick={() => {
-            router.replace('/');
+            router.replace(safeNext ?? '/');
           }}
         >
           Go to home page
