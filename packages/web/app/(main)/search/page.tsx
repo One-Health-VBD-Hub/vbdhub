@@ -41,21 +41,19 @@ export default function SearchPageWrapper() {
 function SearchPage() {
   const resultsPerPage = 5;
 
-  // TODO: set `document.title` based on search query
-
   // for filter modal on mobile view
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useSearchQuery();
+  const [searchQuery] = useSearchQuery();
   const [currentPage, setCurrentPage] = useCurrentPage();
-  const [category, setCategory] = useCategory();
-  const [geometry, setGeometry] = useGeometry();
-  const [taxonomy, setTaxonomy] = useTaxonomy();
-  const [exactOnly, setExactOnly] = useExactOnly();
-  const [database, setDatabase] = useDatabase();
-  const [withoutPublished, setWithoutPublished] = useWithoutPublished();
-  const [publishedFrom, setPublishedFrom] = usePublishedFrom();
-  const [publishedTo, setPublishedTo] = usePublishedTo();
+  const [category] = useCategory();
+  const [geometry] = useGeometry();
+  const [taxonomy] = useTaxonomy();
+  const [exactOnly] = useExactOnly();
+  const [database] = useDatabase();
+  const [withoutPublished] = useWithoutPublished();
+  const [publishedFrom] = usePublishedFrom();
+  const [publishedTo] = usePublishedTo();
 
   const { data, error, isPending } = useSearchResults({
     query: searchQuery,
@@ -74,6 +72,12 @@ function SearchPage() {
   });
 
   if (error) throw error;
+
+  useEffect(() => {
+    if (!searchQuery) return;
+
+    document.title = `${searchQuery} - Find Data - VBD Hub`;
+  }, [searchQuery]);
 
   const currentResults = data?.hits;
   const searchRequestTime = data?.duration
