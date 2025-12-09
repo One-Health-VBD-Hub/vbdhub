@@ -153,7 +153,7 @@ function SearchPage() {
             <InlineLoading />
           ) : (
             <>
-              {currentResults ? (
+              {currentResults && currentResults.length > 0 ? (
                 <div className='space-y-4'>
                   {currentResults?.map((result) => (
                     <ResultCard
@@ -164,14 +164,8 @@ function SearchPage() {
                   ))}
                 </div>
               ) : (
-                <div className='mt-32'>
-                  {/* TODO: look at if necessary */}
-                  <Image
-                    className='mx-auto'
-                    src={waitingImage}
-                    width={200}
-                    alt={'surreal sand hourglass'}
-                  />
+                <div className='my-10 text-base flex flex-col items-center text-center '>
+                  No results found. Try widening your search criteria.
                 </div>
               )}
             </>
