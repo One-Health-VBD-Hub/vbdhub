@@ -8,11 +8,11 @@ import {
 } from '@/app/(main)/search/useSearchFilters';
 
 const SearchBar = ({ className }: { className?: string }) => {
-  const [, setSearchQuery] = useSearchQuery();
+  const [searchQuery, setSearchQuery] = useSearchQuery();
   const [, setCurrentPage] = useCurrentPage();
   const [exactOnly, setExactOnly] = useExactOnly();
 
-  const [searchBoxText, setSearchBoxText] = useState<string>();
+  const [searchBoxText, setSearchBoxText] = useState<string>(searchQuery ?? '');
   const isXsScreen = useMediaQuery({ maxWidth: 480 });
 
   const handleSearch = (text?: string) => {
