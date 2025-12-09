@@ -1,7 +1,6 @@
 'use client';
 
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchResults } from '@/lib/hooks/useSearchResults';
 import ResultCard from '@/app/(main)/search/ResultCard';
 import SearchBar from '@/app/(main)/search/SearchBar';
@@ -10,15 +9,26 @@ import {
   InlineLoading,
   InlineNotification,
   Loading,
-  Modal,
-  PaginationNav
+  Modal
 } from '@carbon/react';
 import Image from 'next/image';
 import waitingImage from '@/public/surreal-hourglass.svg';
-import { useLocalStorage } from 'usehooks-ts';
-import FilterPanel, { type Filters } from '@/app/(main)/search/FilterPanel';
+import FilterPanel from '@/app/(main)/search/FilterPanel';
 import { Filter } from '@carbon/icons-react';
-import { getFiltersFromUrl, getFilterUrlQuery } from '@/lib/utils/filters';
+import Pagination from '@/app/(main)/search/Pagination';
+import { Database, DataCategory } from '@/types/indexed';
+import {
+  useCategory,
+  useCurrentPage,
+  useDatabase,
+  useExactOnly,
+  useGeometry,
+  usePublishedFrom,
+  usePublishedTo,
+  useSearchQuery,
+  useTaxonomy,
+  useWithoutPublished
+} from '@/app/(main)/search/useSearchFilters';
 
 export default function SearchPageWrapper() {
   return (
@@ -29,52 +39,41 @@ export default function SearchPageWrapper() {
 }
 
 function SearchPage() {
-  const [hideBanner, setHideBanner] = useLocalStorage<boolean>(
-    'hide-banner-search',
-    false
-  );
-  const router = useRouter();
-  const path = usePathname();
-  const searchParams = useSearchParams();
-
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams.get('query') ?? undefined
-  );
-
-  const [currentPage, setCurrentPage] = useState(() => {
-    const pageStr = searchParams.get('page');
-    if (pageStr) {
-      const parsedPage = parseInt(pageStr);
-      if (isNaN(parsedPage)) return 1;
-      if (parsedPage > 2000) return 2000;
-      if (parsedPage < 1) return 1;
-
-      return parsedPage;
-    }
-    return 1;
-  });
   const resultsPerPage = 5;
+
+  // TODO: set `document.title` based on search query
 
   // for filter modal on mobile view
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
-  const [filters, setFilters] = useState<Filters>(() =>
-    getFiltersFromUrl(searchParams)
-  );
+  const [searchQuery, setSearchQuery] = useSearchQuery();
+  const [currentPage, setCurrentPage] = useCurrentPage();
+  const [category, setCategory] = useCategory();
+  const [geometry, setGeometry] = useGeometry();
+  const [taxonomy, setTaxonomy] = useTaxonomy();
+  const [exactOnly, setExactOnly] = useExactOnly();
+  const [database, setDatabase] = useDatabase();
+  const [withoutPublished, setWithoutPublished] = useWithoutPublished();
+  const [publishedFrom, setPublishedFrom] = usePublishedFrom();
+  const [publishedTo, setPublishedTo] = usePublishedTo();
 
   const { data, error, isPending } = useSearchResults({
     query: searchQuery,
-    filters,
+    filters: {
+      category: category as DataCategory[],
+      taxonomy,
+      geometry,
+      publishedTo: publishedTo ?? undefined,
+      publishedFrom: publishedFrom ?? undefined,
+      database: database as Database[],
+      withoutPublished,
+      exactOnly
+    },
     page: currentPage,
     limit: resultsPerPage
   });
 
   if (error) throw error;
-
-  const onFiltersChange = useCallback((filters: Filters) => {
-    setFilters(filters);
-    setCurrentPage(1);
-  }, []);
 
   const currentResults = data?.hits;
   const searchRequestTime = data?.duration
@@ -84,63 +83,22 @@ function SearchPage() {
   const totalPages = data?.count ? Math.ceil(data.count / resultsPerPage) : 0;
 
   // set to last page if the current page (from URL) is greater than total pages
-  if (!isPending && currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(totalPages);
-  }
-
-  const handleSearch = (text?: string) => {
-    setCurrentPage(1);
-    setSearchQuery(text);
-  };
-
   useEffect(() => {
-    const query = new URLSearchParams();
-    if (searchQuery) {
-      document.title = `${searchQuery} - Find Data - Vector-Borne Diseases Hub`;
-      query.set('query', searchQuery);
-    } else {
-      document.title = 'Find Data - Vector-Borne Diseases Hub';
+    if (!isPending && currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
     }
-    query.set('page', currentPage.toString());
-
-    const queryWithFilters = getFilterUrlQuery(filters, query);
-    router.push(`${path}/?${queryWithFilters.toString()}`);
-  }, [path, currentPage, router, searchQuery, filters]);
+  }, [currentPage, totalPages]);
 
   return (
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
-      {/* TODO: improve hiding the banner */}
-      <div style={{ display: hideBanner ? 'none' : 'initial' }}>
-        <InlineNotification
-          className='mb-6'
-          style={{ maxInlineSize: 'fit-content' }}
-          lowContrast={true}
-          onClose={() => setHideBanner(true)}
-          kind='warning'
-          title='Warning'
-          subtitle='This is an early stage development version. Use at your own risk. Features may be incomplete, incorrect or disabled.'
-        />
-      </div>
       <h1 className='sr-only'>Search data</h1>
       <div className='gap-4 lg:flex'>
         <div className='hidden xl:block'>
-          <FilterPanel
-            key='filter-desktop'
-            onFilterChange={onFiltersChange}
-            filters={filters}
-          />
+          <FilterPanel key='filter-desktop' />
         </div>
 
         <div className='min-w-0 flex-1'>
-          <SearchBar
-            handleSearch={handleSearch}
-            text={searchQuery}
-            className='mb-4'
-            exactOnly={filters.exactOnly}
-            setExactOnly={(exactOnly) =>
-              onFiltersChange({ ...filters, exactOnly })
-            }
-          />
+          <SearchBar className='mb-4' />
           <>
             <div className='mb-2 flex items-end justify-between align-middle 2xl:justify-end'>
               <Button
@@ -170,11 +128,7 @@ function SearchPage() {
                 modalLabel='Filter'
                 secondaryButtonText='Close'
               >
-                <FilterPanel
-                  key='filter-mobile'
-                  onFilterChange={onFiltersChange}
-                  filters={filters}
-                />
+                <FilterPanel key='filter-mobile' />
               </Modal>
             </div>
           </>
@@ -201,7 +155,7 @@ function SearchPage() {
                     <ResultCard
                       key={result.id}
                       result={result}
-                      query={searchQuery}
+                      query={searchQuery ?? undefined}
                     />
                   ))}
                 </div>
@@ -220,41 +174,11 @@ function SearchPage() {
           )}
 
           {!!data?.count && currentPage <= totalPages && (
-            <>
-              {/* for XS screen */}
-              <PaginationNav
-                className='mt-6 sm:hidden'
-                page={currentPage - 1}
-                itemsShown={4}
-                onChange={(page) => {
-                  const newPage = page + 1;
-                  setCurrentPage(newPage);
-                }}
-                totalItems={totalPages}
-              />
-              {/* for SM screen */}
-              <PaginationNav
-                className='mt-6 hidden sm:block lg:hidden'
-                page={currentPage - 1}
-                itemsShown={8}
-                onChange={(page) => {
-                  const newPage = page + 1;
-                  setCurrentPage(newPage);
-                }}
-                totalItems={totalPages}
-              />
-              {/* for LG or larger screen */}
-              <PaginationNav
-                className='mt-6 hidden lg:block'
-                page={currentPage - 1}
-                itemsShown={10}
-                onChange={(page) => {
-                  const newPage = page + 1;
-                  setCurrentPage(newPage);
-                }}
-                totalItems={totalPages}
-              />
-            </>
+            <Pagination
+              totalPages={totalPages}
+              setCurrentPage={setCurrentPage}
+              currentPage={currentPage}
+            />
           )}
         </div>
       </div>

@@ -37,6 +37,7 @@
     "clsx": "^2",
     "mapbox-gl": "^3",
     "next": "^16",
+    "nuqs": "^2",
     "react": "^19",
     "react-dom": "^19",
     "react-map-gl": "^8",
@@ -44,7 +45,8 @@
     "react-responsive": "^10",
     "tailwind-variants": "^0.3",
     "usehooks-ts": "^3",
-    "wellknown": "^0.5"
+    "wellknown": "^0.5",
+    "zod": "^4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9",
@@ -53,12 +55,11 @@
     "@types/geojson": "^7946",
     "@types/mapbox__mapbox-gl-draw": "^1",
     "@types/mapbox-gl": "^3",
-    "@types/wellknown": "^0.5",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/wellknown": "^0.5",
     "eslint": "^9",
-    "typescript-eslint": "^8",
     "eslint-config-next": "^16",
     "eslint-plugin-prettier": "^5",
     "knip": "^5",
@@ -68,6 +69,7 @@
     "prettier-plugin-tailwindcss": "^0.7",
     "sass": "^1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "typescript-eslint": "^8"
   }
 }
