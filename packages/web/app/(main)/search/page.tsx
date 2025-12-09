@@ -11,8 +11,6 @@ import {
   Loading,
   Modal
 } from '@carbon/react';
-import Image from 'next/image';
-import waitingImage from '@/public/surreal-hourglass.svg';
 import FilterPanel from '@/app/(main)/search/FilterPanel';
 import { Filter } from '@carbon/icons-react';
 import Pagination from '@/app/(main)/search/Pagination';
