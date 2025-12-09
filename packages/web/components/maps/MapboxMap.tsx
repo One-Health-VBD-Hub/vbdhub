@@ -8,8 +8,9 @@ import Map, {
 } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import DrawControl from '@/components/maps/DrawControl';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Feature as GeoJSONFeature } from 'geojson';
+import { useGeometry } from '@/app/(main)/search/useSearchFilters';
 
 interface Props {
   scaleControl?: boolean;
@@ -17,58 +18,40 @@ interface Props {
   fullscreenControl?: boolean;
   navigationControl?: boolean;
   className?: string;
-  onFeaturesChange?: (features: Record<string, GeoJSONFeature>) => void;
-  initialFeatures?: Record<string, GeoJSONFeature>;
 }
 
-export default memo(function MapboxMap({
+export default function MapboxMap({
   scaleControl = false,
   geoLocateControl = false,
   fullscreenControl = false,
   navigationControl = false,
-  className,
-  onFeaturesChange,
-  initialFeatures = {}
+  className
 }: Props) {
-  const [features, setFeatures] =
-    useState<Record<string, GeoJSONFeature>>(initialFeatures);
+  const [features, setFeatures] = useGeometry();
 
-  // synchronise initial features with state
-  useEffect(() => {
-    setFeatures(initialFeatures);
-  }, [initialFeatures]);
+  const onUpdate = (e: { features: GeoJSONFeature[] }) => {
+    setFeatures((prevFeatures) => {
+      const newFeatures = { ...prevFeatures };
 
-  const onUpdate = useCallback(
-    (e: { features: GeoJSONFeature[] }) => {
-      setFeatures((prevFeatures) => {
-        const newFeatures = { ...prevFeatures };
+      for (const f of e.features) {
+        if (f.id) newFeatures[f.id] = f;
+      }
 
-        for (const f of e.features) {
-          if (f.id) newFeatures[f.id] = f;
-        }
+      return newFeatures;
+    });
+  };
 
-        if (onFeaturesChange) setTimeout(() => onFeaturesChange(newFeatures));
-        return newFeatures;
-      });
-    },
-    [onFeaturesChange]
-  );
+  const onDelete = (e: { features: GeoJSONFeature[] }) => {
+    setFeatures((prevFeatures) => {
+      const newFeatures = { ...prevFeatures };
 
-  const onDelete = useCallback(
-    (e: { features: GeoJSONFeature[] }) => {
-      setFeatures((prevFeatures) => {
-        const newFeatures = { ...prevFeatures };
+      for (const f of e.features) {
+        if (f.id) delete newFeatures[f.id];
+      }
 
-        for (const f of e.features) {
-          if (f.id) delete newFeatures[f.id];
-        }
-
-        if (onFeaturesChange) setTimeout(() => onFeaturesChange(newFeatures));
-        return newFeatures;
-      });
-    },
-    [onFeaturesChange]
-  );
+      return newFeatures;
+    });
+  };
 
   return (
     <div className={className}>
@@ -107,4 +90,4 @@ export default memo(function MapboxMap({
       </Map>
     </div>
   );
-});
+}
