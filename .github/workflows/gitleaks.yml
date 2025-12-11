@@ -25,22 +25,15 @@ jobs:
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
         run: |
-          ./gitleaks detect --source . --log-opts="--all" --exit-code 1 --report-format sarif --report-path gitleaks.sarif
-          ./gitleaks detect --source . --log-opts="--all" --exit-code 0 --report-format json --report-path gitleaks.json
+          ./gitleaks detect --source . --log-opts="--all" --exit-code 1 --report-format json --report-path gitleaks.json
 
       - name: Upload gitleaks reports
         uses: actions/upload-artifact@v4
         with:
           name: gitleaks-reports
           path: |
-            gitleaks.sarif
             gitleaks.json
 
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: gitleaks.sarif
-
       - name: Fail on leaks
-        if: steps.gitleaks.outcome == 'failure'
+        if: steps.gitleaks.outputs.status != '0'
         run: exit 1
