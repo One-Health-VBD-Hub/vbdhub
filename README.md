@@ -1,3 +1,5 @@
+[![CLA assistant](https://cla-assistant.io/readme/badge/One-Health-VBD-Hub/vbdhub)](https://cla-assistant.io/One-Health-VBD-Hub/vbdhub)
+
 # VBD Hub Monorepo
 
 This repository houses the VBD Hub applications managed with npm workspaces:
