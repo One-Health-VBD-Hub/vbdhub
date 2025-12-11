@@ -15,7 +15,7 @@ jobs:
 
       - name: Install gitleaks
         run: |
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o gitleaks.tar.gz
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz -o gitleaks.tar.gz
           tar -xzf gitleaks.tar.gz gitleaks
           chmod +x gitleaks
 
@@ -23,7 +23,20 @@ jobs:
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
         run: |
-          ./gitleaks detect --source . --log-opts="--all" --redact --exit-code 1 --report-format sarif --report-path gitleaks.sarif
+          set +e
+          ./gitleaks detect --source . --log-opts="--all" --exit-code 1 --report-format sarif --report-path gitleaks.sarif
+          status=$?
+          # Produce a JSON report as well so findings are easily downloadable
+          ./gitleaks detect --source . --log-opts="--all" --exit-code 0 --report-format json --report-path gitleaks.json
+          exit $status
+
+      - name: Upload gitleaks reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-reports
+          path: |
+            gitleaks.sarif
+            gitleaks.json
 
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
