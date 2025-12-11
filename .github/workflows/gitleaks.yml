@@ -20,15 +20,13 @@ jobs:
           chmod +x gitleaks
 
       - name: Run gitleaks (full history)
+        id: gitleaks
+        continue-on-error: true
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
         run: |
-          set +e
           ./gitleaks detect --source . --log-opts="--all" --exit-code 1 --report-format sarif --report-path gitleaks.sarif
-          status=$?
-          # Produce a JSON report as well so findings are easily downloadable
           ./gitleaks detect --source . --log-opts="--all" --exit-code 0 --report-format json --report-path gitleaks.json
-          exit $status
 
       - name: Upload gitleaks reports
         uses: actions/upload-artifact@v4
@@ -42,3 +40,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: gitleaks.sarif
+
+      - name: Fail on leaks
+        if: steps.gitleaks.outcome == 'failure'
+        run: exit 1
