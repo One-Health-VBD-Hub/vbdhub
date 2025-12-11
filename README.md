@@ -1,4 +1,5 @@
 [![CLA assistant](https://cla-assistant.io/readme/badge/One-Health-VBD-Hub/vbdhub)](https://cla-assistant.io/One-Health-VBD-Hub/vbdhub)
+<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
 
 # VBD Hub Monorepo
 
