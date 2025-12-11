@@ -25,7 +25,9 @@ jobs:
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
         run: |
+          set +e
           ./gitleaks detect --source . --log-opts="--all" --exit-code 1 --report-format json --report-path gitleaks.json
+          echo "status=$?" >> "$GITHUB_OUTPUT"
 
       - name: Upload gitleaks reports
         uses: actions/upload-artifact@v4
