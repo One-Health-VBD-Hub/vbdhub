@@ -37,6 +37,7 @@
     "clsx": "^2",
     "mapbox-gl": "^3",
     "next": "^16",
+    "nuqs": "^2",
     "react": "^19",
     "react-dom": "^19",
     "react-map-gl": "^8",
@@ -45,7 +46,8 @@
     "stytch": "^12.43.1",
     "tailwind-variants": "^0.3",
     "usehooks-ts": "^3",
-    "wellknown": "^0.5"
+    "wellknown": "^0.5",
+    "zod": "^4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9",
