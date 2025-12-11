@@ -4,6 +4,9 @@ This repository houses the VBD Hub applications managed with npm workspaces:
 - `packages/web`: Next.js frontend.
 - `packages/service`: NestJS backend API.
 
+## Funding and affiliation
+- Developed at [Imperial College London](https://www.imperial.ac.uk/), funded by Imperial College London, [DEFRA](https://www.gov.uk/government/organisations/department-for-environment-food-rural-affairs), and [UKRI (BBSRC)](https://www.ukri.org/councils/bbsrc/).
+
 ## Prerequisites
 - Node.js 18+ and npm.
 - Local environment files for each package (copy from each package’s `.env.example`).
