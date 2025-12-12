@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const username = user.emails?.[0]?.email?.split('@')[0];
+  const username = emailRecord.email.split('@')[0];
   if (username) {
     outgoingParams.set('username', username);
   }
