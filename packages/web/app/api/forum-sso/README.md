@@ -1,4 +1,4 @@
-# DiscourseConnect SSO (forum.vbdhub.org ↔ vbdhub.org)
+# [Discourse](https://www.discourse.org) Connect SSO (forum.vbdhub.org ↔ vbdhub.org)
 
 This folder contains the Next.js route that acts as the DiscourseConnect SSO provider for the forum.
 
@@ -14,7 +14,7 @@ This folder contains the Next.js route that acts as the DiscourseConnect SSO pro
 1) Discourse redirects browser to `/api/forum-sso?sso=…&sig=…`.  
 2) Route verifies HMAC with `DISCOURSE_CONNECT_SECRET` (constant-time compare).  
 3) Decodes payload → extracts `nonce` and `return_sso_url`; rejects if missing. Validates `return_sso_url` host matches `DISCOURSE_RETURN_BASE_URL`.  
-4) Auth check: reads Stytch cookies `stytch_session` / `stytch_session_jwt`; calls Stytch `sessions.authenticate`. If unauthenticated, redirects to `/auth?next=<original forum-sso URL>` (host forced to `NEXT_PUBLIC_WEB_URL`).  
+4) Auth check: reads [Stytch](https://stytch.com) cookies `stytch_session` / `stytch_session_jwt`; calls Stytch `sessions.authenticate`. If unauthenticated, redirects to `/auth?next=<original forum-sso URL>` (host forced to `NEXT_PUBLIC_WEB_URL`).  
 5) After login (and optional `/register`), user returns to `/api/forum-sso`.  
 6) Builds outgoing payload with `nonce`, `external_id` (Stytch `user_id`), `email`; adds `require_activation=true` if email unverified; optional `name` and `username` (email local part).  
 7) Signs payload with `DISCOURSE_CONNECT_SECRET`, appends `sso`/`sig` to `return_sso_url`, redirects browser back to Discourse. Discourse finalizes login.
