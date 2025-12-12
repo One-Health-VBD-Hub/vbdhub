@@ -3,11 +3,12 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getStytchClient } from '@/lib/server/stytch';
+import { User } from 'stytch';
 
 // this is required to bypass all Next.js caches
 export const dynamic = 'force-dynamic';
 
-// Constant-time comparison to prevent timing attacks
+// Constant-time comparison for hex HMAC strings to avoid timing leaks
 function timingSafeEqual(a: string, b: string) {
   const aBuffer = Buffer.from(a, 'hex');
   const bBuffer = Buffer.from(b, 'hex');
@@ -17,7 +18,7 @@ function timingSafeEqual(a: string, b: string) {
   return crypto.timingSafeEqual(aBuffer, bBuffer);
 }
 
-// Redirect unauthenticated users to login, preserving the original request URL
+// Redirect unauthenticated users to login while preserving where they came from
 function buildLoginRedirect(request: NextRequest) {
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = '/auth';
@@ -30,6 +31,7 @@ function buildLoginRedirect(request: NextRequest) {
   return NextResponse.redirect(loginUrl);
 }
 
+// Ensure the Discourse return URL matches the configured host (mitigates open redirect)
 function validateReturnUrl(rawUrl: string) {
   const expectedBase = process.env.DISCOURSE_RETURN_BASE_URL;
   const parsedUrl = new URL(rawUrl);
@@ -46,6 +48,7 @@ function validateReturnUrl(rawUrl: string) {
   return parsedUrl;
 }
 
+// Verify the incoming Discourse SSO payload signature
 function verifyIncomingSignature(payload: string, signature: string) {
   const secret = process.env.DISCOURSE_CONNECT_SECRET;
 
@@ -65,6 +68,7 @@ function verifyIncomingSignature(payload: string, signature: string) {
   }
 }
 
+// Sign the outgoing payload we will send back to Discourse
 function signOutgoingPayload(payload: string) {
   const secret = process.env.DISCOURSE_CONNECT_SECRET;
 
@@ -75,10 +79,12 @@ function signOutgoingPayload(payload: string) {
   return crypto.createHmac('sha256', secret).update(payload).digest('hex');
 }
 
+// Encode URLSearchParams to base64 for Discourse
 function buildOutgoingPayload(params: URLSearchParams) {
   return Buffer.from(params.toString()).toString('base64');
 }
 
+// Validate Stytch session cookies with Stytch to obtain the user record
 async function authenticateCurrentUser() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get('stytch_session')?.value;
@@ -98,11 +104,10 @@ async function authenticateCurrentUser() {
   return response.user;
 }
 
-function pickEmail(user: {
-  emails?: Array<{ email: string; verified?: boolean }>;
-}) {
+// Prefer a verified email; fall back to the first available
+function pickEmail(user: User) {
   if (!user.emails || user.emails.length === 0) {
-    return null;
+    return;
   }
 
   const verified = user.emails.find((email) => email.verified);
@@ -114,6 +119,7 @@ export async function GET(request: NextRequest) {
   const payload = searchParams.get('sso');
   const signature = searchParams.get('sig');
 
+  // Discourse must supply both the base64 payload and the HMAC
   if (!payload || !signature) {
     return NextResponse.json(
       { error: 'Missing DiscourseConnect parameters.' },
@@ -121,6 +127,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Reject tampered payloads before doing any other work
   try {
     verifyIncomingSignature(payload, signature);
   } catch (error) {
@@ -135,6 +142,7 @@ export async function GET(request: NextRequest) {
   const nonce = incomingParams.get('nonce');
   const returnUrl = incomingParams.get('return_sso_url');
 
+  // The nonce links our response to Discourse' request; the return URL is where we will redirect
   if (!nonce || !returnUrl) {
     return NextResponse.json(
       { error: 'Invalid DiscourseConnect payload.' },
@@ -142,6 +150,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Guard against open redirects or rogue hosts
   let discourseReturnUrl: URL;
   try {
     discourseReturnUrl = validateReturnUrl(returnUrl);
@@ -167,15 +176,17 @@ export async function GET(request: NextRequest) {
   // Redirect to login if not authenticated
   if (!user) return buildLoginRedirect(request);
 
+  // Pick the best email to pass to Discourse
   const emailRecord = pickEmail(user);
 
-  if (!emailRecord?.email) {
+  if (!emailRecord) {
     return NextResponse.json(
       { error: 'Authenticated user has no email address.' },
       { status: 400 }
     );
   }
 
+  // Build the payload Discourse expects, mirroring required fields from the logged-in user
   const outgoingParams = new URLSearchParams({
     nonce,
     external_id: user.user_id,
@@ -198,6 +209,7 @@ export async function GET(request: NextRequest) {
     outgoingParams.set('username', username);
   }
 
+  // Encode + sign our response and bounce back to Discourse
   const encodedPayload = buildOutgoingPayload(outgoingParams);
   const outgoingSignature = signOutgoingPayload(encodedPayload);
 
