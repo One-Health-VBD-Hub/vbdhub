@@ -20,7 +20,7 @@ This folder contains the Next.js route that acts as the DiscourseConnect SSO pro
 7) Signs payload with `DISCOURSE_CONNECT_SECRET`, appends `sso`/`sig` to `return_sso_url`, redirects browser back to Discourse. Discourse finalizes login.
 
 ## Frontend pieces involved
-- `/auth` page: Stytch magic-link login; honors `next` param; on success routes to `/register` if name missing, else to `next` or `/`. The magic-link redirect URLs are built with `?next=...` appended so the Discourse return path survives the email link.
+- `/auth` page: Stytch email OTP (no redirect in the widget itself); honors `next` param in the page URL; after OTP completes, `/auth` routes to `/register` if name missing, else to `next` or `/`.
 - `/register` page: collects name/consent; redirects to `next` or `/` when complete; wrapped in `Suspense` for `useSearchParams`.
 
 ## Discourse configuration (admin UI)
@@ -33,7 +33,7 @@ This folder contains the Next.js route that acts as the DiscourseConnect SSO pro
 ## Domain / proxy notes
 - Redirect host/protocol are forced to `NEXT_PUBLIC_WEB_URL`; set it to the public origin.  
 - Cookies are host-only (`availableToSubdomains: false`) in Stytch config: app must run on the same host as `NEXT_PUBLIC_WEB_URL` to read them on the SSO route.
-- Stytch redirect allowlist (Live): add the exact redirect URL used in `NEXT_PUBLIC_LOGIN_REDIRECT_URL` / `NEXT_PUBLIC_SIGNUP_REDIRECT_URL`, including the `next` placeholder, e.g. `https://vbdhub.org/auth?next={}`. Wildcards like `.../auth*` are not supported in Live; in Test, Stytch allows limited wildcards per their docs.
+- If you switch back to magic links: Stytch redirect allowlist (Live) needs the exact redirect URL used in `NEXT_PUBLIC_LOGIN_REDIRECT_URL` / `NEXT_PUBLIC_SIGNUP_REDIRECT_URL`, including the `next` placeholder, e.g. `https://vbdhub.org/auth?next={}`. Wildcards like `.../auth*` are not supported in Live; in Test, Stytch allows limited wildcards per their docs.
 
 ## Error cases returned by the route
 - 400: missing `sso`/`sig`; invalid HMAC; missing `nonce`/`return_sso_url`; return URL host mismatch; authenticated user missing email.
