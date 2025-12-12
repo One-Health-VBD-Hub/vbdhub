@@ -25,7 +25,8 @@ function buildLoginRedirect(request: NextRequest) {
   // force host/protocol to the configured public web URL
   const base = new URL(process.env.NEXT_PUBLIC_WEB_URL ?? '');
   loginUrl.protocol = base.protocol;
-  loginUrl.host = base.host;
+  loginUrl.hostname = base.hostname;
+  loginUrl.port = ''; // strip any explicit port to keep redirects on the public origin
 
   loginUrl.pathname = '/auth';
   loginUrl.search = '';
