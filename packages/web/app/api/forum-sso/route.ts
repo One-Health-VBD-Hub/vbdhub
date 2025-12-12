@@ -94,19 +94,21 @@ function buildOutgoingPayload(params: URLSearchParams) {
 // Validate Stytch session cookies with Stytch to obtain the user record
 async function authenticateCurrentUser() {
   const cookieStore = await cookies();
-  const sessionToken = cookieStore.get('stytch_session')?.value;
   const sessionJwt = cookieStore.get('stytch_session_jwt')?.value;
+  const sessionToken = cookieStore.get('stytch_session')?.value;
 
-  if (!sessionToken && !sessionJwt) {
-    return null;
-  }
+  // Stytch requires exactly one session credential per authenticate call
+  const sessionArg = sessionJwt
+    ? { session_jwt: sessionJwt }
+    : sessionToken
+      ? { session_token: sessionToken }
+      : null;
+
+  if (!sessionArg) return null;
 
   const stytchClient = getStytchClient();
 
-  const response = await stytchClient.sessions.authenticate({
-    session_token: sessionToken,
-    session_jwt: sessionJwt
-  });
+  const response = await stytchClient.sessions.authenticate(sessionArg);
 
   return response.user;
 }
