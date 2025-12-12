@@ -162,7 +162,7 @@ function SearchPage() {
                   ))}
                 </div>
               ) : (
-                <div className='my-10 text-base flex flex-col items-center text-center '>
+                <div className='my-10 flex flex-col items-center text-center text-base'>
                   No results found. Try widening your search criteria.
                 </div>
               )}
