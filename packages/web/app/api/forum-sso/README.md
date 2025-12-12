@@ -20,7 +20,7 @@ This folder contains the Next.js route that acts as the DiscourseConnect SSO pro
 7) Signs payload with `DISCOURSE_CONNECT_SECRET`, appends `sso`/`sig` to `return_sso_url`, redirects browser back to Discourse. Discourse finalizes login.
 
 ## Frontend pieces involved
-- `/auth` page: Stytch magic-link login; honors `next` param; on success routes to `/register` if name missing, else to `next` or `/`.
+- `/auth` page: Stytch magic-link login; honors `next` param; on success routes to `/register` if name missing, else to `next` or `/`. The magic-link redirect URLs are built with `?next=...` appended so the Discourse return path survives the email link.
 - `/register` page: collects name/consent; redirects to `next` or `/` when complete; wrapped in `Suspense` for `useSearchParams`.
 
 ## Discourse configuration (admin UI)
@@ -33,6 +33,7 @@ This folder contains the Next.js route that acts as the DiscourseConnect SSO pro
 ## Domain / proxy notes
 - Redirect host/protocol are forced to `NEXT_PUBLIC_WEB_URL`; set it to the public origin.  
 - Cookies are host-only (`availableToSubdomains: false`) in Stytch config: app must run on the same host as `NEXT_PUBLIC_WEB_URL` to read them on the SSO route.
+- Stytch redirect allowlist: add the exact bases used in `NEXT_PUBLIC_LOGIN_REDIRECT_URL` / `NEXT_PUBLIC_SIGNUP_REDIRECT_URL` (e.g., `https://vbdhub.org/auth`). Wildcards like `.../auth*` are not supported, but query strings (e.g., `?next=...`) do not need separate whitelisting.
 
 ## Error cases returned by the route
 - 400: missing `sso`/`sig`; invalid HMAC; missing `nonce`/`return_sso_url`; return URL host mismatch; authenticated user missing email.
