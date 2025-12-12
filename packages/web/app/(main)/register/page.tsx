@@ -18,7 +18,7 @@ export default function Register() {
   const router = useRouter();
   const params = useSearchParams();
   const rawNext = params.get('next');
-  const safeNext = rawNext && rawNext.startsWith('/') ? rawNext : null;
+  const safeNext = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : null;
   const [status, setStatus] = useState<
     'writing' | 'submitted' | 'pending' | 'error'
   >('writing');
