@@ -204,11 +204,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const username = emailRecord.email.split('@')[0];
-  if (username) {
-    outgoingParams.set('username', username);
-  }
-
   // Encode + sign our response and bounce back to Discourse
   const encodedPayload = buildOutgoingPayload(outgoingParams);
   const outgoingSignature = signOutgoingPayload(encodedPayload);
