@@ -25,7 +25,10 @@ function Auth() {
   const router = useRouter();
 
   const rawNext = params.get('next');
-  const safeNext = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : null;
+  const safeNext =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : null;
 
   // tries to authenticate the user with a magic link token
   useEffect(() => {
