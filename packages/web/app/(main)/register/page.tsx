@@ -22,6 +22,8 @@ export default function Register() {
   const [status, setStatus] = useState<
     'writing' | 'submitted' | 'pending' | 'error'
   >('writing');
+  const isAlreadyComplete = isInitialized && Boolean(user?.name.first_name);
+  const isSubmitted = status === 'submitted' || isAlreadyComplete;
 
   const [formValues, setFormValues] = useState({
     firstName: '',
@@ -47,20 +49,15 @@ export default function Register() {
     router.replace(authPath);
   }
 
-  useEffect(() => {
-    // if user is logged in and has provided their name previously
-    if (isInitialized && user?.name.first_name) setStatus('submitted');
-  }, [isInitialized, user]);
-
-  const disabled = status === 'pending' || status === 'submitted';
+  const disabled = status === 'pending' || isSubmitted;
 
   useEffect(() => {
-    if (status === 'submitted') {
+    if (isSubmitted) {
       router.replace(safeNext ?? '/');
     }
-  }, [router, safeNext, status]);
+  }, [router, safeNext, isSubmitted]);
 
-  if (status === 'submitted') {
+  if (isSubmitted) {
     return (
       <div className='mx-auto mt-24 sm:mt-32'>
         <h1 className='text-xl font-semibold'>Registration complete</h1>
