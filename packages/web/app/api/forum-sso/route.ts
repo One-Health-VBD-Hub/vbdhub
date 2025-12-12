@@ -21,6 +21,12 @@ function timingSafeEqual(a: string, b: string) {
 // Redirect unauthenticated users to login while preserving where they came from
 function buildLoginRedirect(request: NextRequest) {
   const loginUrl = request.nextUrl.clone();
+
+  // force host/protocol to the configured public web URL
+  const base = new URL(process.env.NEXT_PUBLIC_WEB_URL ?? '');
+  loginUrl.protocol = base.protocol;
+  loginUrl.host = base.host;
+
   loginUrl.pathname = '/auth';
   loginUrl.search = '';
   loginUrl.searchParams.set(
