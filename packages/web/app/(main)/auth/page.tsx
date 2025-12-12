@@ -64,7 +64,7 @@ function Auth() {
     <>
       <h1 className='sr-only'>Sign up or log in</h1>
       {isInitialized && !user ? (
-        <LoginOrSignupForm />
+        <LoginOrSignupForm next={safeNext} />
       ) : (
         <Loading withOverlay={true} />
       )}

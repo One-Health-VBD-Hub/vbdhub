@@ -6,14 +6,33 @@ const LOGIN_REDIRECT_URL =
 const SIGNUP_REDIRECT_URL =
   process.env.NEXT_PUBLIC_SIGNUP_REDIRECT_URL ?? 'http://localhost:3000/auth';
 
+type LoginOrSignupFormProps = {
+  next?: string | null;
+};
+
+const buildRedirectUrl = (baseUrl: string, next?: string | null) => {
+  if (!next) return baseUrl;
+
+  try {
+    const url = new URL(baseUrl);
+    url.searchParams.set('next', next);
+    return url.toString();
+  } catch {
+    return baseUrl;
+  }
+};
+
 // built according to https://stytch.com/docs/quickstarts/nextjs on 11/11/2024
-export const LoginOrSignupForm = () => {
+export const LoginOrSignupForm = ({ next }: LoginOrSignupFormProps) => {
+  const loginRedirectURL = buildRedirectUrl(LOGIN_REDIRECT_URL, next);
+  const signupRedirectURL = buildRedirectUrl(SIGNUP_REDIRECT_URL, next);
+
   const config = {
     products: [Products.emailMagicLinks],
     emailMagicLinksOptions: {
-      loginRedirectURL: LOGIN_REDIRECT_URL,
+      loginRedirectURL,
       loginExpirationMinutes: 60,
-      signupRedirectURL: SIGNUP_REDIRECT_URL,
+      signupRedirectURL,
       signupExpirationMinutes: 1440
     }
   };
