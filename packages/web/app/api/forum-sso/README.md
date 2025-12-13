@@ -1,13 +1,13 @@
-# [Discourse](https://www.discourse.org) Connect SSO (forum.vbdhub.org ↔ vbdhub.org)
+# [Discourse](https://www.discourse.org) Connect SSO ([forum.vbdhub.org](https://forum.vbdhub.org) ↔ [vbdhub.org](https://vbdhub.org))
 
-This folder contains the Next.js route that acts as the DiscourseConnect SSO provider for the forum.
+This folder contains the Next.js route that acts as the [DiscourseConnect](https://meta.discourse.org/t/setup-discourseconnect-official-single-sign-on-for-discourse-sso/) SSO provider for the forum.
 
 ## Endpoints
 - `GET /api/forum-sso` (bypasses Next.js caches): entry point Discourse calls with `sso` (base64 payload) and `sig` (HMAC-SHA256).
 
 ## Required env vars
 - `NEXT_PUBLIC_WEB_URL`: public origin for vbdhub.org (e.g., `https://vbdhub.org`); used to pin redirects to the correct host.
-- `DISCOURSE_CONNECT_SECRET`: shared HMAC secret; must match Discourse “DiscourseConnect secret”.
+- `DISCOURSE_CONNECT_SECRET`: shared [HMAC](https://en.wikipedia.org/wiki/HMAC) secret; must match Discourse “DiscourseConnect secret”.
 - `DISCOURSE_RETURN_BASE_URL`: expected Discourse origin (e.g., `https://forum.vbdhub.org`) to validate `return_sso_url` host.
 
 ## Flow (happy path)
