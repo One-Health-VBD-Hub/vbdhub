@@ -1,13 +1,8 @@
 import { StytchLogin } from '@stytch/nextjs';
 import { OTPMethods, Products } from '@stytch/vanilla-js';
 
-type LoginOrSignupFormProps = {
-  next?: string | null;
-};
-
 // built according to https://stytch.com/docs/quickstarts/nextjs on 11/11/2024
-export const LoginOrSignupForm = (_: LoginOrSignupFormProps) => {
-  // Email OTP happens inline (no redirect), so we don't need to append `next` here.
+export const LoginOrSignupForm = () => {
   const config = {
     products: [Products.otp],
     otpOptions: {

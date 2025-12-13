@@ -33,7 +33,7 @@ This folder contains the Next.js route that acts as the DiscourseConnect SSO pro
 ## Domain / proxy notes
 - Redirect host/protocol are forced to `NEXT_PUBLIC_WEB_URL`; set it to the public origin.  
 - Cookies are host-only (`availableToSubdomains: false`) in Stytch config: app must run on the same host as `NEXT_PUBLIC_WEB_URL` to read them on the SSO route.
-- If you switch back to magic links: Stytch redirect allowlist (Live) needs the exact redirect URL used in `NEXT_PUBLIC_LOGIN_REDIRECT_URL` / `NEXT_PUBLIC_SIGNUP_REDIRECT_URL`, including the `next` placeholder, e.g. `https://vbdhub.org/auth?next={}`. Wildcards like `.../auth*` are not supported in Live; in Test, Stytch allows limited wildcards per their docs.
+- Stytch SDK configuration: Email OTP requires enabling the OTP product/endpoints in the Stytch dashboard for the Web SDK; otherwise the widget will error.
 
 ## Error cases returned by the route
 - 400: missing `sso`/`sig`; invalid HMAC; missing `nonce`/`return_sso_url`; return URL host mismatch; authenticated user missing email.
@@ -42,7 +42,7 @@ This folder contains the Next.js route that acts as the DiscourseConnect SSO pro
 
 ## Testing (manual)
 - From logged-out Discourse, click “Log in” → redirected to `/auth` on `vbdhub.org`.  
-- Complete magic-link login; if prompted, fill `/register`; confirm you are returned to Discourse and logged in.  
+- Complete OTP login; if prompted, fill `/register`; confirm you are returned to Discourse and logged in.  
 - Repeat login to confirm idempotent linking (same Discourse account).  
 - Tamper test: modify `sig` or `return_sso_url` host → expect 400 JSON.
 
