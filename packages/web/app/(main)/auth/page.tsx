@@ -38,7 +38,7 @@ function Auth() {
 
       if (token && tokenType === 'magic_links') {
         stytch.magicLinks.authenticate(token, {
-          session_duration_minutes: 60 * 24 * 3 // 3 days
+          session_duration_minutes: 60 * 24 * 7 // 7 days
         });
       }
     }
