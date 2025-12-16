@@ -26,7 +26,7 @@ jobs:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
         run: |
           set +e
-          ./gitleaks detect --source . --log-opts="--all" --report-format json --report-path gitleaks.json
+          ./gitleaks detect --source . --log-opts="--all" --gitleaks-ignore-path .gitleaksignore --report-format json --report-path gitleaks.json
           echo "status=$?" >> "$GITHUB_OUTPUT"
 
       - name: Upload gitleaks reports
