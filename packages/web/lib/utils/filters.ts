@@ -1,47 +1,6 @@
 import type { Filters } from '@/app/(main)/search/FilterPanel';
-import { isDatabase, isDataCategory } from '@/types/indexed';
 import { stringify, parse, GeoJSONPolygon } from 'wellknown';
 import { Feature } from 'geojson';
-
-export function getFiltersFromUrl(searchParams: URLSearchParams): Filters {
-  const category = searchParams.get('category')?.split(',');
-  const database = searchParams.get('database')?.split(',');
-  const publishedFrom = searchParams.get('publishedFrom');
-  const publishedTo = searchParams.get('publishedTo');
-  const withoutPublished = searchParams.get('withoutPublished');
-  const geometry = searchParams.get('geometry');
-  const taxonomy = searchParams.get('taxonomy')?.split(',');
-  const exactOnly = searchParams.get('exact') === 'true';
-
-  if (category && !category.every(isDataCategory))
-    throw new Error(`Invalid category value in URL: ${category}`);
-
-  if (database && !database.every(isDatabase))
-    throw new Error(`Invalid database value in URL: ${database}`);
-
-  const geoJson = geometry
-    ? wktMultiPolygonToGeoJson(geometry).reduce(
-        (acc, feature) => {
-          const randomId = Math.random().toString(36).substring(2, 15); // generate a random ID
-          feature.id = randomId;
-          acc[randomId] = feature;
-          return acc;
-        },
-        {} as Record<string, Feature>
-      )
-    : {};
-
-  return {
-    category: category ?? [],
-    database: database ?? [],
-    taxonomy: taxonomy ?? [],
-    publishedFrom: publishedFrom ? new Date(publishedFrom) : undefined,
-    publishedTo: publishedTo ? new Date(publishedTo) : undefined,
-    withoutPublished: withoutPublished === 'true',
-    geometry: geoJson,
-    exactOnly: exactOnly
-  };
-}
 
 export function getFilterUrlQuery(
   filters: Filters,

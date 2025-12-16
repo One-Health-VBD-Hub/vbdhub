@@ -1,24 +1,41 @@
 'use client';
 
 import { useStytch, useStytchUser } from '@stytch/nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Button,
   Checkbox,
   CheckboxGroup,
   Form,
+  Loading,
   TextInput
 } from '@carbon/react';
-import React, { SyntheticEvent, useEffect, useState } from 'react';
+import React, { Suspense, SyntheticEvent, useEffect, useState } from 'react';
 import Heading from '@/components/Heading';
 
-export default function Register() {
+export default function RegisterWrapper() {
+  return (
+    <Suspense fallback={<Loading withOverlay={true} />}>
+      <Register />
+    </Suspense>
+  );
+}
+
+function Register() {
   const { user, isInitialized } = useStytchUser();
   const stytch = useStytch();
   const router = useRouter();
+  const params = useSearchParams();
+  const rawNext = params.get('next');
+  const safeNext =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : null;
   const [status, setStatus] = useState<
     'writing' | 'submitted' | 'pending' | 'error'
   >('writing');
+  const isAlreadyComplete = isInitialized && Boolean(user?.name.first_name);
+  const isSubmitted = status === 'submitted' || isAlreadyComplete;
 
   const [formValues, setFormValues] = useState({
     firstName: '',
@@ -37,16 +54,22 @@ export default function Register() {
   };
 
   // redirect the user to the home page if they are not logged in
-  if (isInitialized && !user) router.replace('/');
+  if (isInitialized && !user) {
+    const authPath = safeNext
+      ? `/auth?next=${encodeURIComponent(safeNext)}`
+      : '/auth';
+    router.replace(authPath);
+  }
+
+  const disabled = status === 'pending' || isSubmitted;
 
   useEffect(() => {
-    // if user is logged in and has provided their name previously
-    if (isInitialized && user?.name.first_name) setStatus('submitted');
-  }, [isInitialized, user]);
+    if (isSubmitted) {
+      router.replace(safeNext ?? '/');
+    }
+  }, [router, safeNext, isSubmitted]);
 
-  const disabled = status === 'pending' || status === 'submitted';
-
-  if (status === 'submitted') {
+  if (isSubmitted) {
     return (
       <div className='mx-auto mt-24 sm:mt-32'>
         <h1 className='text-xl font-semibold'>Registration complete</h1>
@@ -56,7 +79,7 @@ export default function Register() {
         </p>
         <Button
           onClick={() => {
-            router.replace('/');
+            router.replace(safeNext ?? '/');
           }}
         >
           Go to home page

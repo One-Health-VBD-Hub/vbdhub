@@ -1,0 +1,41 @@
+name: gitleaks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+
+      - name: Run gitleaks (full history)
+        id: gitleaks
+        continue-on-error: true
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
+        run: |
+          set +e
+          ./gitleaks detect --source . --log-opts="--all" --gitleaks-ignore-path .gitleaksignore --report-format json --report-path gitleaks.json
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Upload gitleaks reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-reports
+          path: |
+            gitleaks.json
+
+      - name: Fail on leaks
+        if: steps.gitleaks.outputs.status != '0'
+        run: exit 1

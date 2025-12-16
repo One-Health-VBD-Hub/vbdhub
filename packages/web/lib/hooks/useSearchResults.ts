@@ -4,7 +4,7 @@ import { Filters } from '@/app/(main)/search/FilterPanel';
 import { getFilterUrlQuery } from '@/lib/utils/filters';
 
 interface UseSearchResultsProps {
-  query?: string;
+  query: string | null;
   page: number;
   filters: Filters;
   limit?: number;
