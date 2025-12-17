@@ -8,9 +8,10 @@ import { ProteomexchangeSyncService } from './proteomexchange/proteomexchange-sy
 import { VectraitsSyncService } from './vectraits/vectraits-sync.service';
 import { VecdynSyncService } from './vecdyn/vecdyn-sync.service';
 import { VbdhubSyncService } from './vbdhub/vbdhub-sync.service';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
-  imports: [HttpModule, ElasticsearchModule, TaxonomyModule],
+  imports: [HttpModule, ElasticsearchModule, TaxonomyModule, StorageModule],
   providers: [
     SynchronisationService,
     VecdynSyncService,
