@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as Minio from 'minio';
 import { Readable } from 'node:stream';
 import { parse } from 'csv-parse';
 import { EsHubDatasetDoc, hubIndexName, mappings } from './types/indexing';
@@ -11,7 +10,7 @@ import {
 import { GeoJSON } from 'geojson';
 import { buildUniqueMultiPoint } from '../../common/geo';
 import { createHash } from 'node:crypto';
-import { BucketItem } from 'minio';
+import { StorageService } from '../../storage/storage.service';
 
 interface EpidemiologicalLineCSV {
   TaxonIdNCBI?: string;
@@ -28,17 +27,11 @@ interface EpidemiologicalLineCSV {
 @Injectable()
 export class VbdhubSyncService {
   private readonly logger = new Logger(VbdhubSyncService.name);
-  private readonly s3Client = new Minio.Client({
-    endPoint: 'storage.railway.app',
-    useSSL: true,
-    accessKey: process.env.S3_ACCESS_KEY_ID,
-    secretKey: process.env.S3_SECRET_ACCESS_KEY
-  });
-  private readonly bucketName = process.env.S3_BUCKET_NAME ?? '';
 
   constructor(
     private readonly taxonomyService: TaxonomyService,
-    private readonly elasticSearchService: ElasticsearchService
+    private readonly elasticSearchService: ElasticsearchService,
+    private readonly storageService: StorageService
   ) {}
 
   async syncDatasets() {
@@ -48,16 +41,15 @@ export class VbdhubSyncService {
   }
 
   async iterateAllCSVs() {
-    const objectsStream = this.s3Client.listObjectsV2(
-      this.bucketName,
-      'epidemiological',
-      true
-    );
-
-    for await (const obj of objectsStream as AsyncIterable<BucketItem>) {
+    for await (const obj of this.storageService.listObjects({
+      prefix: 'epidemiological',
+      recursive: true
+    })) {
       if (!obj.name || !obj.name.endsWith('.csv')) continue;
 
-      const stream = await this.s3Client.getObject(this.bucketName, obj.name);
+      const stream = await this.storageService.getObjectStream({
+        objectKey: obj.name
+      });
       await this.processCSV(stream, obj.name);
     }
   }

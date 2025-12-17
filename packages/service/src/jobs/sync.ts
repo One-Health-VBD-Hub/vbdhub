@@ -53,13 +53,12 @@ async function main() {
     }
   );
 
-  const tasksService = app.get(SynchronisationService);
-
   // Start the PID usage interval to log CPU and memory usage
   if (process.env.NODE_ENV === 'development') pidInterval(15_000);
 
   try {
-    await tasksService.syncDatabase(db, concurrency);
+    const synchronisationService = app.get(SynchronisationService);
+    await synchronisationService.syncDatabase(db, concurrency);
 
     const end = performance.now();
     Logger.warn(`Execution time: ${end - start} ms`, 'sync');
