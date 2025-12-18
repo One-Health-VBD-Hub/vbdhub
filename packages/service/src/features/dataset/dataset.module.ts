@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ElasticsearchModule } from '../elasticsearch/elasticsearch.module';
+import { ElasticsearchModule } from '../../infrastructure/elasticsearch/elasticsearch.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { Keyv } from 'keyv';

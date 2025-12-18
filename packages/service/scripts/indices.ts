@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
-import { SynchronisationModule } from '../src/synchronisation/synchronisation.module';
 import { Logger } from '@nestjs/common';
-import { VectraitsSyncService } from '../src/synchronisation/vectraits/vectraits-sync.service';
-import { ProteomexchangeSyncService } from '../src/synchronisation/proteomexchange/proteomexchange-sync.service';
-import { VecdynSyncService } from '../src/synchronisation/vecdyn/vecdyn-sync.service';
-import { GbifSyncService } from '../src/synchronisation/gbif/gbif-sync.service';
-import { Index, INDICES, isIndex } from '../src/synchronisation/types/indexing';
-import { VbdhubSyncService } from '../src/synchronisation/vbdhub/vbdhub-sync.service';
+import {
+  Index,
+  INDICES,
+  isIndex
+} from '../src/features/synchronisation/types/indexing';
+import { SynchronisationModule } from '../src/features/synchronisation/synchronisation.module';
+import { GbifSyncService } from '../src/features/synchronisation/gbif/gbif-sync.service';
+import { VecdynSyncService } from '../src/features/synchronisation/vecdyn/vecdyn-sync.service';
+import { VectraitsSyncService } from '../src/features/synchronisation/vectraits/vectraits-sync.service';
+import { ProteomexchangeSyncService } from '../src/features/synchronisation/proteomexchange/proteomexchange-sync.service';
+import { VbdhubSyncService } from '../src/features/synchronisation/vbdhub/vbdhub-sync.service';
 
 // run with `sst shell -- ts-node packages/service/scripts/indices.ts <INDEX>`
 async function main() {

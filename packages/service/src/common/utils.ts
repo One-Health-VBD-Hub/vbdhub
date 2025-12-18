@@ -1,4 +1,4 @@
-import { DateRange } from '../synchronisation/types/indexing';
+import { DateRange } from '../features/synchronisation/types/indexing';
 import { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 import { Logger } from '@nestjs/common';

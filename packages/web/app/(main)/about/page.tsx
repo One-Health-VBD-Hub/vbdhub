@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import React from 'react';
 import Heading from '@/components/Heading';
 import Image from 'next/image';
 import { Metadata } from 'next';
 import Stack from '@/components/Stack';
+import Anchor from '@/components/Anchor';
 
 export const metadata: Metadata = {
   title: 'About - Vector-Borne Diseases Hub',
@@ -37,15 +37,19 @@ export default function About() {
             One Health Vector-Borne Diseases Hub
           </span>{' '}
           (also called &#34;VBD Hub&#34; or &#34;One Health VBD Hub&#34;) is a{' '}
-          <em>non-profit open-source</em> project funded by{' '}
-          <Link
-            className='text-[#0f62fe] hover:underline'
-            target='_blank'
+          <em>
+            non-profit{' '}
+            <Anchor href='https://github.com/One-Health-VBD-Hub'>
+              open-source
+            </Anchor>
+          </em>{' '}
+          project funded by{' '}
+          <Anchor
             rel='noopener'
             href='https://www.imperial.ac.uk/news/250073/new-gather-data-diseases-spread-mosquitoes/'
           >
             UKRI and Defra
-          </Link>
+          </Anchor>
           . The aim of the project is to improve the accessibility and sharing
           of information about the infectious agents, hosts, and vectors
           involved in vector-borne disease transmission in the UK. To accomplish
@@ -335,86 +339,81 @@ export default function About() {
         <Heading as='h2' id='press-releases'>
           Press releases
         </Heading>
+        <p>
+          A{' '}
+          <Anchor href='/hotlink-ok/VBD Hub - brand guidelines.pdf'>
+            brand guidelines document
+          </Anchor>{' '}
+          is available for download to help with press releases and other
+          mentions of VBD Hub.
+        </p>
+
         <ul className='list-inside list-disc'>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
+            <Anchor
               rel='noopener'
               href='https://www.imperial.ac.uk/news/250073/new-gather-data-diseases-spread-mosquitoes/'
             >
               <span className='font-medium'>Imperial College</span> - New hub to
               gather data on diseases spread by mosquitoes, ticks and other
               vectors
-            </Link>
+            </Anchor>
           </li>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
+            <Anchor
               rel='noopener'
               href='https://www.pirbright.ac.uk/news/2023/12/pirbright-joins-hub-tackle-vector-borne-diseases'
             >
               <span className='font-medium'>Pirbright Institute</span> -
               Pirbright joins hub to tackle vector-borne diseases
-            </Link>
+            </Anchor>
           </li>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
+            <Anchor
               rel='noopener'
               href='https://www.ceh.ac.uk/news-and-media/news/gathering-data-diseases-spread-insects-and-ticks'
             >
               <span className='font-medium'>CEH</span> - Gathering data on
               diseases spread by mosquitoes, ticks and other vectors
-            </Link>
+            </Anchor>
           </li>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
+            <Anchor
               rel='noopener'
               href='https://news.liverpool.ac.uk/2023/12/13/new-hub-to-gather-data-on-diseases-spread-by-mosquitoes-ticks-and-other-vectors/'
             >
               <span className='font-medium'>University of Liverpool</span> - New
               hub to gather data on diseases spread by mosquitoes, ticks and
               other vectors
-            </Link>
+            </Anchor>
           </li>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
+            <Anchor
               rel='noopener'
               href='https://gtr.ukri.org/projects?ref=BB%2FY008766%2F1'
             >
               <span className='font-medium'>UKRI</span> - Defra-UKRI One Health
               VBD Hub
-            </Link>
+            </Anchor>
           </li>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
+            <Anchor
               rel='noopener'
               href='https://webarchive.nationalarchives.gov.uk/ukgwa/20250107093739/https://www.ukri.org/news/ukri-and-defra-invest-7-million-to-fight-vector-borne-disease'
             >
               <span className='font-medium'>UKRI</span> - UKRI and Defra invest
               £7 million to fight vector-borne disease
-            </Link>
+            </Anchor>
           </li>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
+            <Anchor
               rel='noopener'
               href='https://www.gov.uk/government/news/additional-funding-for-research-on-diseases-spread-by-mosquitoes-and-ticks'
             >
               <span className='font-medium'>Animal Plant Health Agency</span> -
               Additional funding for research on diseases spread by mosquitoes
               and ticks
-            </Link>
+            </Anchor>
           </li>
         </ul>
       </Stack>
@@ -425,24 +424,17 @@ export default function About() {
         </Heading>
         <ul className='list-inside list-disc'>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
-              rel='noopener nofollow'
-              href='https://bsky.app/profile/vbdhub.bsky.social'
-            >
+            <Anchor href='https://bsky.app/profile/vbdhub.bsky.social'>
               BlueSky - @vbdhub.bsky.social
-            </Link>
+            </Anchor>
           </li>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
-              rel='noopener nofollow'
+            <Anchor
+              rel='noopener'
               href='https://www.linkedin.com/company/one-health-vbd-hub'
             >
               LinkedIn - One Health VBD Hub
-            </Link>
+            </Anchor>
           </li>
         </ul>
       </Stack>
@@ -453,15 +445,10 @@ export default function About() {
         </Heading>
         <ul className='list-inside list-disc'>
           <li>
-            <Link
-              className='text-[#0f62fe] hover:underline'
-              target='_blank'
-              rel='noopener nofollow'
-              href='https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2024.1459408'
-            >
+            <Anchor href='https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2024.1459408'>
               ArboItaly: Leveraging open data for enhanced arbovirus
               surveillance in Italy
-            </Link>
+            </Anchor>
           </li>
         </ul>
       </Stack>
