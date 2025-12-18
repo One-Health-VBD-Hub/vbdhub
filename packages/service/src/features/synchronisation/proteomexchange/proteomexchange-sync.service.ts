@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
+import { ElasticsearchService } from '../../../infrastructure/elasticsearch/elasticsearch.service';
 import {
   taxonomyPathTokenizerSettings,
   TaxonomyService
@@ -15,7 +15,7 @@ import { xmlToClass } from 'xml-class-transformer';
 import { getIdentifiers, ProteomeXchangeDatasetType } from './types/xml';
 import { validate } from 'class-validator';
 import { EsAnyDatasetDoc } from '../types/indexing';
-import { undiciFetchWithRetry } from '../../common/utils';
+import { undiciFetchWithRetry } from '../../../common/utils';
 
 @Injectable()
 export class ProteomexchangeSyncService {

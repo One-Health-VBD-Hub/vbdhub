@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
-import { SearchModule } from './search/search.module';
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 import { APP_FILTER } from '@nestjs/core';
-import { DatasetModule } from './dataset/dataset.module';
+import { SearchModule } from './features/search/search.module';
+import { DatasetModule } from './features/dataset/dataset.module';
 
 @Module({
   providers:

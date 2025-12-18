@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
+import { ElasticsearchService } from '../../../infrastructure/elasticsearch/elasticsearch.service';
 import {
   taxonomyPathTokenizerSettings,
   TaxonomyService
