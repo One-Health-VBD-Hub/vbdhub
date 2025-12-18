@@ -335,6 +335,18 @@ export default function About() {
         <Heading as='h2' id='press-releases'>
           Press releases
         </Heading>
+        <p>
+          A{' '}
+          <Link
+            className='text-[#0f62fe] hover:underline'
+            href='/hotlink-ok/VBD Hub - brand guidelines.pdf'
+          >
+            brand guidelines document
+          </Link>{' '}
+          is available for download to help with press releases and other
+          mentions of VBD Hub.
+        </p>
+
         <ul className='list-inside list-disc'>
           <li>
             <Link
