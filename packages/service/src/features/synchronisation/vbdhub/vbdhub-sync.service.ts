@@ -2,15 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Readable } from 'node:stream';
 import { parse } from 'csv-parse';
 import { EsHubDatasetDoc, hubIndexName, mappings } from './types/indexing';
-import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
+import { ElasticsearchService } from '../../../infrastructure/elasticsearch/elasticsearch.service';
 import {
   taxonomyPathTokenizerSettings,
   TaxonomyService
 } from '../../taxonomy/taxonomy.service';
 import { GeoJSON } from 'geojson';
-import { buildUniqueMultiPoint } from '../../common/geo';
+import { buildUniqueMultiPoint } from '../../../common/geo';
 import { createHash } from 'node:crypto';
-import { StorageService } from '../../storage/storage.service';
+import { StorageService } from '../../../infrastructure/storage/storage.service';
 
 interface EpidemiologicalLineCSV {
   TaxonIdNCBI?: string;

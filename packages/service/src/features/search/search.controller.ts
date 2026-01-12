@@ -24,7 +24,7 @@ import {
 } from '../synchronisation/types/indexing';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ApiOperation, ApiProperty, ApiResponse } from '@nestjs/swagger';
-import { normalizeWkt } from '../common/geo';
+import { normalizeWkt } from '../../common/geo';
 
 export interface ITransformFnParams extends TransformFnParams {
   value: string;

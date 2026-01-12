@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { SyncedDatabase } from './types/indexing';
-import { configureAxiosRetry } from '../common/utils';
+import { configureAxiosRetry } from '../../common/utils';
 import {
   gbifNextPageUrlGenerator,
   GbifSyncService

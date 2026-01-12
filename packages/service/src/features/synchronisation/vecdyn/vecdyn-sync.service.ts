@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { ElasticsearchService } from '../../elasticsearch/elasticsearch.service';
+import { ElasticsearchService } from '../../../infrastructure/elasticsearch/elasticsearch.service';
 import { GeoJSON } from 'geojson';
 import {
   mappings,
@@ -14,7 +14,7 @@ import {
 } from '../../taxonomy/taxonomy.service';
 import { firstValueFrom } from 'rxjs';
 import { Agent } from 'https';
-import { buildUniqueMultiPoint } from '../../common/geo';
+import { buildUniqueMultiPoint } from '../../../common/geo';
 
 @Injectable()
 export class VecdynSyncService {

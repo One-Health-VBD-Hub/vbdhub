@@ -1,12 +1,12 @@
-import { SynchronisationModule } from '../synchronisation/synchronisation.module';
 import { NestFactory } from '@nestjs/core';
-import { SynchronisationService } from '../synchronisation/synchronisation.service';
 import { ConsoleLogger, Logger } from '@nestjs/common';
+import { pidInterval } from 'src/common/pidusage';
 import {
-  SyncedDatabase,
-  isSyncedDatabase
-} from '../synchronisation/types/indexing';
-import { pidInterval } from '../common/pidusage';
+  isSyncedDatabase,
+  SyncedDatabase
+} from 'src/features/synchronisation/types/indexing';
+import { SynchronisationModule } from 'src/features/synchronisation/synchronisation.module';
+import { SynchronisationService } from 'src/features/synchronisation/synchronisation.service';
 
 // Function to parse command-line arguments
 function parseArguments(): {

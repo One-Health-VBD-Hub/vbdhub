@@ -10,13 +10,13 @@ import {
   Index,
   SYNCED_DATABASES,
   SyncedDatabase
-} from '../synchronisation/types/indexing';
+} from '../../features/synchronisation/types/indexing';
 import {
   MappingTypeMapping,
   QueryDslGeoShapeFieldQuery,
   TasksGetResponse
 } from '@elastic/elasticsearch/lib/api/types';
-import { SearchDto } from '../search/search.controller';
+import { SearchDto } from '../../features/search/search.controller';
 
 export type Action = {
   index: { _index: string; _id?: string; pipeline?: string };

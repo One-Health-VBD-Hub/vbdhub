@@ -37,7 +37,13 @@ export default function About() {
             One Health Vector-Borne Diseases Hub
           </span>{' '}
           (also called &#34;VBD Hub&#34; or &#34;One Health VBD Hub&#34;) is a{' '}
-          <em>non-profit open-source</em> project funded by{' '}
+          <em>
+            non-profit{' '}
+            <Anchor href='https://github.com/One-Health-VBD-Hub'>
+              open-source
+            </Anchor>
+          </em>{' '}
+          project funded by{' '}
           <Anchor
             rel='noopener'
             href='https://www.imperial.ac.uk/news/250073/new-gather-data-diseases-spread-mosquitoes/'

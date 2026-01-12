@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
+import { ElasticsearchService } from '../../infrastructure/elasticsearch/elasticsearch.service';
 import {
   EsAnyDatasetDoc,
   SYNCED_DATABASES

@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
-import { Database, isSyncedDatabase } from 'src/synchronisation/types/indexing';
+import { ElasticsearchService } from '../../infrastructure/elasticsearch/elasticsearch.service';
+import {
+  Database,
+  isSyncedDatabase
+} from '../synchronisation/types/indexing';
 
 @Injectable()
 export class DatasetService {
