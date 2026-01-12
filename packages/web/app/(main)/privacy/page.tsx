@@ -501,6 +501,17 @@ export default function Privacy() {
           compliance.
         </p>
 
+        <Heading id='railway' as='h4' link={false}>
+          Railway Corp. (&#34;Railway&#34;)
+        </Heading>
+
+        <p>
+          This data processor does the following activities for us: Railway
+          provides application hosting and deployment services for our web
+          application. They process and store user data on our behalf to run the
+          application infrastructure and ensure reliable access to our services.
+        </p>
+
         <h4 className='font-semibold'>Stytch, Inc. (&#34;Stytch&#34;)</h4>
 
         <p>
@@ -639,6 +650,25 @@ export default function Privacy() {
         </p>
 
         <p>
+          <span className='font-medium'>Organisation name:</span> Railway Corp.
+          (&#34;Railway&#34;)
+          <br />
+          <span className='font-medium'>Category of recipient:</span>{' '}
+          application hosting and deployment services
+          <br />
+          <span className='font-medium'>
+            Country the personal information is sent to:
+          </span>{' '}
+          EU
+          <br />
+          <span className='font-medium'>
+            How the transfer complies with UK data protection law:
+          </span>{' '}
+          The country or sector has a UK data bridge (also known as Adequacy
+          Regulations)
+        </p>
+
+        <p>
           <span className='font-medium'>Organisation name:</span> tawk.to, Inc.
           (&#34;tawk.to&#34;)
           <br />
@@ -729,8 +759,8 @@ export default function Privacy() {
         </Heading>
 
         <p>
-          <time dateTime='2024-11-25'>
-            25<span className='align-super text-xs'>th</span> November 2024
+          <time dateTime='2026-01-12'>
+            12<span className='align-super text-xs'>th</span> January 2026
           </time>
         </p>
       </Stack>
