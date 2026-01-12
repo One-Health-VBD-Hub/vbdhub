@@ -113,7 +113,7 @@ export default function Training2025() {
                 in June 2025.
               </p>
 
-              <p>This version will be released in July 2025.</p>
+              <p>This version will be released in February 2026.</p>
             </Stack>
           ) : (
             <Stack gap={4} id='version'>
