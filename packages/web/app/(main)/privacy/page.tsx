@@ -454,7 +454,14 @@ export default function Privacy() {
         </Heading>
 
         {/* TODO: retention schedule */}
-        <p>This section is being worked on.</p>
+        <p>
+          We keep personal information only for as long as necessary for the
+          purposes described in this notice, including providing our services,
+          meeting legal and accounting obligations, resolving disputes, and
+          enforcing our agreements. Retention periods vary depending on the type
+          of information and the reason we use it. When information is no longer
+          needed, we delete or anonymise it.
+        </p>
       </Stack>
 
       <Stack gap={3}>
