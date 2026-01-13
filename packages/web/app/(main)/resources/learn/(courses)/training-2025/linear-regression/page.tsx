@@ -18,7 +18,7 @@ export default function Page() {
             <Link href='/resources/learn/training-2025'>Training 2025</Link>
           </BreadcrumbItem>
         </Breadcrumb>
-        <MulQuaBioPage page='/notebooks/Regress.html' />
+        <MulQuaBioPage page='/notebooks/regress.html' />
       </Stack>
     </Suspense>
   );
