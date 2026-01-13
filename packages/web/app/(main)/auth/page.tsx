@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useStytch, useStytchUser } from '@stytch/nextjs';
 import { LoginOrSignupForm } from '@/components/LoginOrSignupForm';
 import { useRouter } from 'next/navigation';
-import { Loading } from '@carbon/react';
+import { InlineNotification, Loading } from '@carbon/react';
 
 export default function AuthWrapper() {
   return (
@@ -29,6 +29,9 @@ function Auth() {
     rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
       ? rawNext
       : null;
+  const showForumRegistrationBanner = Boolean(
+    safeNext?.startsWith('/api/forum-sso')
+  );
 
   // tries to authenticate the user with a magic link token
   useEffect(() => {
@@ -64,7 +67,18 @@ function Auth() {
     <>
       <h1 className='sr-only'>Sign up or log in</h1>
       {isInitialized && !user ? (
-        <LoginOrSignupForm />
+        <div className='mx-auto my-auto flex w-full max-w-100 flex-col gap-y-4'>
+          {showForumRegistrationBanner && (
+            <InlineNotification
+              className='w-full max-w-100'
+              lowContrast={true}
+              kind='info'
+              title='Forum registration'
+              subtitle='Please register below to access the forum. You will be redirected straight away.'
+            />
+          )}
+          <LoginOrSignupForm />
+        </div>
       ) : (
         <Loading withOverlay={true} />
       )}
