@@ -71,10 +71,11 @@ function Auth() {
           {showForumRegistrationBanner && (
             <InlineNotification
               className='w-full max-w-100'
+              hideCloseButton
               lowContrast={true}
               kind='info'
-              title='Forum registration'
-              subtitle='Please register below to access the forum. You will be redirected straight away.'
+              title='Forum access requires an account'
+              subtitle='Please sign up or log in below to access the forum. You will be redirected after that.'
             />
           )}
           <LoginOrSignupForm />
