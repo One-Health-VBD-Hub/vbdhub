@@ -7,7 +7,7 @@ export const LoginOrSignupForm = () => {
     products: [Products.otp],
     otpOptions: {
       methods: [OTPMethods.Email],
-      expirationMinutes: 10
+      expirationMinutes: 15
     }
   };
 
