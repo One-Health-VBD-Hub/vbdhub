@@ -75,14 +75,14 @@ function Register() {
         <h1 className='text-xl font-semibold'>Registration complete</h1>
         <p className='my-2'>
           Thank you for providing your information. You can now continue using
-          the app.
+          the app. You will be redirected shortly.
         </p>
         <Button
           onClick={() => {
             router.replace(safeNext ?? '/');
           }}
         >
-          Go to home page
+          Continue
         </Button>
       </div>
     );
