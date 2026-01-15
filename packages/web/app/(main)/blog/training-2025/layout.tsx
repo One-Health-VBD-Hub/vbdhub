@@ -1,6 +1,7 @@
 import React from 'react';
+import { Metadata } from 'next';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Training workshop on data sharing and analysis - Blog',
   description:
     'Join us for a training workshop on data sharing and analysis at the Vector-Borne Diseases Hub from June 4th to 6th, 2025. More details in the blog post! 🦟💻',
