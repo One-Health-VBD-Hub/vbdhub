@@ -18,6 +18,28 @@ export const metadata = {
 
 const posts = [
   {
+    id: 4,
+    title: 'Launching the VBD Hub community forum',
+    href: '/blog/community-forum',
+    description: (
+      <>
+        Introducing the VBD Hub community forum, a new space for discussion,
+        collaboration, and knowledge sharing across the vector-borne disease
+        community.
+      </>
+    ),
+    date: 'Jan 15, 2026',
+    datetime: '2026-01-15',
+    category: { title: 'Announcements', href: '#' },
+    author: {
+      name: 'VBD Hub',
+      role: 'Team',
+      imageUrl: '/bordered-logo.webp',
+      imageWidth: 491,
+      imageHeight: 550
+    }
+  },
+  {
     id: 1,
     title: 'Citizen science contributions to vector surveillance',
     href: '/blog/citizen-science',
