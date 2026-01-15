@@ -89,7 +89,7 @@ function SearchPage() {
     if (!isPending && currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
-  }, [currentPage, totalPages]);
+  }, [currentPage, isPending, setCurrentPage, totalPages]);
 
   return (
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
