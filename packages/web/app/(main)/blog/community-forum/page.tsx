@@ -63,6 +63,18 @@ export default function CommunityForum() {
           these challenges can be explored collectively.
         </p>
 
+        <p>
+          The forum is managed together with the{' '}
+          <Anchor href='https://globalvectorhub.lshtm.ac.uk/'>
+            Global Vector Hub
+          </Anchor>
+          , a project at{' '}
+          <Anchor href='https://lshtm.ac.uk/'>
+            The London School of Hygiene & Tropical Medicine
+          </Anchor>
+          .
+        </p>
+
         <Stack as='section'>
           <Heading as='h2' link={false}>
             Why a community forum?
