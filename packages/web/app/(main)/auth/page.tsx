@@ -81,7 +81,7 @@ function Auth() {
                 redirected after that.
                 <br />
                 <Anchor target='_self' href='/blog/community-forum'>
-                  Read more about forum.
+                  Read more about the forum.
                 </Anchor>
               </span>
             </ActionableNotification>
