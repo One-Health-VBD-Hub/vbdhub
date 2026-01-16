@@ -30,8 +30,9 @@ function Auth() {
     rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
       ? rawNext
       : null;
-  const showForumRegistrationBanner = true;
-
+  const showForumRegistrationBanner = Boolean(
+    safeNext?.startsWith('/api/forum-sso')
+  );
   // tries to authenticate the user with a magic link token
   useEffect(() => {
     if (stytch && !user && isInitialized) {
@@ -81,7 +82,7 @@ function Auth() {
                 redirected after that.
                 <br />
                 <Anchor target='_self' href='/blog/community-forum'>
-                  Read more about forum.
+                  Read more about the forum.
                 </Anchor>
               </span>
             </ActionableNotification>
