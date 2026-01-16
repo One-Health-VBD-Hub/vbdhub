@@ -91,6 +91,15 @@ function SearchPage() {
     }
   }, [currentPage, isPending, setCurrentPage, totalPages]);
 
+  // determine whether to show the GBIF aggregated dataset card
+  const showAggregateDatasetGBIF =
+    currentPage == 1 &&
+    taxonomy.length > 0 &&
+    (category.length == 0 ||
+      database.length == 0 ||
+      category.includes('occurrence') ||
+      database.includes('gbif'));
+
   return (
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
       <h1 className='sr-only'>Search data</h1>
@@ -153,6 +162,27 @@ function SearchPage() {
             <>
               {currentResults && currentResults.length > 0 ? (
                 <div className='space-y-4'>
+                  {showAggregateDatasetGBIF && (
+                    <ResultCard
+                      gbifAggregated
+                      key={taxonomy.join()}
+                      result={{
+                        title: `GBIF Aggregated Dataset (taxon IDs ${taxonomy.join(', ')})`,
+                        id: 'gbif-aggregated',
+                        description:
+                          'Aggregated occurrence data from the Global Biodiversity Information Facility (GBIF).',
+                        db: 'gbif',
+                        kingdom: [],
+                        phylum: [],
+                        class: [],
+                        order: [],
+                        family: [],
+                        genus: [],
+                        species: []
+                      }}
+                      query={searchQuery ?? undefined}
+                    />
+                  )}
                   {currentResults?.map((result) => (
                     <ResultCard
                       key={result.id}
