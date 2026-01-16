@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useStytch, useStytchUser } from '@stytch/nextjs';
 import { LoginOrSignupForm } from '@/components/LoginOrSignupForm';
 import { useRouter } from 'next/navigation';
-import { InlineNotification, Loading } from '@carbon/react';
+import { ActionableNotification, Loading } from '@carbon/react';
+import Anchor from '@/components/Anchor';
 
 export default function AuthWrapper() {
   return (
@@ -29,9 +30,7 @@ function Auth() {
     rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
       ? rawNext
       : null;
-  const showForumRegistrationBanner = Boolean(
-    safeNext?.startsWith('/api/forum-sso')
-  );
+  const showForumRegistrationBanner = true;
 
   // tries to authenticate the user with a magic link token
   useEffect(() => {
@@ -69,14 +68,23 @@ function Auth() {
       {isInitialized && !user ? (
         <div className='mx-auto my-auto flex w-full max-w-100 flex-col gap-y-4'>
           {showForumRegistrationBanner && (
-            <InlineNotification
+            <ActionableNotification
               className='w-full max-w-100'
               hideCloseButton
               lowContrast={true}
               kind='info'
               title='Forum access requires an account'
-              subtitle='Please sign up or log in below to access the forum. You will be redirected after that.'
-            />
+              // subtitle='Please sign up or log in below to access the forum. You will be redirected after that.'
+            >
+              <span className='text-sm'>
+                Please sign up or log in below to access the forum. You will be
+                redirected after that.
+                <br />
+                <Anchor target='_self' href='/blog/community-forum'>
+                  Read more about forum.
+                </Anchor>
+              </span>
+            </ActionableNotification>
           )}
           <LoginOrSignupForm />
         </div>
