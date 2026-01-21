@@ -12,7 +12,7 @@ import {
   Toggle,
   Tooltip
 } from '@carbon/react';
-import React, { useCallback, useId, useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Reset } from '@carbon/icons-react';
 import {
   Database,
@@ -25,6 +25,16 @@ import { useDebounce } from '@/lib/hooks/useDebounce';
 import { UseComboboxInputValueChange } from 'downshift';
 import { Feature as GeoJSONFeature } from 'geojson';
 import dynamic from 'next/dynamic';
+import {
+  useResetSearchFilters,
+  useCategory,
+  useDatabase,
+  useGeometry,
+  usePublishedFrom,
+  usePublishedTo,
+  useTaxonomy,
+  useWithoutPublished
+} from '@/app/(main)/search/useSearchFilters';
 
 // dynamically import the map component to avoid large bundle size
 const MapboxMap = dynamic(() => import('@/components/maps/MapboxMap'), {
@@ -52,74 +62,70 @@ export interface Filters {
   exactOnly?: boolean;
 }
 
-export default function FilterPanel({
-  onFilterChange,
-  filters
-}: {
-  onFilterChange: (filters: Filters) => void;
-  filters: Filters;
-}) {
-  const hasFilters: boolean =
-    filters.category.length > 0 ||
-    filters.database.length > 0 ||
-    filters.taxonomy.length > 0 ||
-    !!filters.publishedFrom ||
-    !!filters.publishedTo ||
-    Object.keys(filters.geometry).length > 0;
-  const baseId = useId();
+export default function FilterPanel() {
+  const [category, setCategory] = useCategory();
+  const [database, setDatabase] = useDatabase();
+  const [taxonomy, setTaxonomy] = useTaxonomy();
+  const [publishedFrom, setPublishedFrom] = usePublishedFrom();
+  const [publishedTo, setPublishedTo] = usePublishedTo();
+  const [withoutPublished, setWithoutPublished] = useWithoutPublished();
+  const [geometry, setGeometry] = useGeometry();
+  const resetSearchFilters = useResetSearchFilters();
 
-  const handleReset = () => onFilterChange(defaultFilters);
+  const hasFilters: boolean =
+    category.length > 0 ||
+    database.length > 0 ||
+    taxonomy.length > 0 ||
+    !!publishedFrom ||
+    !!publishedTo ||
+    Object.keys(geometry).length > 0;
+  const baseId = useId();
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isDataCategory(e.currentTarget.value))
       throw new Error(`Invalid category value ${e.currentTarget.value}`);
 
-    onFilterChange({
-      ...filters,
-      category: e.currentTarget.checked
-        ? [...filters.category, e.currentTarget.value]
-        : filters.category.filter((cat) => cat !== e.currentTarget.value)
-    });
+    setCategory(
+      e.currentTarget.checked
+        ? [...category, e.currentTarget.value]
+        : category.filter((cat) => cat !== e.currentTarget.value)
+    );
   };
 
   const handleTaxonomyChange = (items: TaxonomyItem[]) => {
-    onFilterChange({
-      ...filters,
-      taxonomy: items.map((item) => item.key.toString(10))
-    });
+    setTaxonomy(items.map((item) => item.key.toString(10)));
   };
 
   const handleDbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isDatabase(e.currentTarget.value))
       throw new Error(`Invalid database value ${e.currentTarget.value}`);
 
-    onFilterChange({
-      ...filters,
-      database: e.currentTarget.checked
-        ? [...filters.database, e.currentTarget.value]
-        : filters.database.filter((db) => db !== e.currentTarget.value)
-    });
+    setDatabase(
+      e.currentTarget.checked
+        ? [...database, e.currentTarget.value]
+        : database.filter((db) => db !== e.currentTarget.value)
+    );
   };
 
   // fetch taxonomy names from GBIF API using the selected taxonomy IDs
   const { data: selectedTaxItems, isPending: taxItemsPending } = useQuery({
-    queryKey: ['selectedTaxItems', filters.taxonomy],
+    queryKey: ['selectedTaxItems', taxonomy],
     placeholderData: keepPreviousData,
     staleTime: Infinity, // enable request caching
-    queryFn: ({ signal }) => getTaxonomyNamesFromIDs(filters.taxonomy, signal)
+    queryFn: ({ signal }) => getTaxonomyNamesFromIDs(taxonomy, signal)
   });
 
   const numOfFilters =
-    filters.category.length +
-    filters.database.length +
-    filters.taxonomy.length +
-    (filters.publishedFrom || filters.publishedTo ? 1 : 0) +
-    (Object.keys(filters.geometry).length > 0 ? 1 : 0);
+    category.length +
+    database.length +
+    taxonomy.length +
+    (publishedFrom || publishedTo ? 1 : 0) +
+    (Object.keys(geometry).length > 0 ? 1 : 0);
 
   return (
     <Form className='mb-8 min-w-[321px] bg-[#f7f7f7] pb-8'>
       <div className='flex items-center justify-between'>
-        <h2 className='pl-[16px] font-medium'>
+        <h2 className='pl-4 font-medium'>
           Filter {numOfFilters ? `(${numOfFilters})` : ''}
         </h2>
         <Button
@@ -127,7 +133,7 @@ export default function FilterPanel({
           type='button'
           size='lg'
           renderIcon={Reset}
-          onClick={handleReset}
+          onClick={resetSearchFilters}
           disabled={!hasFilters}
         >
           Clear
@@ -140,35 +146,35 @@ export default function FilterPanel({
               id={'occurrence' + baseId}
               value='occurrence'
               labelText='Occurrence'
-              checked={filters.category.includes('occurrence')}
+              checked={category.includes('occurrence')}
               onChange={handleCategoryChange}
             />
             <Checkbox
               id={'abundance' + baseId}
               value='abundance'
               labelText='Abundance'
-              checked={filters.category.includes('abundance')}
+              checked={category.includes('abundance')}
               onChange={handleCategoryChange}
             />
             <Checkbox
               id={'trait' + baseId}
               value='trait'
               labelText='Trait'
-              checked={filters.category.includes('trait')}
+              checked={category.includes('trait')}
               onChange={handleCategoryChange}
             />
             <Checkbox
               id={'proteomic' + baseId}
               value='proteomic'
               labelText='Proteomic'
-              checked={filters.category.includes('proteomic')}
+              checked={category.includes('proteomic')}
               onChange={handleCategoryChange}
             />
             <Checkbox
               id={'epidemiological' + baseId}
               value='epidemiological'
               labelText='Epidemiological'
-              checked={filters.category.includes('epidemiological')}
+              checked={category.includes('epidemiological')}
               onChange={handleCategoryChange}
             />
             <div className='cds--form-item'>
@@ -178,7 +184,7 @@ export default function FilterPanel({
                     id={'genomic' + baseId}
                     value='genomic'
                     labelText='Genomic'
-                    checked={filters.category.includes('genomic')}
+                    checked={category.includes('genomic')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -190,7 +196,7 @@ export default function FilterPanel({
                     id={'microarray' + baseId}
                     value='microarray'
                     labelText='Microarray'
-                    checked={filters.category.includes('microarray')}
+                    checked={category.includes('microarray')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -202,7 +208,7 @@ export default function FilterPanel({
                     id={'transcriptomic' + baseId}
                     value='transcriptomic'
                     labelText='Transcriptomic'
-                    checked={filters.category.includes('transcriptomic')}
+                    checked={category.includes('transcriptomic')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -217,35 +223,35 @@ export default function FilterPanel({
               id={'vecdyn' + baseId}
               value='vd'
               labelText='VecDyn'
-              checked={filters.database.includes('vd')}
+              checked={database.includes('vd')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'vectraits' + baseId}
               value='vt'
               labelText='VecTraits'
-              checked={filters.database.includes('vt')}
+              checked={database.includes('vt')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'gbif' + baseId}
               value='gbif'
               labelText='GBIF'
-              checked={filters.database.includes('gbif')}
+              checked={database.includes('gbif')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'proteomexchange' + baseId}
               value='px'
               labelText='ProteomeXchange'
-              checked={filters.database.includes('px')}
+              checked={database.includes('px')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'hub' + baseId}
               value='hub'
               labelText='VBD Hub'
-              checked={filters.database.includes('hub')}
+              checked={database.includes('hub')}
               onChange={handleDbChange}
             />
             <div className='cds--form-item'>
@@ -256,7 +262,7 @@ export default function FilterPanel({
                     value='ncbi'
                     labelText='NCBI'
                     disabled
-                    checked={filters.database.includes('ncbi')}
+                    checked={database.includes('ncbi')}
                     onChange={handleDbChange}
                   />
                 </div>
@@ -283,42 +289,28 @@ export default function FilterPanel({
                 renderIcon={Reset}
                 onClick={(e) => {
                   e.stopPropagation(); // stop event from propagating further (prevents collapsing the accordion)
-                  onFilterChange({
-                    ...filters,
-                    publishedFrom: undefined,
-                    publishedTo: undefined,
-                    withoutPublished: undefined
-                  });
+                  setPublishedTo(null);
+                  setPublishedFrom(null);
+                  setWithoutPublished(null);
                 }}
-                hidden={
-                  filters.publishedFrom == undefined &&
-                  filters.publishedTo == undefined
-                }
-                disabled={
-                  filters.publishedFrom == undefined &&
-                  filters.publishedTo == undefined
-                }
+                hidden={!publishedFrom && !publishedTo}
+                disabled={!publishedFrom && !publishedTo}
               />
             </div>
           }
         >
           <DatePicker // TODO: look at and refactor
             key={
-              filters.publishedFrom || filters.publishedTo
-                ? 'hasDates'
-                : 'noDates' // force re-render when dates are cleared
+              publishedFrom || publishedTo ? 'hasDates' : 'noDates' // force re-render when dates are cleared
             }
             datePickerType='range'
             maxDate={new Date()}
             dateFormat='Y-m-d'
-            value={[filters.publishedFrom ?? '', filters.publishedTo ?? '']}
-            onChange={(d) =>
-              onFilterChange({
-                ...filters,
-                publishedFrom: d[0],
-                publishedTo: d[1]
-              })
-            }
+            value={[publishedFrom ?? '', publishedTo ?? '']}
+            onChange={(d) => {
+              setPublishedFrom(d[0] ? new Date(d[0]) : null);
+              setPublishedTo(d[1] ? new Date(d[1]) : null);
+            }}
           >
             <DatePickerInput
               id={'date-picker-input-id-start' + baseId}
@@ -337,20 +329,12 @@ export default function FilterPanel({
             size='sm'
             className='mt-4'
             hideLabel={true}
-            toggled={filters.withoutPublished}
-            onToggle={() =>
-              onFilterChange({
-                ...filters,
-                withoutPublished: !filters.withoutPublished
-              })
-            }
+            toggled={withoutPublished}
+            onToggle={() => setWithoutPublished(!withoutPublished)}
             labelText='Include results without this field'
             labelA='No'
             labelB='Yes'
-            disabled={
-              filters.publishedFrom == undefined &&
-              filters.publishedTo == undefined
-            }
+            disabled={publishedFrom == undefined && publishedTo == undefined}
             id={'toggle-missing-published' + baseId}
           />
         </AccordionItem>
@@ -377,29 +361,16 @@ export default function FilterPanel({
                 renderIcon={Reset}
                 onClick={(e) => {
                   e.stopPropagation(); // stop event from propagating further (prevents collapsing the accordion)
-                  onFilterChange({
-                    ...filters,
-                    geometry: {}
-                  });
+                  setGeometry(null);
                 }}
-                hidden={Object.keys(filters.geometry).length === 0}
-                disabled={Object.keys(filters.geometry).length === 0}
+                hidden={Object.keys(geometry).length === 0}
+                disabled={Object.keys(geometry).length === 0}
               />
             </div>
           }
         >
           <span className='cds--label'>Restrict to geographic area</span>
           <MapboxMap
-            onFeaturesChange={useCallback(
-              (features: Record<string, GeoJSONFeature>) => {
-                onFilterChange({
-                  ...filters,
-                  geometry: features
-                });
-              },
-              [filters, onFilterChange]
-            )}
-            initialFeatures={filters.geometry}
             className='mb-4 aspect-square lg:aspect-square lg:h-72'
             fullscreenControl
           />
@@ -423,13 +394,10 @@ export default function FilterPanel({
                 renderIcon={Reset}
                 onClick={(e) => {
                   e.stopPropagation(); // stop event from propagating further (prevents collapsing the accordion)
-                  onFilterChange({
-                    ...filters,
-                    taxonomy: []
-                  });
+                  setTaxonomy(null);
                 }}
-                hidden={filters.taxonomy.length === 0}
-                disabled={filters.taxonomy.length === 0}
+                hidden={taxonomy.length === 0}
+                disabled={taxonomy.length === 0}
               />
             </div>
           }

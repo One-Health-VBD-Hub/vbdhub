@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useStytch, useStytchUser } from '@stytch/nextjs';
 import { LoginOrSignupForm } from '@/components/LoginOrSignupForm';
 import { useRouter } from 'next/navigation';
-import { Loading } from '@carbon/react';
+import { ActionableNotification, Loading } from '@carbon/react';
+import Anchor from '@/components/Anchor';
 
 export default function AuthWrapper() {
   return (
@@ -24,6 +25,14 @@ function Auth() {
   const params = useSearchParams();
   const router = useRouter();
 
+  const rawNext = params.get('next');
+  const safeNext =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : null;
+  const showForumRegistrationBanner = Boolean(
+    safeNext?.startsWith('/api/forum-sso')
+  );
   // tries to authenticate the user with a magic link token
   useEffect(() => {
     if (stytch && !user && isInitialized) {
@@ -32,7 +41,7 @@ function Auth() {
 
       if (token && tokenType === 'magic_links') {
         stytch.magicLinks.authenticate(token, {
-          session_duration_minutes: 60 * 24 * 3 // 3 days
+          session_duration_minutes: 60 * 24 * 7 // 7 days
         });
       }
     }
@@ -43,19 +52,43 @@ function Auth() {
     if (isInitialized && user) {
       // redirect the user to the registration page if they haven't provided their name yet
       if (!user.name.first_name) {
-        router.replace('/register');
+        const registerPath = safeNext
+          ? `/register?next=${encodeURIComponent(safeNext)}`
+          : '/register';
+        router.replace(registerPath);
       } else {
         // Redirect the user to an authenticated page if they are already logged in
-        router.replace('/'); // TODO: redirect to the page they came from
+        router.replace(safeNext ?? '/');
       }
     }
-  }, [user, isInitialized, router]);
+  }, [user, isInitialized, router, safeNext]);
 
   return (
     <>
       <h1 className='sr-only'>Sign up or log in</h1>
       {isInitialized && !user ? (
-        <LoginOrSignupForm />
+        <div className='mx-auto my-auto flex w-full max-w-100 flex-col gap-y-4'>
+          {showForumRegistrationBanner && (
+            <ActionableNotification
+              className='w-full max-w-100'
+              hideCloseButton
+              lowContrast={true}
+              kind='info'
+              title='Forum access requires an account'
+              // subtitle='Please sign up or log in below to access the forum. You will be redirected after that.'
+            >
+              <span className='text-sm'>
+                Please sign up or log in below to access the forum. You will be
+                redirected after that.
+                <br />
+                <Anchor target='_self' href='/blog/community-forum'>
+                  Read more about the forum.
+                </Anchor>
+              </span>
+            </ActionableNotification>
+          )}
+          <LoginOrSignupForm />
+        </div>
       ) : (
         <Loading withOverlay={true} />
       )}

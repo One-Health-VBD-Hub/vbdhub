@@ -8,6 +8,7 @@ import { StytchProviderWrapper } from '@/components/providers/StytchProviderWrap
 import Footer from '@/components/Footer';
 import FormbricksProvider from '@/components/providers/formbricks';
 import { IBM_Plex_Sans } from 'next/font/google';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 const IBMPlexSans = IBM_Plex_Sans({
   weight: ['100', '200', '300', '400', '500', '600', '700'],
@@ -68,15 +69,17 @@ export default function RootLayout({
       </Suspense>
       <StytchProviderWrapper>
         <QueryClientProviderWrapper>
-          <body
-            className={`${IBMPlexSans.className} flex h-full min-h-screen flex-col`}
-          >
-            <Scripts />
-            <div className='mx-auto w-[80%] max-w-(--breakpoint-xl) grow pb-10'>
-              {children}
-            </div>
-            <Footer />
-          </body>
+          <NuqsAdapter>
+            <body
+              className={`${IBMPlexSans.className} flex h-full min-h-screen flex-col`}
+            >
+              <Scripts />
+              <div className='mx-auto w-[80%] max-w-(--breakpoint-xl) grow pb-10'>
+                {children}
+              </div>
+              <Footer />
+            </body>
+          </NuqsAdapter>
         </QueryClientProviderWrapper>
       </StytchProviderWrapper>
     </html>

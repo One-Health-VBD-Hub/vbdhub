@@ -1,81 +1,33 @@
-# Monorepo Template
+[![CLA assistant](https://cla-assistant.io/readme/badge/One-Health-VBD-Hub/vbdhub)](https://cla-assistant.io/One-Health-VBD-Hub/vbdhub)
+<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
 
-A template to create a monorepo SST v3 project. [Learn more](https://sst.dev/docs/set-up-a-monorepo).
+# VBD Hub Monorepo
 
-## Get started
+This repository houses the VBD Hub applications managed with npm workspaces:
+- `packages/web`: Next.js frontend.
+- `packages/service`: NestJS backend API.
 
-1. Use this template to [create your own repo](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+## Funding and affiliation
+- Developed at [Imperial College London](https://www.imperial.ac.uk/), funded by Imperial College London, [DEFRA](https://www.gov.uk/government/organisations/department-for-environment-food-rural-affairs), and [UKRI (BBSRC)](https://www.ukri.org/councils/bbsrc/).
 
-2. Clone the new repo.
+## Prerequisites
+- Node.js 18+ and npm.
+- Local environment files for each package (copy from each package’s `.env.example`).
 
-   ```bash
-   git clone <REPO_URL> MY_APP
-   cd MY_APP
-   ```
+## Getting Started
+```bash
+npm install
+# run from the repo root
+npm run dev:web       # starts the Next.js app
+npm run dev:service   # starts the NestJS service
+```
 
-3. Rename the files in the project to the name of your app.
+## Structure
+- `packages/web/` – Frontend app (see `packages/web/README.md` for details).
+- `packages/service/` – Backend service (see `packages/service/README.md` for details).
+- `.github/workflows/` – CI (includes Gitleaks secret scanning).
 
-   ```bash
-   npx replace-in-file '/vbdhub/g' 'MY_APP' '**/*.*' --verbose
-   ```
-
-4. Deploy!
-
-   ```bash
-   npm install
-   npx sst deploy
-   ```
-
-5. Optionally, enable [_git push to deploy_](https://sst.dev/docs/console/#autodeploy).
-
-## Usage
-
-This template uses [npm Workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces). It has 3 packages to start with and you can add more it.
-
-1. `core/`
-
-   This is for any shared code. It's defined as modules. For example, there's the `Example` module.
-
-   ```ts
-   export module Example {
-     export function hello() {
-       return "Hello, world!";
-     }
-   }
-   ```
-
-   That you can use across other packages using.
-
-   ```ts
-   import { Example } from "@aws-monorepo/core/example";
-
-   Example.hello();
-   ```
-
-   We also have [Vitest](https://vitest.dev/) configured for testing this package with the `sst shell` CLI.
-
-   ```bash
-   npm test
-   ```
-
-2. `functions/`
-
-   This is for your Lambda functions and it uses the `core` package as a local dependency.
-
-3. `scripts/`
-
-    This is for any scripts that you can run on your SST app using the `sst shell` CLI and [`tsx`](https://www.npmjs.com/package/tsx). For example, you can run the example script using:
-
-   ```bash
-   npm run shell src/example.ts
-   ```
-
-### Infrastructure
-
-The `infra/` directory allows you to logically split the infrastructure of your app into separate files. This can be helpful as your app grows.
-
-In the template, we have an `test.ts`, and `storage.ts`. These export the created resources. And are imported in the `sst.config.ts`.
-
----
-
-**Join our community** [Discord](https://sst.dev/discord) | [YouTube](https://www.youtube.com/c/sst-dev) | [X.com](https://x.com/SST_dev)
+## Development Notes
+- Uses Prettier settings defined in `package.json`.
+- Git ignores local `.env` files; keep real secrets out of git.
+- CI runs Gitleaks on pushes and pull requests; configure secrets in GitHub settings if needed.
