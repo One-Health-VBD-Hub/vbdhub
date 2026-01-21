@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Metadata } from 'next';
 import Stack from '@/components/Stack';
 import Anchor from '@/components/Anchor';
+import Snippet from '@/components/Snippet';
 
 export const metadata: Metadata = {
   title: 'About - Vector-Borne Diseases Hub',
@@ -336,6 +337,36 @@ export default function About() {
       </Stack>
 
       <Stack gap={3}>
+        <Heading as='h2' id='cite-us'>
+          How to cite VBD Hub
+        </Heading>
+        <p>
+          If you use the VBD Hub platform in your research, please cite (
+          <span className='font-medium'>Harvard style</span> reference):
+        </p>
+        <Snippet type='multi' wrapText>
+          <p>
+            Cator, L., Pawar, S., Pearse, W., White, S., Modrak, S., Windram,
+            F., Kelly, S., Jones, R., Vineer, H., England, M. and Sanders, C.
+            (2026) ‘VBD Hub: Open-source platform for vector-borne disease data
+            integration’. Zenodo.{' '}
+            <Anchor href='https://doi.org/10.5281/zenodo.18326925'>
+              doi:10.5281/zenodo.18326925
+            </Anchor>
+            .
+          </p>
+        </Snippet>
+        <p> And for in-text citation:</p>
+        <Snippet>
+          (Cator <span className='italic'>et al.</span>, 2026)
+        </Snippet>
+        <p>
+          Please also cite original data sources (e.g. GBIF, ProteomeXchange) as
+          and when appropriate.
+        </p>
+      </Stack>
+
+      <Stack gap={3}>
         <Heading as='h2' id='press-releases'>
           Press releases
         </Heading>
@@ -448,6 +479,18 @@ export default function About() {
             <Anchor href='https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2024.1459408'>
               ArboItaly: Leveraging open data for enhanced arbovirus
               surveillance in Italy
+            </Anchor>
+          </li>
+          <li>
+            <Anchor href='https://doi.org/10.5281/zenodo.18326925'>
+              VBD Hub: Open-source platform for vector-borne disease data
+              integration
+            </Anchor>
+          </li>
+          <li>
+            <Anchor href='https://doi.org/10.6084/m9.figshare.30637367'>
+              Come Together: Data Sharing to Support One Health Responses to
+              Vector-Borne Disease Threats
             </Anchor>
           </li>
         </ul>
