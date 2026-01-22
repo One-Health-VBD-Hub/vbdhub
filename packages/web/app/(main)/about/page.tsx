@@ -350,7 +350,7 @@ export default function About() {
             F., Kelly, S., Jones, R., Vineer, H., England, M. and Sanders, C.
             (2026) ‘VBD Hub: Open-source platform for vector-borne disease data
             integration’. Zenodo.{' '}
-            <Anchor href='https://doi.org/10.5281/zenodo.18326924'>
+            <Anchor rel='' href='https://doi.org/10.5281/zenodo.18326924'>
               doi:10.5281/zenodo.18326924
             </Anchor>
             .
@@ -482,13 +482,13 @@ export default function About() {
             </Anchor>
           </li>
           <li>
-            <Anchor href='https://doi.org/10.5281/zenodo.18326925'>
+            <Anchor rel='' href='https://doi.org/10.5281/zenodo.18326925'>
               VBD Hub: Open-source platform for vector-borne disease data
               integration
             </Anchor>
           </li>
           <li>
-            <Anchor href='https://doi.org/10.6084/m9.figshare.30637367'>
+            <Anchor rel='' href='https://doi.org/10.6084/m9.figshare.30637367'>
               Come Together: Data Sharing to Support One Health Responses to
               Vector-Borne Disease Threats
             </Anchor>
