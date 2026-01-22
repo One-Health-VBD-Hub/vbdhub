@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CarbonBadge from '@/components/CarbonBadge';
+import Snippet from '@/components/Snippet';
 
 export default function Footer() {
   return (
@@ -7,7 +8,7 @@ export default function Footer() {
       <div className='bg-gray-950 text-[#e5e5e5]'>
         <div className='container mx-auto flex flex-col flex-wrap items-center justify-between gap-4 px-5 py-2.5 md:flex-row'>
           {/* Left-aligned links */}
-          <div className='flex flex-wrap gap-4'>
+          <div className='flex flex-wrap justify-center gap-4'>
             <address>
               <Link
                 href='mailto:support@vbdhub.org'
@@ -32,6 +33,14 @@ export default function Footer() {
             <Link href='#' className='hover:underline' id='feedback-button'>
               Feedback
             </Link>
+            <Snippet
+              // href='https://doi.org/10.5281/zenodo.18326924'
+              className='top-0.5 hover:underline'
+              type='inline'
+              align='top'
+            >
+              10.5281/zenodo.18326924
+            </Snippet>
           </div>
 
           {/* Right-aligned CarbonBadge */}
