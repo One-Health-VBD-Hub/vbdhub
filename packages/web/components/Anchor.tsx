@@ -19,7 +19,7 @@ export default function Anchor({
   return (
     <Link
       target={target}
-      rel={rel}
+      rel={rel || undefined}
       className={anchor({ className })}
       {...props}
     />
