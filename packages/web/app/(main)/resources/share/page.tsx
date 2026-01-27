@@ -54,34 +54,38 @@ export default function Share() {
         <div className='flex flex-col gap-10 2xl:flex-row'>
           <Stack gap={3} className='max-w-(--breakpoint-md)'>
             <p className='text-justify'>
-              A key aspect of the Hub&#39;s approach to supporting data sharing
-              is to leverage existing resources. Hub users can find and access{' '}
-              <em>‘omics</em>, <em>traits</em>, <em>abundance</em>,{' '}
-              <em>occurrence</em>, and <em>epidemiological</em> data through the
-              Hub’s search functionality. My role as the Hub curator (
+              The Vector-Borne Diseases Hub supports data sharing by leveraging
+              existing resources while providing guidance on standards and
+              privacy. Users can find <em>‘omics</em>, <em>traits</em>,{' '}
+              <em>abundance</em>, <em>occurrence</em>, and{' '}
+              <em>epidemiological</em> data via the Hub’s search tools, with
+              links back to source repositories. The Hub curator (
               <Link
                 className='text-[#0f62fe] hover:underline'
                 href='mailto:s.kelly@imperial.ac.uk'
               >
                 Sarah Kelly
               </Link>
-              ), is to work with you (the community) to identify key datasets in
-              the vector-borne disease field that would benefit the community to
-              be discoverable on the Hub site. I will work with you, the
-              depositor, to ensure the appropriate data standards and privacy
-              levels you require are met during the curation process. This
-              includes embargo data support, if you wish to work with me to
-              standardise your data but are not ready for data to be publicly
-              available, we can place an embargo on your data until you wish to
-              proceed. I will support the uploading of data into these existing
-              specialised repositories, following the guidelines and SOPs for
-              these existing resources. In the case that there is no specialised
-              repository available for your data type, the Hub will be able to
-              host your metadata and/or data directly.
+              ) works with the community to identify priority datasets for
+              discovery, align them to agreed data standards, and set
+              appropriate access and privacy levels. This includes support for
+              embargoes when data must remain private until a later release. The
+              curator also supports uploads to specialised repositories,
+              following their SOPs and submission guidelines. If no suitable
+              repository exists for a data type, the Hub can host metadata and
+              where appropriate, the data itself.
             </p>
 
             <p>
               The SOPs for these specialised repositories can be found below.
+            </p>
+            <p>
+              For an overview of how the Hub manages, shares, and preserves
+              data, see our{' '}
+              <Link href='/dmp' className='text-[#0f62fe] hover:underline'>
+                Data Management Plan
+              </Link>
+              .
             </p>
           </Stack>
 

@@ -10,11 +10,16 @@ type LinkProps = ComponentPropsWithoutRef<typeof Link> & {
   ref?: Ref<HTMLAnchorElement>;
 };
 
-export default function Anchor({ className, ...props }: LinkProps) {
+export default function Anchor({
+  className,
+  target = '_blank',
+  rel = 'noopener nofollow',
+  ...props
+}: LinkProps) {
   return (
     <Link
-      target='_blank'
-      rel='noopener nofollow'
+      target={target}
+      rel={rel || undefined}
       className={anchor({ className })}
       {...props}
     />

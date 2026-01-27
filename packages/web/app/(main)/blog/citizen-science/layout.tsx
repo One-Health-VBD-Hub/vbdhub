@@ -1,6 +1,7 @@
 import React from 'react';
+import { Metadata } from 'next';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Citizen science contributions to vector surveillance - Blog',
   description:
     'Discover how citizen science in Europe tracks mosquitoes & ticks for enhanced vector surveillance, early disease warnings & public health insights.',

@@ -29,8 +29,8 @@ const roadmapItems = [
   },
   {
     id: 3,
-    date: 'June 2025',
-    datetime: '2025-06',
+    date: 'July 2025',
+    datetime: '2025-07',
     title: 'Hard launch',
     details: (
       <ul className='list-inside list-disc text-left'>
@@ -45,8 +45,8 @@ const roadmapItems = [
   },
   {
     id: 4,
-    date: 'September 2025',
-    datetime: '2025-09',
+    date: 'January 2026',
+    datetime: '2026-01',
     title: 'Version 2 release',
     details: (
       <ul className='list-inside list-disc text-left'>

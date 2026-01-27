@@ -17,6 +17,6 @@ export const metadata: Metadata = {
 };
 
 const Layout = ({ children }: Readonly<{ children: React.ReactNode }>) => (
-  <>{children}</>
+  <div className='flex h-full flex-col'>{children}</div>
 );
 export default Layout;

@@ -16,7 +16,8 @@ export const LoginOrSignupForm = () => {
     colors: { primary: '#000000' },
     container: {
       borderRadius: '0px',
-      borderColor: '#e0e0e0'
+      borderColor: '#e0e0e0',
+      width: 'auto'
     },
     buttons: {
       primary: {
@@ -37,9 +38,5 @@ export const LoginOrSignupForm = () => {
     }
   };
 
-  return (
-    <div className='flex min-h-[80vh] flex-col items-center justify-center'>
-      <StytchLogin config={config} styles={style} />
-    </div>
-  );
+  return <StytchLogin config={config} styles={style} />;
 };
