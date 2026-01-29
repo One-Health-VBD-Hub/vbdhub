@@ -13,8 +13,7 @@ import {
 } from '../../features/synchronisation/types/indexing';
 import {
   MappingTypeMapping,
-  QueryDslGeoShapeFieldQuery,
-  TasksGetResponse
+  QueryDslGeoShapeFieldQuery
 } from '@elastic/elasticsearch/lib/api/types';
 import { SearchDto } from '../../features/search/search.controller';
 
@@ -59,32 +58,6 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
       },
       mappings
     });
-  }
-
-  async deleteAllDocuments(indexName: string) {
-    const { task } = await this.client.deleteByQuery({
-      index: indexName,
-      query: {
-        match_all: {} // Matches all documents
-      },
-      slices: 'auto',
-      scroll_size: 10_000,
-      wait_for_completion: false
-    });
-
-    if (!task)
-      throw new Error(`Failed to initiate delete task for index ${indexName}`);
-
-    // now poll:
-    let status: TasksGetResponse;
-    do {
-      status = await this.client.tasks.get({ task_id: task.toString() });
-      await new Promise((r) => setTimeout(r, 5_000)); // wait 5 seconds before checking again
-    } while (!status.completed);
-
-    this.logger.warn(
-      `Deleted documents: ${(status.task.status as { deleted?: string }).deleted ?? ''}`
-    );
   }
 
   async ping() {
@@ -285,26 +258,6 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
       },
       size: 1
     });
-  }
-
-  async getAllDocs(index: Index) {
-    return this.client.search({
-      index: index,
-      query: {
-        match_all: {}
-      }
-    });
-  }
-
-  async getNodeHeapPressure(): Promise<number | undefined> {
-    try {
-      // fetch node statistics
-      const response = await this.client.nodes.stats({ metric: 'jvm' });
-      const nodeId = Object.keys(response.nodes)[0];
-      return response.nodes[nodeId].jvm?.mem?.heap_used_percent;
-    } catch (error) {
-      this.logger.error(`Error fetching node stats: ${error}`);
-    }
   }
 
   async ingestData(
