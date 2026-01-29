@@ -137,11 +137,11 @@ export class VecdynSyncService {
 
     databaseRecord.doi = documents[0].doi;
 
-    await this.elasticSearchService.getClient().index({
-      index: vecDynIndexName,
-      id: id.toString(),
-      document: databaseRecord
-    });
+    await this.elasticSearchService.ingestSingle(
+      vecDynIndexName,
+      id.toString(),
+      databaseRecord
+    );
   }
 
   async createElasticSearchIndex() {

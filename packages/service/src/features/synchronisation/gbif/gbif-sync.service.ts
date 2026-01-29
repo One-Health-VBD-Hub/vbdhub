@@ -90,7 +90,7 @@ export class GbifSyncService {
       };
     });
 
-    await this.elasticSearchService.ingestData(
+    await this.elasticSearchService.ingestBulk(
       records,
       (doc: EsAnyDatasetDoc) => ({
         index: { _index: gbifIndexName, _id: doc.id }

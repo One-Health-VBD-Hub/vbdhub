@@ -89,11 +89,11 @@ export class VbdhubSyncService {
       ...taxonomy
     };
 
-    await this.elasticSearchService.getClient().index({
-      index: hubIndexName,
-      id: datasetName,
-      document: datasetRecord
-    });
+    await this.elasticSearchService.ingestSingle(
+      hubIndexName,
+      datasetName,
+      datasetRecord
+    );
   }
 
   async createElasticSearchIndex() {

@@ -50,10 +50,6 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  getClient() {
-    return this.client;
-  }
-
   async createIndex(index: Index, mappings: MappingTypeMapping, settings = {}) {
     await this.client.indices.create({
       index,
@@ -260,7 +256,15 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async ingestData(
+  async ingestSingle(index: Index, id: string, doc: EsAnyDatasetDoc) {
+    await this.client.index({
+      index: index,
+      id: id,
+      document: doc
+    });
+  }
+
+  async ingestBulk(
     docs: EsAnyDatasetDoc[] | { message: string }[],
     onDocument: (doc: EsAnyDatasetDoc | { message: string }) => Action
   ) {
