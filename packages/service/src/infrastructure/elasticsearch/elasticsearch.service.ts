@@ -4,6 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Client } from '@elastic/elasticsearch';
 import {
   EsAnyDatasetDoc,
@@ -25,8 +26,8 @@ export type Action = {
 export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ElasticsearchService.name);
   private client: Client;
-  private nodeUrl = process.env.ELASTICSEARCH_NODE_LESS;
-  private apiKey = process.env.ELASTICSEARCH_API_KEY_LESS;
+
+  constructor(private readonly config: ConfigService) {}
 
   async onModuleDestroy() {
     if (this.client) {
@@ -36,12 +37,15 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit() {
-    if (!this.nodeUrl || !this.apiKey)
+    const nodeUrl = this.config.get<string>('ELASTICSEARCH_NODE_LESS');
+    const apiKey = this.config.get<string>('ELASTICSEARCH_API_KEY_LESS');
+
+    if (!nodeUrl || !apiKey)
       throw new Error('Elasticsearch configuration is missing');
 
     this.client = new Client({
-      node: this.nodeUrl,
-      auth: { apiKey: this.apiKey },
+      node: nodeUrl,
+      auth: { apiKey },
       serverMode: 'serverless'
     });
   }
@@ -58,10 +62,6 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
       },
       mappings
     });
-  }
-
-  async ping() {
-    return await this.client.ping();
   }
 
   async search({
