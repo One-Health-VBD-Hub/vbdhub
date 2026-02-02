@@ -12,7 +12,7 @@ import { VectraitsSyncService } from '../src/features/synchronisation/vectraits/
 import { ProteomexchangeSyncService } from '../src/features/synchronisation/proteomexchange/proteomexchange-sync.service';
 import { VbdhubSyncService } from '../src/features/synchronisation/vbdhub/vbdhub-sync.service';
 
-// run with `sst shell -- ts-node packages/service/scripts/indices.ts <INDEX>`
+// run with `ts-node scripts/indices.ts <INDEX>` from the packages/service folder (package root)
 async function main() {
   const args = process.argv.slice(2); // Skip the first two arguments (node and script path)l
 

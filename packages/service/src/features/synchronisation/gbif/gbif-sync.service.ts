@@ -90,12 +90,12 @@ export class GbifSyncService {
       };
     });
 
-    await this.elasticSearchService.ingestData(
-      records,
-      (doc: EsAnyDatasetDoc) => ({
+    await this.elasticSearchService.ingestBulk({
+      datasource: records,
+      onDocument: (doc: EsAnyDatasetDoc) => ({
         index: { _index: gbifIndexName, _id: doc.id }
       })
-    );
+    });
     return 'success';
   }
 
