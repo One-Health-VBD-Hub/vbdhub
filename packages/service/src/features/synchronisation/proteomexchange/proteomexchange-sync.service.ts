@@ -120,12 +120,12 @@ export class ProteomexchangeSyncService {
       type: 'proteomic'
     };
 
-    await this.elasticSearchService.ingestBulk(
-      [record],
-      (doc: EsAnyDatasetDoc) => ({
+    await this.elasticSearchService.ingestBulk({
+      datasource: [record],
+      onDocument: (doc: EsAnyDatasetDoc) => ({
         index: { _index: proteomeXchangeIndexName, _id: doc.id }
       })
-    );
+    });
     return 'success';
   }
 
