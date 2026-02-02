@@ -4,6 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Client } from '@elastic/elasticsearch';
 import {
   EsAnyDatasetDoc,
@@ -14,20 +15,18 @@ import {
 import {
   MappingTypeMapping,
   QueryDslGeoShapeFieldQuery,
-  TasksGetResponse
+  QueryDslQueryContainer,
+  SearchResponse
 } from '@elastic/elasticsearch/lib/api/types';
 import { SearchDto } from '../../features/search/search.controller';
-
-export type Action = {
-  index: { _index: string; _id?: string; pipeline?: string };
-};
+import { BulkHelperOptions } from '@elastic/elasticsearch/lib/helpers';
 
 @Injectable()
 export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ElasticsearchService.name);
   private client: Client;
-  private nodeUrl = process.env.ELASTICSEARCH_NODE_LESS;
-  private apiKey = process.env.ELASTICSEARCH_API_KEY_LESS;
+
+  constructor(private readonly config: ConfigService) {}
 
   async onModuleDestroy() {
     if (this.client) {
@@ -36,59 +35,32 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  onModuleInit() {
-    if (!this.nodeUrl || !this.apiKey)
-      throw new Error('Elasticsearch configuration is missing');
+  async onModuleInit() {
+    const nodeUrl = this.config.getOrThrow<string>('ELASTICSEARCH_NODE_LESS');
+    const apiKey = this.config.getOrThrow<string>('ELASTICSEARCH_API_KEY_LESS');
 
     this.client = new Client({
-      node: this.nodeUrl,
-      auth: { apiKey: this.apiKey },
+      node: nodeUrl,
+      auth: { apiKey },
       serverMode: 'serverless'
     });
+
+    await this.client.ping();
   }
 
-  getClient() {
-    return this.client;
-  }
+  async createIndex(
+    index: Index,
+    mappings: MappingTypeMapping,
+    settings: Record<string, unknown> = {}
+  ) {
+    const exists = await this.client.indices.exists({ index });
+    if (exists) return;
 
-  async createIndex(index: Index, mappings: MappingTypeMapping, settings = {}) {
     await this.client.indices.create({
       index,
-      settings: {
-        ...settings
-      },
+      settings,
       mappings
     });
-  }
-
-  async deleteAllDocuments(indexName: string) {
-    const { task } = await this.client.deleteByQuery({
-      index: indexName,
-      query: {
-        match_all: {} // Matches all documents
-      },
-      slices: 'auto',
-      scroll_size: 10_000,
-      wait_for_completion: false
-    });
-
-    if (!task)
-      throw new Error(`Failed to initiate delete task for index ${indexName}`);
-
-    // now poll:
-    let status: TasksGetResponse;
-    do {
-      status = await this.client.tasks.get({ task_id: task.toString() });
-      await new Promise((r) => setTimeout(r, 5_000)); // wait 5 seconds before checking again
-    } while (!status.completed);
-
-    this.logger.warn(
-      `Deleted documents: ${(status.task.status as { deleted?: string }).deleted ?? ''}`
-    );
-  }
-
-  async ping() {
-    return await this.client.ping();
   }
 
   async search({
@@ -110,8 +82,8 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     from: number;
     gbifDatasetKeys: string[];
     taxonomicPaths?: string[];
-  }) {
-    const filters = [];
+  }): Promise<SearchResponse<EsAnyDatasetDoc>> {
+    const filters: QueryDslQueryContainer[] = [];
 
     filters.push({
       bool: {
@@ -217,7 +189,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     }
 
     // build the text‐match clause
-    let textQueryClause: Record<string, unknown> | undefined;
+    let textQueryClause: QueryDslQueryContainer | undefined;
     if (query) {
       // https://chatgpt.com/c/684712c0-c624-8003-97db-be08474634a8
       if (exact) {
@@ -280,38 +252,29 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
       index: [...SYNCED_DATABASES],
       query: {
         bool: {
-          must: [{ term: { id: id } }, { term: { db: db } }] // exact match on both id and db
+          must: [{ ids: { values: [id] } }, { term: { db: db } }] // exact match on _id and db
         }
       },
       size: 1
     });
   }
 
-  async getAllDocs(index: Index) {
-    return this.client.search({
+  async ingestSingle(index: Index, id: string, doc: EsAnyDatasetDoc) {
+    await this.client.index({
       index: index,
-      query: {
-        match_all: {}
-      }
+      id: id,
+      document: doc
     });
   }
 
-  async getNodeHeapPressure(): Promise<number | undefined> {
-    try {
-      // fetch node statistics
-      const response = await this.client.nodes.stats({ metric: 'jvm' });
-      const nodeId = Object.keys(response.nodes)[0];
-      return response.nodes[nodeId].jvm?.mem?.heap_used_percent;
-    } catch (error) {
-      this.logger.error(`Error fetching node stats: ${error}`);
+  async ingestBulk({
+    datasource,
+    onDocument
+  }: BulkHelperOptions<EsAnyDatasetDoc>) {
+    if (datasource instanceof Array) {
+      this.logger.debug(`Ingesting ${datasource.length} docs`);
     }
-  }
 
-  async ingestData(
-    docs: EsAnyDatasetDoc[] | { message: string }[],
-    onDocument: (doc: EsAnyDatasetDoc | { message: string }) => Action
-  ) {
-    this.logger.debug(`Ingesting ${docs.length} docs`);
     const errors: {
       document: EsAnyDatasetDoc | { message: string };
       error: unknown;
@@ -323,11 +286,12 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     //  • retry 3× on 429/5xx with a 1 s backoff
     //  • run up to 2 concurrent bulk requests
     const result = await this.client.helpers.bulk({
-      datasource: docs,
+      datasource,
       onDocument,
       flushBytes: 95 * 1000 * 1000, // 95 MB cap per request
       concurrency: 2,
       retries: 3,
+      include_source_on_error: true,
       onDrop(info) {
         errors.push(info);
       },

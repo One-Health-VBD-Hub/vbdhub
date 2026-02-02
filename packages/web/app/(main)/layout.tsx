@@ -21,6 +21,7 @@ import { usePathname } from 'next/navigation';
 import { useStytch, useStytchSession } from '@stytch/nextjs';
 import { NewTab } from '@carbon/icons-react';
 import Image from 'next/image';
+import logoTeal from '../../public/logo-teal.svg';
 
 export default function Layout({
   children
@@ -64,7 +65,7 @@ export default function Layout({
           />
           <HeaderName
             isSideNavExpanded={false}
-            className='min-w-[185px]'
+            className='min-w-46.25'
             style={{ paddingRight: 0 }}
             as={Link}
             href='/'
@@ -88,16 +89,16 @@ export default function Layout({
             {/*  <span className='font-normal'>Home</span>*/}
             {/*)}*/}
             {/* OR */}
-            <Image
-              width={125}
-              height={144}
-              className='mr-1.5 h-7 w-auto'
-              src='/logo-teal.svg'
-              alt='logo of the One Health Vector-Borne Diseases Hub'
-            />
-            <span className='font-normal'>VBD Hub -&nbsp;</span>
-            {/* TODO: make more robust */}
-            {path !== '/' ? page : 'Home'}
+            <div className='flex items-center'>
+              <Image
+                className='mr-1.5 h-7 w-auto'
+                src={logoTeal}
+                alt='logo of the One Health Vector-Borne Diseases Hub'
+              />
+              <span className='font-normal'>VBD Hub -&nbsp;</span>
+              {/* TODO: make more robust */}
+              {path !== '/' ? page : 'Home'}
+            </div>
           </HeaderName>
           <HeaderNavigation aria-label='Vector-Borne Diseases Hub'>
             <HeaderMenuItem href='/' as={Link} isActive={path === '/'}>

@@ -95,11 +95,11 @@ export class VectraitsSyncService {
           }
         : undefined;
 
-    await this.elasticSearchService.getClient().index({
-      index: vecTraitsIndexName,
-      id: id.toString(),
-      document: esVtDatasetDoc
-    });
+    await this.elasticSearchService.ingestSingle(
+      vecTraitsIndexName,
+      id.toString(),
+      esVtDatasetDoc
+    );
   }
 
   async createElasticSearchIndex() {
