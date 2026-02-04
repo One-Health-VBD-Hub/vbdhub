@@ -157,7 +157,9 @@ function SearchPage() {
           )}
 
           {isPending ? (
-            <InlineLoading />
+            <div className='w-full *:mx-auto *:w-fit'>
+              <InlineLoading />
+            </div>
           ) : (
             <>
               {currentResults && currentResults.length > 0 ? (
