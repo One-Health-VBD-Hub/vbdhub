@@ -30,7 +30,7 @@ async function bootstrap() {
   // get the ConfigService instance that loads the .env file
   const configService = app.get(ConfigService);
 
-  const mode = configService.get<string>('NODE_ENV');
+  const mode = configService.get<string>('NODE_ENV', 'development');
   Logger.warn(`Running in ${mode} mode`, 'bootstrap');
 
   // configure global validation
