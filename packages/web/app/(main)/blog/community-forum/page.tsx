@@ -47,7 +47,7 @@ export default function CommunityForum() {
 
         <p>
           We are delighted to announce the launch of the{' '}
-          <Anchor rel='' href='https://forum.vbdhub.org'>
+          <Anchor rel='' target='_self' href='https://forum.vbdhub.org'>
             VBD Hub community forum
           </Anchor>
           , a new online space designed to support discussion, collaboration,
@@ -188,7 +188,7 @@ export default function CommunityForum() {
 
           <p>
             <span className='font-medium'>Explore and join the forum:</span>{' '}
-            <Anchor href='https://forum.vbdhub.org' target='_blank' rel=''>
+            <Anchor href='https://forum.vbdhub.org' target='_self' rel=''>
               forum.vbdhub.org
             </Anchor>
           </p>
