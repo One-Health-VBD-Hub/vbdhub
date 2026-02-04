@@ -109,7 +109,7 @@ function SearchPage() {
         </div>
 
         <div className='min-w-0 flex-1'>
-          <SearchBar className='mb-4' />
+          {/*<SearchBar className='mb-4' />*/}
           <>
             <div className='mb-2 flex items-end justify-between align-middle 2xl:justify-end'>
               <Button

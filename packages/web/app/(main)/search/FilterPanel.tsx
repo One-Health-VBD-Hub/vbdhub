@@ -8,7 +8,7 @@ import {
   DatePickerInput,
   DropdownSkeleton,
   FilterableMultiSelect,
-  Form,
+  Search,
   Toggle,
   Tooltip
 } from '@carbon/react';
@@ -33,7 +33,10 @@ import {
   usePublishedFrom,
   usePublishedTo,
   useTaxonomy,
-  useWithoutPublished
+  useWithoutPublished,
+  useSearchQuery,
+  useCurrentPage,
+  useExactOnly
 } from '@/app/(main)/search/useSearchFilters';
 
 // dynamically import the map component to avoid large bundle size
@@ -43,13 +46,6 @@ const MapboxMap = dynamic(() => import('@/components/maps/MapboxMap'), {
     <div className='mb-4 aspect-square animate-pulse bg-gray-100 lg:aspect-square lg:h-72' />
   )
 });
-
-export const defaultFilters: Filters = {
-  category: [],
-  database: [],
-  taxonomy: [],
-  geometry: {}
-};
 
 export interface Filters {
   geometry: Record<string, GeoJSONFeature>;
@@ -66,13 +62,27 @@ export default function FilterPanel() {
   const [category, setCategory] = useCategory();
   const [database, setDatabase] = useDatabase();
   const [taxonomy, setTaxonomy] = useTaxonomy();
+  const [_, setCurrentPage] = useCurrentPage();
   const [publishedFrom, setPublishedFrom] = usePublishedFrom();
   const [publishedTo, setPublishedTo] = usePublishedTo();
   const [withoutPublished, setWithoutPublished] = useWithoutPublished();
   const [geometry, setGeometry] = useGeometry();
+  const [exactOnly, setExactOnly] = useExactOnly();
+
+  const [searchQuery, setSearchQuery] = useSearchQuery();
+  const [searchBoxText, setSearchBoxText] = useState<string>(searchQuery ?? '');
+
+  const handleSearch = () => {
+    const text = searchBoxText?.trim();
+
+    setCurrentPage(1);
+    setSearchQuery(text);
+  };
+
   const resetSearchFilters = useResetSearchFilters();
 
   const hasFilters: boolean =
+    (searchQuery && searchQuery.length > 0) ||
     category.length > 0 ||
     database.length > 0 ||
     taxonomy.length > 0 ||
@@ -123,7 +133,7 @@ export default function FilterPanel() {
     (Object.keys(geometry).length > 0 ? 1 : 0);
 
   return (
-    <Form className='mb-8 min-w-[321px] bg-[#f7f7f7] pb-8'>
+    <div className='mb-8 min-w-80.25 bg-[#f7f7f7] pb-8'>
       <div className='flex items-center justify-between'>
         <h2 className='pl-4 font-medium'>
           Filter {numOfFilters ? `(${numOfFilters})` : ''}
@@ -133,7 +143,10 @@ export default function FilterPanel() {
           type='button'
           size='lg'
           renderIcon={Reset}
-          onClick={resetSearchFilters}
+          onClick={() => {
+            resetSearchFilters();
+            setSearchBoxText('');
+          }}
           disabled={!hasFilters}
         >
           Clear
@@ -410,8 +423,69 @@ export default function FilterPanel() {
             onChange={handleTaxonomyChange}
           />
         </AccordionItem>
+        <AccordionItem
+          title={
+            <div className='flex items-center justify-between'>
+              Full text search
+              <Button
+                as='span' // fixes button within button hydration error
+                kind='ghost'
+                type='button'
+                className='mx-3.5'
+                // TODO: remove once weird right padding bug fixed
+                style={{
+                  padding: 'unset'
+                }}
+                size='md'
+                hasIconOnly
+                iconDescription='Reset'
+                renderIcon={Reset}
+                onClick={(e) => {
+                  e.stopPropagation(); // stop event from propagating further (prevents collapsing the accordion)
+                  setSearchQuery(null);
+                  setSearchBoxText('');
+                  setExactOnly(null);
+                }}
+                hidden={!searchQuery}
+                disabled={!searchQuery}
+              />
+            </div>
+          }
+        >
+          <span className='cds--label'>Search within text fields</span>
+          <form
+            className='flex flex-col gap-4'
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearch();
+            }}
+          >
+            <Search
+              className='xl:w-[288px]'
+              autoComplete='on'
+              closeButtonLabelText='Clear search input'
+              id='full-text-search'
+              value={searchBoxText}
+              labelText='Label text'
+              placeholder='Search "Anopheles 2016 Insecticide resistance"'
+              size='md'
+              onChange={(e) => setSearchBoxText(e.target.value)}
+              type='search'
+            />
+            <Checkbox
+              id='exact-only'
+              labelText='Exact match only'
+              disabled={!searchBoxText}
+              checked={exactOnly}
+              onChange={() => setExactOnly(!exactOnly)}
+            />
+            <Button type='submit' size='md' title='Search for datasets'>
+              Search
+            </Button>
+          </form>
+        </AccordionItem>
       </Accordion>
-    </Form>
+    </div>
   );
 }
 
