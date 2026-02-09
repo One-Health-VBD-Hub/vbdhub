@@ -19,7 +19,7 @@
     "sync:vd": "node dist/jobs/sync vd 10",
     "sync:hub": "node dist/jobs/sync hub 10",
     "sync:px": "node dist/jobs/sync px 15",
-    "knip": "knip",
+    "knip": "npx knip",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org imperial-college-london-ls --project hub-backend ./dist && sentry-cli sourcemaps upload --org imperial-college-london-ls --project hub-backend ./dist"
   },
   "prettier": {
