@@ -1,9 +1,12 @@
-import { FastifyPluginAsync } from 'fastify'
+import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
 
-const root: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
+const root: FastifyPluginAsyncJsonSchemaToTs = async (
+  fastify,
+  opts
+): Promise<void> => {
   fastify.get('/', async function (request, reply) {
-    return { root: true }
-  })
-}
+    return { root: true };
+  });
+};
 
-export default root
+export default root;
