@@ -28,8 +28,8 @@ const posts = [
         data.
       </>
     ),
-    date: 'Feb 10, 2026',
-    datetime: '2026-02-10',
+    date: 'Feb 11, 2026',
+    datetime: '2026-02-11',
     category: { title: 'Announcements', href: '#' },
     author: {
       name: 'Francis Windram',

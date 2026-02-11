@@ -6,6 +6,8 @@ import Heading from '@/components/Heading';
 import { Breadcrumb, BreadcrumbItem } from '@carbon/react';
 import Anchor from '@/components/Anchor';
 import RCodeBlock from '@/components/RCodeBlock';
+import Image from 'next/image';
+import logoOrange from '@/public/logo-orange.svg';
 
 export default function OhvbdCranRelease() {
   return (
@@ -21,7 +23,7 @@ export default function OhvbdCranRelease() {
 
         <div>
           <time className='text-sm' dateTime='2026-02-10'>
-            Feb 10, 2026
+            Feb 11, 2026
           </time>
         </div>
       </div>
@@ -30,6 +32,11 @@ export default function OhvbdCranRelease() {
         <header>
           <Heading id='ohvbd-cran-release'>
             ohvbd 1.0.0 has been released on CRAN!
+            <Image
+              className='m-2 h-12 w-auto'
+              src={logoOrange}
+              alt='logo of the ohvbd package'
+            />
           </Heading>
         </header>
 
@@ -85,7 +92,7 @@ export default function OhvbdCranRelease() {
 
         <Stack as='section'>
           <Heading as='h2' link={false}>
-            Basic data download in <code>ohvbd</code>
+            Basic data download
           </Heading>
           <p>
             <code className='rounded bg-gray-100 px-1'>ohvbd</code> has been
