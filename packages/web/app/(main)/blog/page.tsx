@@ -18,6 +18,28 @@ export const metadata = {
 
 const posts = [
   {
+    id: 5,
+    title: 'ohvbd 1.0.0 has been released on CRAN!',
+    href: '/blog/ohvbd-cran-release',
+    description: (
+      <>
+        Announcing ohvbd v1.0.0 on CRAN: a unified R interface for retrieval,
+        harmonisation, and citation-aware workflows for vector-borne disease
+        data.
+      </>
+    ),
+    date: 'Feb 10, 2026',
+    datetime: '2026-02-10',
+    category: { title: 'Announcements', href: '#' },
+    author: {
+      name: 'Francis Windram',
+      role: 'Research Associate',
+      imageUrl: '/members/francis.webp',
+      imageWidth: 800,
+      imageHeight: 800
+    }
+  },
+  {
     id: 4,
     title: 'Launching the VBD Hub community forum',
     href: '/blog/community-forum',
