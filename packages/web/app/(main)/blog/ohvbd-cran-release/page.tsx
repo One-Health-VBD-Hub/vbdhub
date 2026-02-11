@@ -28,15 +28,18 @@ export default function OhvbdCranRelease() {
         </div>
       </div>
 
+      <div className='flex justify-center'>
+        <Image
+          src={logoOrange}
+          className='h-42 w-auto'
+          alt='logo of the ohvbd package'
+        />
+      </div>
+
       <Stack as='article'>
         <header>
           <Heading id='ohvbd-cran-release'>
             ohvbd 1.0.0 has been released on CRAN!
-            <Image
-              className='m-2 h-12 w-auto'
-              src={logoOrange}
-              alt='logo of the ohvbd package'
-            />
           </Heading>
         </header>
 
