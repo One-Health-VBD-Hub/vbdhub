@@ -4,6 +4,7 @@ import React from 'react';
 import Heading from '@/components/Heading';
 import Image from 'next/image';
 import Stack from '@/components/Stack';
+import logoOrange from '@/public/logo-orange.svg';
 
 export const metadata = {
   title: 'R package - Resources - Vector-Borne Diseases Hub',
@@ -25,10 +26,8 @@ export default function Package() {
       <Heading id='package'>
         <div className='flex items-center'>
           <Image
-            width={125}
-            height={144}
-            className='mr-1.5 h-12 w-auto'
-            src='/logo-orange.svg'
+            className='mr-2 h-12 w-auto'
+            src={logoOrange}
             alt='logo of the ohvbd package'
           />
           <span className='font-bold'>R</span>&nbsp;package
