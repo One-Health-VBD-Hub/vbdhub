@@ -47,8 +47,9 @@ export default function OhvbdCranRelease() {
         <RCodeBlock code={`install.packages("ohvbd")`} />
 
         <p>
-          This post introduces the package and its functions, alongside some
-          background on why and how we created <em>ohvbd</em>.
+          This blog post will introduce you to the package and its functions,
+          alongside a bit of background behind <em>why</em> and <em>how</em> we
+          have created ohvbd.
         </p>
 
         <Stack as='section'>
@@ -62,32 +63,41 @@ export default function OhvbdCranRelease() {
             >
               ohvbd
             </Anchor>{' '}
-            is a data retrieval and harmonisation package for R. It provides a
-            programmatic interface to multiple databases relevant to modelling
-            vector-borne diseases (VBDs).
+            is a data retrieval and harmonisation package for R. It aims to
+            provide a programmatic interface to multiple databases relevant to
+            the modelling of vector-borne diseases (VBDs).
           </p>
           <p>
-            Modelling is generally a data-hungry process. Whether you are
-            testing the effect of temperature on disease risk or exploring how
-            vector biting rate depends on body size, you eventually need to
-            validate models against real-world data. Those data exist across
-            disparate databases, and manual retrieval can quickly become
-            laborious.
+            Generally speaking, modelling tends to be a data-hungry process.
+            Whether you are looking to understand the effect of temperature on
+            disease risk, or wish to model how the biting rate of a vector
+            depends on body size, you will eventually need to test any model
+            that you create against real-world data. These data are found in
+            many disparate databases, and the process of finding and retrieving
+            data from these databases can easily become a laborious manual
+            process.
           </p>
           <p>
-            <em>ohvbd</em> provides a unified interface and underlying pipeline
-            for working with those sources.
+            ohvbd provides a unified programmatic interface and underlying
+            pipeline for interfacing with many such databases.
           </p>
         </Stack>
 
         <Stack as='section'>
           <Heading as='h2' link={false}>
-            Basic data download in ohvbd
+            Basic data download in <code>ohvbd</code>
           </Heading>
           <p>
-            <em>ohvbd</em> has been designed to make finding and retrieving data
-            on disease vectors straightforward. It typically uses a piped
-            workflow to find, fetch, and filter data from supported databases.
+            <code className='rounded bg-gray-100 px-1'>ohvbd</code> has been
+            designed to make finding and retrieving data on disease vectors
+            simple and straightforward.
+          </p>
+
+          <p>
+            Typically it uses a &quot;piped&quot;-style approach to find, get,
+            and filter data from the supported databases, however it aims to
+            provide the data to you &quot;as-is&quot;, leaving further
+            downstream analysis and filtering down to you.
           </p>
 
           <p>
@@ -142,7 +152,7 @@ nrow(df)`}
 
           <ul className='my-2 list-inside list-disc'>
             <li>
-              Search via the{' '}
+              Find data by searching using the{' '}
               <Anchor
                 href='https://vbdhub.org'
                 className='text-blue-600 hover:underline'
@@ -153,7 +163,7 @@ nrow(df)`}
               <code className='rounded bg-gray-100 px-1'>search_hub()</code>).
             </li>
             <li>
-              Filter only results from{' '}
+              Filter out only the results from{' '}
               <Anchor
                 href='https://vectorbyte.crc.nd.edu/vectraits-explorer'
                 className='text-blue-600 hover:underline'
@@ -163,7 +173,7 @@ nrow(df)`}
               (<code className='rounded bg-gray-100 px-1'>filter_db()</code>).
             </li>
             <li>
-              Fetch data from VecTraits (
+              Fetch that data from VecTraits (
               <code className='rounded bg-gray-100 px-1'>fetch()</code>).
             </li>
             <li>
@@ -190,10 +200,9 @@ colnames(filtered_df)`}
           />
 
           <p>
-            Note that{' '}
-            <code className='rounded bg-gray-100 px-1'>DatasetID</code> is added
-            automatically. This supports another important design principle in{' '}
-            <em>ohvbd</em>.
+            Note here that &quot;DatasetID&quot; has been added automatically to
+            the selected data, this is related to another useful part of the
+            ohvbd design philsosphy.
           </p>
         </Stack>
 
@@ -202,10 +211,16 @@ colnames(filtered_df)`}
             Citations
           </Heading>
           <p>
-            It is critical that data producers are credited appropriately.
-            During data manipulation, provenance can become disconnected from
-            the data itself. <em>ohvbd</em> makes it easier to retain citation
-            information.
+            It is exceedingly important that those who generate data that others
+            use are credited appropriately for their work. However in the
+            process of data manipulation, it can be easy for data to become
+            disconnected from its source.
+          </p>
+
+          <p>
+            <code className='rounded bg-gray-100 px-1'>ohvbd</code> looks to
+            make it easy to maintain the information necessary for recovering
+            citations.
           </p>
 
           <RCodeBlock
@@ -233,8 +248,15 @@ colnames(filtered_df)`}
             Climate data
           </Heading>
           <p>
-            We also aimed to make it easy to use AREAdata for associating
-            spatial records with core climate variables.
+            We aimed, with{' '}
+            <code className='rounded bg-gray-100 px-1'>ohvbd</code>, to make it
+            easy for scientists to leverage the AREAdata dataset to match
+            spatially explicit data with core climatic variables.
+          </p>
+
+          <p>
+            So for an example dataset we can associate this data to temperature
+            data at the county level:
           </p>
 
           <RCodeBlock
@@ -292,13 +314,22 @@ ad_extract_working |> dplyr::select(!c("Longitude", "Latitude"))`}
             Other tools
           </Heading>
 
+          <p>
+            Alongside the main data download functionality,{' '}
+            <code className='rounded bg-gray-100 px-1'>ohvbd</code> also
+            provides a few handy extra tools which could be useful outside of{' '}
+            <code className='rounded bg-gray-100 px-1'>ohvbd</code>-specific
+            workflows.
+          </p>
+
           <Heading as='h3' link={false}>
             tee()
           </Heading>
           <p>
-            <code className='rounded bg-gray-100 px-1'>tee()</code> allows you
-            to extract data from the middle of a pipeline and save it to another
-            variable.
+            For example the{' '}
+            <code className='rounded bg-gray-100 px-1'>tee()</code> function
+            allows you to extract data from the middle of an R pipeline and save
+            it out to a separate variable:
           </p>
 
           <RCodeBlock
@@ -313,17 +344,17 @@ geomean`}
           <RCodeBlock code={`## [1] 0.0000000 0.6931472 1.0986123`} />
 
           <p>
-            While originally designed to support citation workflows for GBIF
-            data, it is useful in many scenarios, especially when debugging
-            larger pipelines.
+            While this was originally designed to help with citing gbif data, it
+            is also exceedingly useful in a variety of other scenarios!
+            Particularly when debugging large pipelines.
           </p>
 
           <Heading as='h3' link={false}>
             match_countries() and match_species()
           </Heading>
           <p>
-            These functions convert country names to polygons and species names
-            to GBIF taxonomic IDs:
+            These two functions allow you to convert country names to polygons,
+            and species names to GBIF taxonomic IDs respectively:
           </p>
 
           <RCodeBlock
@@ -349,6 +380,12 @@ geomean`}
             code={`## Ixodes ricinus  Aedes aegypti
 ##        2182588        1651891`}
           />
+
+          <p>
+            Whilst originally designed as part of the{' '}
+            <code className='rounded bg-gray-100 px-1'>search_hub()</code>{' '}
+            interface, they have significant uses elsewhere!
+          </p>
         </Stack>
 
         <Stack as='section'>
@@ -356,70 +393,104 @@ geomean`}
             What&apos;s new since development releases?
           </Heading>
 
+          <p>
+            Since the original{' '}
+            <code className='rounded bg-gray-100 px-1'>ohvbd</code> testing
+            period (thanks to all those who participated, particularly through
+            the One Health VBD Hub 2025 summer training workshop) a lot has
+            changed in the package! As such here is a brief summary of the
+            changes going into v1.0.0:
+          </p>
+
           <ul className='my-2 list-inside list-disc'>
             <li>
               <code className='rounded bg-gray-100 px-1'>extract_</code>{' '}
               functions are now{' '}
               <code className='rounded bg-gray-100 px-1'>glean_</code>.
+              <ul className='my-2 list-inside list-disc'>
+                <li>
+                  This means that if <code>tidyverse</code> is loaded after{' '}
+                  <code>ohvbd</code>, there are no direct namespace collisions.
+                </li>
+              </ul>
             </li>
-            <li>Interface support for GBIF occurrence data.</li>
             <li>
-              New utility functions including{' '}
+              <code className='rounded bg-gray-100 px-1'>ohvbd</code> now
+              interfaces with GBIF for occurrence data.
+            </li>
+            <li>
+              New generally useful functions such as{' '}
               <code className='rounded bg-gray-100 px-1'>tee()</code>,{' '}
               <code className='rounded bg-gray-100 px-1'>match_species()</code>,
               and{' '}
               <code className='rounded bg-gray-100 px-1'>match_country()</code>.
             </li>
             <li>
-              New citation tools including{' '}
+              New citation-retrieval tools such as{' '}
               <code className='rounded bg-gray-100 px-1'>fetch_citation()</code>
               .
             </li>
             <li>
-              <code className='rounded bg-gray-100 px-1'>force_db()</code>{' '}
-              enables explicit provenance assignment where needed.
+              New <code className='rounded bg-gray-100 px-1'>force_db()</code>{' '}
+              function enables one to force{' '}
+              <code className='rounded bg-gray-100 px-1'>ohvbd</code> to
+              consider a particular object as having a particular provenance.
             </li>
             <li>
-              <code className='rounded bg-gray-100 px-1'>filter_db()</code>{' '}
-              allows filtering results from a specific database.
+              New <code className='rounded bg-gray-100 px-1'>filter_db()</code>{' '}
+              command allows for filtering out of only one database&apos;s
+              results from hub searches.
             </li>
             <li>
+              Multiple changes to the{' '}
               <code className='rounded bg-gray-100 px-1'>search_hub()</code>{' '}
-              improvements, including taxonomic searching and smoother
-              single-database search workflows.
+              interface, adding taxonomic searching and smoothing searching of
+              single databases.
             </li>
-            <li>Quick provenance testing helpers for ohvbd objects.</li>
+            <li>
+              New functions for quick testing of object provenance (according to{' '}
+              <code className='rounded bg-gray-100 px-1'>ohvbd</code>).
+            </li>
             <li>
               <code className='rounded bg-gray-100 px-1'>search_x_smart()</code>{' '}
-              now supports{' '}
+              functions can now take{' '}
               <code className='rounded bg-gray-100 px-1'>&quot;tags&quot;</code>{' '}
-              as a search field.
+              as a search field, enabling support for tagged datasets.
             </li>
             <li>
-              VectorByte interface functions no longer require SSL workarounds.
+              Functions that interface with vectorbyte databases no longer
+              require workarounds to an SSL error. (Thanks to the{' '}
+              <Anchor
+                href='https://vectorbyte.crc.nd.edu'
+                className='text-blue-600 hover:underline'
+              >
+                VectorByte
+              </Anchor>{' '}
+              team for this!)
             </li>
             <li>
               <code className='rounded bg-gray-100 px-1'>fetch()</code> on{' '}
               <code className='rounded bg-gray-100 px-1'>ohvbd.hub.search</code>{' '}
-              or <code className='rounded bg-gray-100 px-1'>glean()</code> on{' '}
-              <code className='rounded bg-gray-100 px-1'>ohvbd.ids</code> now
-              gives a reminder when a step may be missing.
+              or <code className='rounded bg-gray-100 px-1'>glean()</code> on an{' '}
+              <code className='rounded bg-gray-100 px-1'>ohvbd.ids</code> object
+              now provides a hint that you may have forgotten something.
             </li>
             <li>
-              <code className='rounded bg-gray-100 px-1'>ohvbd.ids()</code>{' '}
-              warns and resolves duplicate IDs automatically.
+              <code className='rounded bg-gray-100 px-1'>ohvbd.ids()</code> now
+              warns you and fixes the problem if you provide ids with duplicate
+              values.
             </li>
           </ul>
 
           <p>
-            And much more.{' '}
+            And much much more!{' '}
             <Anchor
               href='https://ohvbd.vbdhub.org/news/index.html'
               className='text-blue-600 hover:underline'
             >
-              See the full changelog for details
-            </Anchor>
-            .
+              See the full changelog
+            </Anchor>{' '}
+            for more details.
           </p>
         </Stack>
 
@@ -428,19 +499,23 @@ geomean`}
             What does the future hold?
           </Heading>
           <p>
-            We released directly as v1.0.0 to signal stability and reduce major
-            breaking changes. This should make it easier to build durable
-            analysis pipelines on top of <em>ohvbd</em>.
+            <code className='rounded bg-gray-100 px-1'>ohvbd</code> has released
+            straight to v1.0.0 to recognise that the package is now stable and
+            should not go through many major breaking changes any time soon. As
+            such, you should now be able to reliably build analysis pipelines on
+            top of it, knowing that things won&apos;t break under your feet.
           </p>
           <p>
-            As new VBD data resources become available, we will continue to
-            evaluate and integrate them where appropriate. If you have a data
-            source request, please{' '}
+            As new resources for VBD data become available, we will make sure to
+            consider whether to interface with them, and will implement these in
+            much the same manner as we currently interface with VectorByte data
+            sources. If you have a request for a data source to consider
+            interfacing with, please do{' '}
             <Anchor
               href='https://github.com/fwimp/ohvbd/issues'
               className='text-blue-600 hover:underline'
             >
-              open an issue
+              open a GitHub issue
             </Anchor>
             .
           </p>
@@ -451,7 +526,7 @@ geomean`}
             Acknowledgements
           </Heading>
           <p>
-            We thank the VectorByte, GBIF, and{' '}
+            We would like to thank the VectorByte, GBIF, and{' '}
             <Anchor
               href='https://pearselab.github.io/areadata/'
               className='text-blue-600 hover:underline'
@@ -459,7 +534,8 @@ geomean`}
               AREAdata
             </Anchor>{' '}
             teams for their excellent data resources, and the vbdhub.org
-            community for testing and advice. We also acknowledge funding from{' '}
+            community for their testing and advice. We would also like to
+            recognise the funding provided by{' '}
             <Anchor
               href='https://www.ukri.org/councils/bbsrc'
               className='text-blue-600 hover:underline'
