@@ -51,7 +51,7 @@ export default function OhvbdCranRelease() {
           >
             ohvbd
           </Anchor>{' '}
-          package v1.0.0. You can install it from CRAN with:
+          R package v1.0.0. You can install it from CRAN with:
         </p>
 
         <RCodeBlock code={`install.packages("ohvbd")`} />
