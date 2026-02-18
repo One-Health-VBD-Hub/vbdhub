@@ -283,34 +283,33 @@ export default function Layout({
           </SideNav>
         </Header>
       </div>
-      {!path.includes('forum') ||
-        (!path.includes('auth') && (
-          <ActionableNotification
-            className='fixed top-20 right-5 z-10000 min-w-85'
-            aria-label='closes notification'
-            kind='info'
-            role='status'
-            lowContrast
-            statusIconDescription='notification'
-            title='New community forum!'
-          >
-            <p className='text-sm'>
-              <span>
-                We have just launched a community{' '}
-                <span className='font-medium'>
-                  forum on vector borne diseases
-                </span>
-                ! Join the discussion and connect with other researchers and
-                practitioners in the field.
+      {!path.includes('forum') && !path.includes('auth') && (
+        <ActionableNotification
+          className='fixed top-20 right-5 z-10000 min-w-85'
+          aria-label='closes notification'
+          kind='info'
+          role='status'
+          lowContrast
+          statusIconDescription='notification'
+          title='New community forum!'
+        >
+          <p className='text-sm'>
+            <span>
+              We have just launched a community{' '}
+              <span className='font-medium'>
+                forum on vector borne diseases
               </span>
-              <br />
-              <br />
-              <Anchor target='_self' href='/blog/community-forum'>
-                Learn about forum
-              </Anchor>
-            </p>
-          </ActionableNotification>
-        ))}
+              ! Join the discussion and connect with other researchers and
+              practitioners in the field.
+            </span>
+            <br />
+            <br />
+            <Anchor target='_self' href='/blog/community-forum'>
+              Learn about forum
+            </Anchor>
+          </p>
+        </ActionableNotification>
+      )}
       {children}
     </>
   );
