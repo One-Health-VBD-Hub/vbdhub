@@ -1,0 +1,30 @@
+{
+  "name": "@vbdhub/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run prisma:generate && tsc",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7",
+    "@prisma/client": "^7"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22",
+    "@types/node": "^22",
+    "dotenv": "^17",
+    "prisma": "^7",
+    "typescript": "^5"
+  }
+}
