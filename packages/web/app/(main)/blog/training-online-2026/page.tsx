@@ -96,7 +96,10 @@ export default function Page() {
 
       <p>
         Please{' '}
-        <Anchor href='https://app.formbricks.com/s/cmlqr13m5hjqose01r6j0l9a0'>
+        <Anchor
+          className='font-medium'
+          href='https://app.formbricks.com/s/cmlqr13m5hjqose01r6j0l9a0'
+        >
           apply here
         </Anchor>{' '}
         by the end of <span className='font-medium'>6th March 2026</span>. We
