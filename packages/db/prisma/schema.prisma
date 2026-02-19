@@ -20,17 +20,13 @@
 //   You can add a generated tsvector + GIN index in a SQL migration (Prisma doesn't model tsvector well).
 
 generator client {
-  provider        = "prisma-client-js"
-  output          = "../src/generated/prisma"
-  moduleFormat    = "cjs"
-  // Needed to declare PostgreSQL extensions (e.g., postgis) in the datasource block
-  previewFeatures = ["postgresqlExtensions"]
+  provider     = "prisma-client-js"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
-  provider   = "postgresql"
-  // Enables Prisma Migrate to create/track the PostGIS extension
-  extensions = [postgis]
+  provider = "postgresql"
 }
 
 enum SourceDb {
