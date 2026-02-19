@@ -135,6 +135,8 @@ model Taxon {
   /// Optional parent pointer (not required for querying if lineage columns are populated)
   /// Useful if you later want to rebuild lineage columns or debug taxonomy.
   parentGbifTaxonId Int?
+  parent            Taxon?  @relation("TaxonParent", fields: [parentGbifTaxonId], references: [gbifTaxonId], onDelete: Restrict)
+  children          Taxon[] @relation("TaxonParent")
 
   /// The “simple but powerful” part:
   /// store the IDs of the ancestor at each major rank.
@@ -144,12 +146,29 @@ model Taxon {
   /// - “under family Culicidae and phylum Arthropoda” => taxon.familyId = culicidaeId AND taxon.phylumId = arthropodaId
   ///
   /// Populate these once per Taxon at ingest time from the GBIF backbone lineage.
-  kingdomId Int?
-  phylumId  Int?
-  classId   Int?
-  orderId   Int?
-  familyId  Int?
-  genusId   Int?
+  kingdomId          Int?
+  kingdomTaxon       Taxon?  @relation("TaxonKingdom", fields: [kingdomId], references: [gbifTaxonId], onDelete: Restrict)
+  kingdomDescendants Taxon[] @relation("TaxonKingdom")
+
+  phylumId          Int?
+  phylumTaxon       Taxon?  @relation("TaxonPhylum", fields: [phylumId], references: [gbifTaxonId], onDelete: Restrict)
+  phylumDescendants Taxon[] @relation("TaxonPhylum")
+
+  classId          Int?
+  classTaxon       Taxon?  @relation("TaxonClass", fields: [classId], references: [gbifTaxonId], onDelete: Restrict)
+  classDescendants Taxon[] @relation("TaxonClass")
+
+  orderId          Int?
+  orderTaxon       Taxon?  @relation("TaxonOrder", fields: [orderId], references: [gbifTaxonId], onDelete: Restrict)
+  orderDescendants Taxon[] @relation("TaxonOrder")
+
+  familyId          Int?
+  familyTaxon       Taxon?  @relation("TaxonFamily", fields: [familyId], references: [gbifTaxonId], onDelete: Restrict)
+  familyDescendants Taxon[] @relation("TaxonFamily")
+
+  genusId          Int?
+  genusTaxon       Taxon?  @relation("TaxonGenus", fields: [genusId], references: [gbifTaxonId], onDelete: Restrict)
+  genusDescendants Taxon[] @relation("TaxonGenus")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
