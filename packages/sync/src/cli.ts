@@ -2,6 +2,7 @@ import { parseArgs } from 'node:util';
 import pino from 'pino';
 import { listJobs } from './job-registry.js';
 import { runJob } from './runner.js';
+import 'dotenv/config';
 
 function printHelp(): void {
   const availableJobs = listJobs()
