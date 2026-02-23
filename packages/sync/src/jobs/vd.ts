@@ -6,6 +6,16 @@ const VECDYN_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
 const VECDYN_SOURCE_DB = 'vecdyn';
 const VECDYN_CATEGORY = 'abundance';
 
+type SupportedTaxonRank =
+  | 'kingdom'
+  | 'phylum'
+  | 'class'
+  | 'order'
+  | 'family'
+  | 'genus'
+  | 'species'
+  | 'subspecies';
+
 interface VecDynIdsResponse {
   ids: number[];
 }
@@ -72,6 +82,32 @@ interface VecDynCsvResponse {
 
 type VecDynSpeciesByDateResponse = Record<string, Record<string, number>>;
 
+interface GlobalNamesVerificationResponse {
+  names?: GlobalNamesNameResult[];
+}
+
+interface GlobalNamesNameResult {
+  name?: string;
+  results?: GlobalNamesMatchResult[];
+}
+
+interface GlobalNamesMatchResult {
+  dataSourceId?: number;
+  sortScore?: number;
+  taxonomicStatus?: string;
+  isSynonym?: boolean;
+  recordId?: string;
+  currentRecordId?: string;
+  currentCanonicalSimple?: string;
+  currentCanonicalFull?: string;
+  matchedCanonicalSimple?: string;
+  matchedCanonicalFull?: string;
+  currentName?: string;
+  classificationPath?: string;
+  classificationRanks?: string;
+  classificationIds?: string;
+}
+
 interface Coordinate {
   lat: number;
   lon: number;
@@ -84,6 +120,33 @@ interface BoundingBox {
   maxLon: number;
 }
 
+interface ResolvedGbifTaxon {
+  gbifTaxonId: number;
+  scientificName: string;
+  nameNorm: string;
+  rank: SupportedTaxonRank | null;
+  parentGbifTaxonId: number | null;
+  kingdomId: number | null;
+  phylumId: number | null;
+  classId: number | null;
+  orderId: number | null;
+  familyId: number | null;
+  genusId: number | null;
+  ancestors: Array<{
+    gbifTaxonId: number;
+    scientificName: string;
+    nameNorm: string;
+    rank: SupportedTaxonRank | null;
+    parentGbifTaxonId: number | null;
+    kingdomId: number | null;
+    phylumId: number | null;
+    classId: number | null;
+    orderId: number | null;
+    familyId: number | null;
+    genusId: number | null;
+  }>;
+}
+
 export const vdSyncJob: JobDefinition = {
   name: 'vd',
   description: 'Synchronise VecDyn records',
@@ -91,6 +154,8 @@ export const vdSyncJob: JobDefinition = {
     if (signal.aborted) throw new Error('Job aborted before start');
 
     const prisma = createPrismaClient();
+    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+
     try {
       logger.info('Fetching VecDyn dataset IDs');
       const ids = await fetchVecDynDatasetIds(signal);
@@ -126,12 +191,12 @@ export const vdSyncJob: JobDefinition = {
           const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(
             speciesByDate
           );
+
           const publishedAt =
             temporalCoverage.startDate ??
             parsePublishedAtFromYears(detail.results?.Years);
           const title =
-            csv.consistent_data?.title?.trim() ||
-            `VecDyn dataset ${id}`;
+            csv.consistent_data?.title?.trim() || `VecDyn dataset ${id}`;
           const description =
             normalizeNullableString(csv.consistent_data?.description) ??
             buildDescription(csv.consistent_data);
@@ -141,6 +206,7 @@ export const vdSyncJob: JobDefinition = {
           const doi = normalizeNullableString(csv.consistent_data?.doi);
           const homepageUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
           const sourceKey = String(id);
+
           const rawPayload = {
             detail,
             csvMeta: buildCsvRawMeta(csv),
@@ -200,7 +266,9 @@ export const vdSyncJob: JobDefinition = {
           const linkedTaxa = await linkDatasetTaxa(
             prisma,
             dataset.id,
-            speciesNames
+            speciesNames,
+            signal,
+            taxonomyResolutionCache
           );
 
           logger.info(
@@ -241,9 +309,21 @@ async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
 }
 
 async function fetchJson<T>(url: string, signal: AbortSignal): Promise<T> {
+  return fetchJsonWithInit<T>(url, signal);
+}
+
+async function fetchJsonWithInit<T>(
+  url: string,
+  signal: AbortSignal,
+  init?: RequestInit
+): Promise<T> {
   const response = await fetch(url, {
     signal,
-    headers: { accept: 'application/json' }
+    ...init,
+    headers: {
+      accept: 'application/json',
+      ...(init?.headers ?? {})
+    }
   });
 
   if (!response.ok) {
@@ -343,7 +423,9 @@ function parseTemporalCoverageFromSpeciesByDate(
   };
 }
 
-function buildDescription(consistentData: VecDynCsvConsistentData | undefined): string | null {
+function buildDescription(
+  consistentData: VecDynCsvConsistentData | undefined
+): string | null {
   if (!consistentData) return null;
 
   const parts = [
@@ -380,7 +462,9 @@ function buildCsvRawMeta(csv: VecDynCsvResponse): Prisma.InputJsonObject {
       sampleStage: normalizeNullableString(consistentData?.sample_stage),
       sampleUnit: normalizeNullableString(consistentData?.sample_unit),
       speciesIdMethod: normalizeNullableString(consistentData?.species_id_method),
-      gpsObfuscationInfo: normalizeNullableString(consistentData?.gps_obfuscation_info),
+      gpsObfuscationInfo: normalizeNullableString(
+        consistentData?.gps_obfuscation_info
+      ),
       dateUncertaintyDueToGraph: parseBoolish(
         normalizeNullableString(consistentData?.date_uncertainty_due_to_graph)
       ),
@@ -408,40 +492,54 @@ function normalizeTaxonName(name: string): string {
     .trim();
 }
 
+function normalizeTaxonQueryName(name: string): string {
+  return name
+    .replace(/\bcomplex\b/gi, '')
+    .replace(/\bmorphological group\b/gi, '')
+    .replace(/\bsp\.\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function linkDatasetTaxa(
   prisma: ReturnType<typeof createPrismaClient>,
   datasetId: string,
-  speciesNames: string[]
+  speciesNames: string[],
+  signal: AbortSignal,
+  taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>
 ): Promise<number> {
   if (speciesNames.length === 0) return 0;
 
-  const normalized = Array.from(
+  const queryNames = Array.from(
     new Set(
-      speciesNames.map(normalizeTaxonName).filter((name) => name.length > 0)
+      speciesNames
+        .map(normalizeTaxonQueryName)
+        .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
     )
   );
-  if (normalized.length === 0) return 0;
+  if (queryNames.length === 0) return 0;
 
-  const taxa = await prisma.taxon.findMany({
-    where: { nameNorm: { in: normalized } },
-    select: { gbifTaxonId: true, nameNorm: true }
-  });
+  const unresolvedNames = queryNames.filter(
+    (name) => !taxonomyResolutionCache.has(name)
+  );
 
-  const byNameNorm = new Map<string, number[]>();
-  for (const taxon of taxa) {
-    const existing = byNameNorm.get(taxon.nameNorm);
-    if (existing) {
-      existing.push(taxon.gbifTaxonId);
-    } else {
-      byNameNorm.set(taxon.nameNorm, [taxon.gbifTaxonId]);
+  if (unresolvedNames.length > 0) {
+    const resolvedFromApi = await resolveGbifTaxaFromNames(
+      unresolvedNames,
+      signal
+    );
+    for (const name of unresolvedNames) {
+      taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
     }
   }
 
   const uniqueTaxonIds = new Set<number>();
-  for (const nameNorm of normalized) {
-    const ids = byNameNorm.get(nameNorm);
-    if (!ids || ids.length !== 1) continue;
-    uniqueTaxonIds.add(ids[0]!);
+  for (const name of queryNames) {
+    const resolved = taxonomyResolutionCache.get(name);
+    if (!resolved) continue;
+
+    await upsertResolvedTaxon(prisma, resolved);
+    uniqueTaxonIds.add(resolved.gbifTaxonId);
   }
 
   if (uniqueTaxonIds.size === 0) return 0;
@@ -455,6 +553,305 @@ async function linkDatasetTaxa(
   });
 
   return created.count;
+}
+
+async function resolveGbifTaxaFromNames(
+  names: string[],
+  signal: AbortSignal
+): Promise<Map<string, ResolvedGbifTaxon | null>> {
+  const body = {
+    nameStrings: names,
+    withAllMatches: true,
+    withCapitalization: true,
+    withUninomialFuzzyMatch: true,
+    preferredSources: [11]
+  };
+
+  const response = await fetchJsonWithInit<GlobalNamesVerificationResponse>(
+    'https://verifier.globalnames.org/api/v1/verifications',
+    signal,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    }
+  );
+
+  const resultMap = new Map<string, ResolvedGbifTaxon | null>();
+  for (const item of response.names ?? []) {
+    const name = normalizeTaxonQueryName(item.name ?? '');
+    if (!name) continue;
+    const resolved = parseGlobalNamesGbifMatch(item.results ?? []);
+    resultMap.set(name, resolved);
+  }
+
+  for (const name of names) {
+    if (!resultMap.has(name)) resultMap.set(name, null);
+  }
+
+  return resultMap;
+}
+
+function parseGlobalNamesGbifMatch(
+  matches: GlobalNamesMatchResult[]
+): ResolvedGbifTaxon | null {
+  const gbifMatches = matches.filter((match) => match.dataSourceId === 11);
+  if (gbifMatches.length === 0) return null;
+
+  const acceptedNonSynonym = gbifMatches
+    .filter(
+      (match) =>
+        (match.taxonomicStatus ?? '').toLowerCase() === 'accepted' &&
+        match.isSynonym === false
+    )
+    .sort((a, b) => (b.sortScore ?? 0) - (a.sortScore ?? 0));
+  const best = acceptedNonSynonym[0];
+  if (!best) return null;
+
+  const focalId = parseGbifId(best.currentRecordId ?? best.recordId);
+  if (!focalId) return null;
+
+  const pathNames = splitPipe(best.classificationPath);
+  const pathRanks = splitPipe(best.classificationRanks);
+  const pathIds = splitPipe(best.classificationIds);
+
+  const lineage = extractLineageIds(pathRanks, pathIds);
+  const ancestryRows = extractAncestryRows(pathNames, pathRanks, pathIds);
+
+  const focalNodeIndex = pathIds.findIndex((id) => parseGbifId(id) === focalId);
+  const focalRank =
+    focalNodeIndex >= 0 ? toSupportedTaxonRank(pathRanks[focalNodeIndex]) : null;
+  const focalParentId =
+    focalNodeIndex > 0 ? parseGbifId(pathIds[focalNodeIndex - 1]) : null;
+
+  const scientificName =
+    best.currentCanonicalFull ??
+    best.matchedCanonicalFull ??
+    best.currentCanonicalSimple ??
+    best.matchedCanonicalSimple ??
+    best.currentName ??
+    pathNames[focalNodeIndex] ??
+    `GBIF ${focalId}`;
+
+  return {
+    gbifTaxonId: focalId,
+    scientificName,
+    nameNorm: normalizeTaxonName(scientificName),
+    rank: focalRank,
+    parentGbifTaxonId: focalParentId,
+    kingdomId: lineage.kingdomId,
+    phylumId: lineage.phylumId,
+    classId: lineage.classId,
+    orderId: lineage.orderId,
+    familyId: lineage.familyId,
+    genusId: lineage.genusId,
+    ancestors: ancestryRows.filter((row) => row.gbifTaxonId !== focalId)
+  };
+}
+
+function splitPipe(value: string | undefined): string[] {
+  if (!value) return [];
+  return value.split('|').map((part) => part.trim());
+}
+
+function extractLineageIds(
+  ranks: string[],
+  ids: string[]
+): {
+  kingdomId: number | null;
+  phylumId: number | null;
+  classId: number | null;
+  orderId: number | null;
+  familyId: number | null;
+  genusId: number | null;
+} {
+  let kingdomId: number | null = null;
+  let phylumId: number | null = null;
+  let classId: number | null = null;
+  let orderId: number | null = null;
+  let familyId: number | null = null;
+  let genusId: number | null = null;
+
+  for (let i = 0; i < ranks.length; i += 1) {
+    const rank = toSupportedTaxonRank(ranks[i]);
+    const id = parseGbifId(ids[i]);
+    if (!rank || !id) continue;
+
+    if (rank === 'kingdom') kingdomId = id;
+    if (rank === 'phylum') phylumId = id;
+    if (rank === 'class') classId = id;
+    if (rank === 'order') orderId = id;
+    if (rank === 'family') familyId = id;
+    if (rank === 'genus') genusId = id;
+  }
+
+  return { kingdomId, phylumId, classId, orderId, familyId, genusId };
+}
+
+function extractAncestryRows(
+  names: string[],
+  ranks: string[],
+  ids: string[]
+): Array<{
+  gbifTaxonId: number;
+  scientificName: string;
+  nameNorm: string;
+  rank: SupportedTaxonRank | null;
+  parentGbifTaxonId: number | null;
+  kingdomId: number | null;
+  phylumId: number | null;
+  classId: number | null;
+  orderId: number | null;
+  familyId: number | null;
+  genusId: number | null;
+}> {
+  const rows: Array<{
+    gbifTaxonId: number;
+    scientificName: string;
+    nameNorm: string;
+    rank: SupportedTaxonRank | null;
+    parentGbifTaxonId: number | null;
+    kingdomId: number | null;
+    phylumId: number | null;
+    classId: number | null;
+    orderId: number | null;
+    familyId: number | null;
+    genusId: number | null;
+  }> = [];
+
+  let lastNumericId: number | null = null;
+  let kingdomId: number | null = null;
+  let phylumId: number | null = null;
+  let classId: number | null = null;
+  let orderId: number | null = null;
+  let familyId: number | null = null;
+  let genusId: number | null = null;
+
+  for (let i = 0; i < ids.length; i += 1) {
+    const gbifTaxonId = parseGbifId(ids[i]);
+    if (!gbifTaxonId) continue;
+
+    const scientificName = names[i] || `GBIF ${gbifTaxonId}`;
+    const rank = toSupportedTaxonRank(ranks[i]);
+
+    if (rank === 'kingdom') kingdomId = gbifTaxonId;
+    if (rank === 'phylum') phylumId = gbifTaxonId;
+    if (rank === 'class') classId = gbifTaxonId;
+    if (rank === 'order') orderId = gbifTaxonId;
+    if (rank === 'family') familyId = gbifTaxonId;
+    if (rank === 'genus') genusId = gbifTaxonId;
+
+    rows.push({
+      gbifTaxonId,
+      scientificName,
+      nameNorm: normalizeTaxonName(scientificName),
+      rank,
+      parentGbifTaxonId: lastNumericId,
+      kingdomId,
+      phylumId,
+      classId,
+      orderId,
+      familyId,
+      genusId
+    });
+    lastNumericId = gbifTaxonId;
+  }
+
+  return rows;
+}
+
+function parseGbifId(value: string | undefined): number | null {
+  if (!value) return null;
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function toSupportedTaxonRank(rank: string | undefined): SupportedTaxonRank | null {
+  if (!rank) return null;
+  const normalized = rank.trim().toLowerCase();
+
+  if (
+    normalized === 'kingdom' ||
+    normalized === 'phylum' ||
+    normalized === 'class' ||
+    normalized === 'order' ||
+    normalized === 'family' ||
+    normalized === 'genus' ||
+    normalized === 'species' ||
+    normalized === 'subspecies'
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
+async function upsertResolvedTaxon(
+  prisma: ReturnType<typeof createPrismaClient>,
+  resolved: ResolvedGbifTaxon
+): Promise<void> {
+  for (const ancestor of resolved.ancestors) {
+    await prisma.taxon.upsert({
+      where: { gbifTaxonId: ancestor.gbifTaxonId },
+      create: {
+        gbifTaxonId: ancestor.gbifTaxonId,
+        scientificName: ancestor.scientificName,
+        nameNorm: ancestor.nameNorm,
+        rank: ancestor.rank,
+        parentGbifTaxonId: ancestor.parentGbifTaxonId,
+        kingdomId: ancestor.kingdomId,
+        phylumId: ancestor.phylumId,
+        classId: ancestor.classId,
+        orderId: ancestor.orderId,
+        familyId: ancestor.familyId,
+        genusId: ancestor.genusId
+      },
+      update: {
+        scientificName: ancestor.scientificName,
+        nameNorm: ancestor.nameNorm,
+        rank: ancestor.rank,
+        parentGbifTaxonId: ancestor.parentGbifTaxonId,
+        kingdomId: ancestor.kingdomId,
+        phylumId: ancestor.phylumId,
+        classId: ancestor.classId,
+        orderId: ancestor.orderId,
+        familyId: ancestor.familyId,
+        genusId: ancestor.genusId
+      }
+    });
+  }
+
+  await prisma.taxon.upsert({
+    where: { gbifTaxonId: resolved.gbifTaxonId },
+    create: {
+      gbifTaxonId: resolved.gbifTaxonId,
+      scientificName: resolved.scientificName,
+      nameNorm: resolved.nameNorm,
+      rank: resolved.rank,
+      parentGbifTaxonId: resolved.parentGbifTaxonId,
+      kingdomId: resolved.kingdomId,
+      phylumId: resolved.phylumId,
+      classId: resolved.classId,
+      orderId: resolved.orderId,
+      familyId: resolved.familyId,
+      genusId: resolved.genusId
+    },
+    update: {
+      scientificName: resolved.scientificName,
+      nameNorm: resolved.nameNorm,
+      rank: resolved.rank,
+      parentGbifTaxonId: resolved.parentGbifTaxonId,
+      kingdomId: resolved.kingdomId,
+      phylumId: resolved.phylumId,
+      classId: resolved.classId,
+      orderId: resolved.orderId,
+      familyId: resolved.familyId,
+      genusId: resolved.genusId
+    }
+  });
 }
 
 async function upsertSpatialGeometry(
