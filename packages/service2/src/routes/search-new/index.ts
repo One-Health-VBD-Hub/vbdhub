@@ -135,6 +135,7 @@ const parseDateOnly = (value: unknown, fieldName: string): Date | undefined => {
     );
   }
 
+  // Parse as UTC midnight so date filters behave consistently across timezones.
   const parsed = new Date(`${value}T00:00:00.000Z`);
   if (Number.isNaN(parsed.getTime())) {
     throw new SearchValidationError(
@@ -149,6 +150,7 @@ const dedupeStringArray = (
   values: readonly string[] | undefined
 ): string[] | undefined => {
   if (!values?.length) return undefined;
+  // Trim + dedupe to keep filter payload canonical before it reaches the service.
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 };
 
@@ -166,6 +168,7 @@ const normalizeWkt = (value: unknown): string | undefined => {
   }
 
   const normalized = value.trim();
+  // Cheap structural validation at route boundary; PostGIS does full validation.
   if (!WKT_GEOMETRY_REGEX.test(normalized)) {
     throw new SearchValidationError(
       'geometry must be a valid WKT Polygon or MultiPolygon'
@@ -193,6 +196,7 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
         const page = request.body.page ?? DEFAULT_PAGE;
         const limit = request.body.limit ?? DEFAULT_LIMIT;
 
+        // Keep offset pagination bounded to avoid deep, expensive scans.
         if (limit * page > MAX_WINDOW) {
           throw new SearchValidationError(
             `limit * page must be <= ${MAX_WINDOW}. Refine your query or filters.`
@@ -238,6 +242,7 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           taxonomyGbifIds
         });
       } catch (error) {
+        // Surface expected validation failures as 400 responses.
         if (error instanceof SearchValidationError) {
           throw fastify.httpErrors.badRequest(error.message);
         }

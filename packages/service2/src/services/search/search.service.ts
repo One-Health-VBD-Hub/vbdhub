@@ -56,6 +56,7 @@ export interface SearchResult {
 }
 
 const normalizeInclusiveDateUpperBound = (date: Date): Date => {
+  // Build an exclusive upper bound at next-day midnight to keep date filtering inclusive.
   const upperBound = new Date(date);
   upperBound.setUTCDate(upperBound.getUTCDate() + 1);
   upperBound.setUTCHours(0, 0, 0, 0);
@@ -76,12 +77,14 @@ const emptyResult = ({ page, limit }: SearchInput): SearchResult => ({
 
 export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
   const search = async (input: SearchInput): Promise<SearchResult> => {
+    // Build filters incrementally so each optional criterion composes with AND semantics.
     const andConditions: Prisma.DatasetWhereInput[] = [];
 
     if (input.query) {
       if (input.queryMode === 'fulltext') {
         let fullTextMatchIds: { id: string }[];
         try {
+          // Use PostgreSQL FTS for ranking-ready token search over key text fields.
           fullTextMatchIds = await prisma.$queryRaw<{ id: string }[]>`
             SELECT "id"
             FROM "Dataset"
@@ -99,11 +102,13 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
             LIMIT ${MAX_TEXT_MATCH_CANDIDATES}
           `;
         } catch {
+          // Invalid tsquery syntax should be a client error, not an internal failure.
           throw new SearchValidationError(
             'query is not valid for full-text search'
           );
         }
 
+        // Short-circuit avoids running count/findMany when FTS produced no candidates.
         if (!fullTextMatchIds.length) return emptyResult(input);
         andConditions.push({ id: { in: fullTextMatchIds.map((row) => row.id) } });
       } else {
@@ -135,6 +140,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
     if (input.publishedFrom || input.publishedTo) {
       const range: Prisma.DateTimeNullableFilter<'Dataset'> = {};
       if (input.publishedFrom) range.gte = input.publishedFrom;
+      // `lt next day` implements an inclusive `publishedTo` for date-only inputs.
       if (input.publishedTo)
         range.lt = normalizeInclusiveDateUpperBound(input.publishedTo);
 
@@ -160,6 +166,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
     }
 
     if (input.country?.length) {
+      // Country can be present in different raw metadata keys across source datasets.
       const countryFilters: Prisma.DatasetWhereInput[] = input.country.flatMap(
         (country) => [
           {
@@ -192,6 +199,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
     if (input.geometry) {
       let intersectingIds: { id: string }[];
       try {
+        // Spatial filtering is delegated to PostGIS using intersection semantics.
         intersectingIds = await prisma.$queryRaw<{ id: string }[]>`
           SELECT "id"
           FROM "Dataset"
@@ -207,6 +215,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
         );
       }
 
+      // No spatial hits means no need to execute paginated query.
       if (!intersectingIds.length) return emptyResult(input);
       andConditions.push({ id: { in: intersectingIds.map((row) => row.id) } });
     }
@@ -215,6 +224,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
       andConditions.length > 0 ? { AND: andConditions } : {};
     const skip = (input.page - 1) * input.limit;
 
+    // Execute count + page query in one transaction for consistency.
     const [total, datasets] = await prisma.$transaction([
       prisma.dataset.count({ where }),
       prisma.dataset.findMany({
