@@ -56,11 +56,6 @@ const searchRequestBodySchema = {
     publishedTo: { type: 'string', format: 'date' },
     includeWithoutPublished: { type: 'boolean' },
     geometry: { type: 'string', maxLength: 200_000 },
-    country: {
-      type: 'array',
-      items: { type: 'string', minLength: 1, maxLength: 100 },
-      maxItems: 200
-    },
     taxonomyGbifIds: {
       type: 'array',
       items: { type: 'integer', minimum: 1 },
@@ -223,7 +218,6 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
         const sourceDb = dedupeStringArray(request.body.sourceDb) as
           | SourceDb[]
           | undefined;
-        const country = dedupeStringArray(request.body.country);
         const taxonomyGbifIds = dedupeIntArray(request.body.taxonomyGbifIds);
         const geometry = normalizeWkt(request.body.geometry);
 
@@ -238,7 +232,6 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           publishedTo,
           includeWithoutPublished: request.body.includeWithoutPublished,
           geometry,
-          country,
           taxonomyGbifIds
         });
       } catch (error) {

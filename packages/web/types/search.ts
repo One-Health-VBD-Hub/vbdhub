@@ -54,6 +54,5 @@ export interface SearchRequestBody {
   publishedTo?: string;
   includeWithoutPublished?: boolean;
   geometry?: string;
-  country?: string[];
   taxonomyGbifIds?: number[];
 }

@@ -24,7 +24,6 @@ export interface SearchInput {
   publishedTo?: Date;
   includeWithoutPublished?: boolean;
   geometry?: string;
-  country?: string[];
   taxonomyGbifIds?: number[];
 }
 
@@ -163,37 +162,6 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
           }
         }
       });
-    }
-
-    if (input.country?.length) {
-      // Country can be present in different raw metadata keys across source datasets.
-      const countryFilters: Prisma.DatasetWhereInput[] = input.country.flatMap(
-        (country) => [
-          {
-            raw: {
-              path: ['country'],
-              string_contains: country,
-              mode: 'insensitive'
-            }
-          },
-          {
-            raw: {
-              path: ['countryCoverage'],
-              string_contains: country,
-              mode: 'insensitive'
-            }
-          },
-          {
-            raw: {
-              path: ['countries'],
-              string_contains: country,
-              mode: 'insensitive'
-            }
-          }
-        ]
-      );
-
-      if (countryFilters.length) andConditions.push({ OR: countryFilters });
     }
 
     if (input.geometry) {
