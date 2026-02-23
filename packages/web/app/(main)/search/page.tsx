@@ -14,11 +14,10 @@ import {
 import FilterPanel from '@/app/(main)/search/FilterPanel';
 import { Filter } from '@carbon/icons-react';
 import Pagination from '@/app/(main)/search/Pagination';
-import { Database, DataCategory } from '@/types/indexed';
 import {
   useCategory,
   useCurrentPage,
-  useDatabase,
+  useSourceDb,
   useExactOnly,
   useGeometry,
   usePublishedFrom,
@@ -48,7 +47,7 @@ function SearchPage() {
   const [geometry] = useGeometry();
   const [taxonomy] = useTaxonomy();
   const [exactOnly] = useExactOnly();
-  const [database] = useDatabase();
+  const [sourceDb] = useSourceDb();
   const [withoutPublished] = useWithoutPublished();
   const [publishedFrom] = usePublishedFrom();
   const [publishedTo] = usePublishedTo();
@@ -56,12 +55,12 @@ function SearchPage() {
   const { data, error, isPending } = useSearchResults({
     query: searchQuery,
     filters: {
-      category: category as DataCategory[],
+      category,
       taxonomy,
       geometry,
       publishedTo: publishedTo ?? undefined,
       publishedFrom: publishedFrom ?? undefined,
-      database: database as Database[],
+      sourceDb,
       withoutPublished,
       exactOnly
     },
@@ -77,12 +76,12 @@ function SearchPage() {
     document.title = `${searchQuery} - Find Data - VBD Hub`;
   }, [searchQuery]);
 
-  const currentResults = data?.hits;
+  const currentResults = data?.items;
   const searchRequestTime = data?.duration
     ? (data.duration / 1000).toFixed(2)
     : 0;
 
-  const totalPages = data?.count ? Math.ceil(data.count / resultsPerPage) : 0;
+  const totalPages = data?.meta.totalPages ?? 0;
 
   // set to last page if the current page (from URL) is greater than total pages
   useEffect(() => {
@@ -96,9 +95,9 @@ function SearchPage() {
     currentPage == 1 &&
     taxonomy.length > 0 &&
     (category.length == 0 ||
-      database.length == 0 ||
+      sourceDb.length == 0 ||
       category.includes('occurrence') ||
-      database.includes('gbif'));
+      sourceDb.includes('gbif'));
 
   return (
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
@@ -123,9 +122,9 @@ function SearchPage() {
               {currentResults && (
                 <div className='text-xs'>
                   Found{' '}
-                  {(data?.count ?? 0) >= 10000
+                  {(data?.meta.total ?? 0) >= 10000
                     ? '+10,000'
-                    : data?.count?.toLocaleString()}{' '}
+                    : data?.meta.total?.toLocaleString()}{' '}
                   results in {searchRequestTime} s
                 </div>
               )}
@@ -169,25 +168,18 @@ function SearchPage() {
                       gbifAggregated
                       key={taxonomy.join()}
                       result={{
+                        sourceKey: 'gbif-aggregated',
+                        sourceDb: 'gbif',
                         title: `GBIF Aggregated Dataset (taxon IDs ${taxonomy.join(', ')})`,
-                        id: 'gbif-aggregated',
                         description:
-                          'Aggregated occurrence data from the Global Biodiversity Information Facility (GBIF).',
-                        db: 'gbif',
-                        kingdom: [],
-                        phylum: [],
-                        class: [],
-                        order: [],
-                        family: [],
-                        genus: [],
-                        species: []
+                          'Aggregated occurrence data from the Global Biodiversity Information Facility (GBIF).'
                       }}
                       query={searchQuery ?? undefined}
                     />
                   )}
                   {currentResults?.map((result) => (
                     <ResultCard
-                      key={result.id}
+                      key={`${result.sourceDb}-${result.sourceKey}`}
                       result={result}
                       query={searchQuery ?? undefined}
                     />
@@ -201,7 +193,7 @@ function SearchPage() {
             </>
           )}
 
-          {!!data?.count && currentPage <= totalPages && (
+          {!!data?.meta.total && currentPage <= totalPages && (
             <Pagination
               totalPages={totalPages}
               setCurrentPage={setCurrentPage}

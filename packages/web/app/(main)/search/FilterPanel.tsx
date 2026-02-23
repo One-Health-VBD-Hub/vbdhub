@@ -14,21 +14,21 @@ import {
 } from '@carbon/react';
 import React, { useId, useState } from 'react';
 import { Reset } from '@carbon/icons-react';
-import {
-  Database,
-  DataCategory,
-  isDatabase,
-  isDataCategory
-} from '@/types/indexed';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { UseComboboxInputValueChange } from 'downshift';
 import { Feature as GeoJSONFeature } from 'geojson';
 import dynamic from 'next/dynamic';
 import {
+  SEARCH_CATEGORIES,
+  SEARCH_SOURCE_DBS,
+  SearchCategory,
+  SearchSourceDb
+} from '@/types/search';
+import {
   useResetSearchFilters,
   useCategory,
-  useDatabase,
+  useSourceDb,
   useGeometry,
   usePublishedFrom,
   usePublishedTo,
@@ -50,17 +50,25 @@ const MapboxMap = dynamic(() => import('@/components/maps/MapboxMap'), {
 export interface Filters {
   geometry: Record<string, GeoJSONFeature>;
   withoutPublished?: boolean;
-  category: DataCategory[];
-  database: Database[];
+  category: SearchCategory[];
+  sourceDb: SearchSourceDb[];
   publishedFrom?: Date;
   publishedTo?: Date;
   taxonomy: string[];
   exactOnly?: boolean;
 }
 
+function isSearchCategory(value: string): value is SearchCategory {
+  return SEARCH_CATEGORIES.includes(value as SearchCategory);
+}
+
+function isSearchSourceDb(value: string): value is SearchSourceDb {
+  return SEARCH_SOURCE_DBS.includes(value as SearchSourceDb);
+}
+
 export default function FilterPanel() {
   const [category, setCategory] = useCategory();
-  const [database, setDatabase] = useDatabase();
+  const [sourceDb, setSourceDb] = useSourceDb();
   const [taxonomy, setTaxonomy] = useTaxonomy();
   const [_, setCurrentPage] = useCurrentPage();
   const [publishedFrom, setPublishedFrom] = usePublishedFrom();
@@ -84,7 +92,7 @@ export default function FilterPanel() {
   const hasFilters: boolean =
     (searchQuery && searchQuery.length > 0) ||
     category.length > 0 ||
-    database.length > 0 ||
+    sourceDb.length > 0 ||
     taxonomy.length > 0 ||
     !!publishedFrom ||
     !!publishedTo ||
@@ -92,7 +100,7 @@ export default function FilterPanel() {
   const baseId = useId();
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isDataCategory(e.currentTarget.value))
+    if (!isSearchCategory(e.currentTarget.value))
       throw new Error(`Invalid category value ${e.currentTarget.value}`);
 
     setCategory(
@@ -107,13 +115,13 @@ export default function FilterPanel() {
   };
 
   const handleDbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isDatabase(e.currentTarget.value))
+    if (!isSearchSourceDb(e.currentTarget.value))
       throw new Error(`Invalid database value ${e.currentTarget.value}`);
 
-    setDatabase(
+    setSourceDb(
       e.currentTarget.checked
-        ? [...database, e.currentTarget.value]
-        : database.filter((db) => db !== e.currentTarget.value)
+        ? [...sourceDb, e.currentTarget.value]
+        : sourceDb.filter((db) => db !== e.currentTarget.value)
     );
   };
 
@@ -127,7 +135,7 @@ export default function FilterPanel() {
 
   const numOfFilters =
     category.length +
-    database.length +
+    sourceDb.length +
     taxonomy.length +
     (publishedFrom || publishedTo ? 1 : 0) +
     (Object.keys(geometry).length > 0 ? 1 : 0);
@@ -171,23 +179,23 @@ export default function FilterPanel() {
             />
             <Checkbox
               id={'trait' + baseId}
-              value='trait'
-              labelText='Trait'
-              checked={category.includes('trait')}
+              value='traits'
+              labelText='Traits'
+              checked={category.includes('traits')}
               onChange={handleCategoryChange}
             />
             <Checkbox
               id={'proteomic' + baseId}
-              value='proteomic'
-              labelText='Proteomic'
-              checked={category.includes('proteomic')}
+              value='proteomics'
+              labelText='Proteomics'
+              checked={category.includes('proteomics')}
               onChange={handleCategoryChange}
             />
             <Checkbox
               id={'epidemiological' + baseId}
-              value='epidemiological'
+              value='epidemiology'
               labelText='Epidemiological'
-              checked={category.includes('epidemiological')}
+              checked={category.includes('epidemiology')}
               onChange={handleCategoryChange}
             />
             <div className='cds--form-item'>
@@ -195,9 +203,8 @@ export default function FilterPanel() {
                 <div>
                   <Checkbox
                     id={'genomic' + baseId}
-                    value='genomic'
+                    value='genomics'
                     labelText='Genomic'
-                    checked={category.includes('genomic')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -209,7 +216,6 @@ export default function FilterPanel() {
                     id={'microarray' + baseId}
                     value='microarray'
                     labelText='Microarray'
-                    checked={category.includes('microarray')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -221,7 +227,6 @@ export default function FilterPanel() {
                     id={'transcriptomic' + baseId}
                     value='transcriptomic'
                     labelText='Transcriptomic'
-                    checked={category.includes('transcriptomic')}
                     onChange={handleCategoryChange}
                     disabled
                   />
@@ -234,37 +239,37 @@ export default function FilterPanel() {
           <CheckboxGroup legendText='Original publisher of the data'>
             <Checkbox
               id={'vecdyn' + baseId}
-              value='vd'
+              value='vecdyn'
               labelText='VecDyn'
-              checked={database.includes('vd')}
+              checked={sourceDb.includes('vecdyn')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'vectraits' + baseId}
-              value='vt'
+              value='vectraits'
               labelText='VecTraits'
-              checked={database.includes('vt')}
+              checked={sourceDb.includes('vectraits')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'gbif' + baseId}
               value='gbif'
               labelText='GBIF'
-              checked={database.includes('gbif')}
+              checked={sourceDb.includes('gbif')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'proteomexchange' + baseId}
-              value='px'
+              value='proteomexchange'
               labelText='ProteomeXchange'
-              checked={database.includes('px')}
+              checked={sourceDb.includes('proteomexchange')}
               onChange={handleDbChange}
             />
             <Checkbox
               id={'hub' + baseId}
               value='hub'
               labelText='VBD Hub'
-              checked={database.includes('hub')}
+              checked={sourceDb.includes('hub')}
               onChange={handleDbChange}
             />
             <div className='cds--form-item'>
@@ -275,7 +280,6 @@ export default function FilterPanel() {
                     value='ncbi'
                     labelText='NCBI'
                     disabled
-                    checked={database.includes('ncbi')}
                     onChange={handleDbChange}
                   />
                 </div>
