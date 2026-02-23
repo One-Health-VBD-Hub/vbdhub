@@ -1,113 +1,165 @@
 import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
 import type { DatasetCategory, SourceDb } from '@prisma/client';
-import {
-  SEARCH_QUERY_MODES,
-  SearchQueryMode,
-  SearchValidationError
-} from '../../services/search/search.service';
+import { SearchValidationError } from '../../services/search/search.service';
 
 const MAX_LIMIT = 50;
 const MAX_WINDOW = 10_000;
-const DEFAULT_LIMIT = 20;
-const DEFAULT_PAGE = 1;
 
-const DATASET_CATEGORIES = [
-  'occurrence',
+const LEGACY_CATEGORIES = [
+  'trait',
   'abundance',
-  'traits',
-  'proteomics',
-  'epidemiology'
+  'occurrence',
+  'proteomic',
+  'genomic',
+  'microarray',
+  'transcriptomic',
+  'epidemiological'
 ] as const;
 
-const SOURCE_DBS = [
-  'gbif',
-  'proteomexchange',
-  'vecdyn',
-  'vectraits',
-  'hub'
-] as const;
+const LEGACY_DATABASES = ['px', 'vd', 'vt', 'gbif', 'ncbi', 'hub'] as const;
+
+type LegacyCategory = (typeof LEGACY_CATEGORIES)[number];
+type LegacyDatabase = (typeof LEGACY_DATABASES)[number];
+
+const LEGACY_TO_CANONICAL_CATEGORY: Partial<Record<LegacyCategory, DatasetCategory>> =
+  {
+    trait: 'traits',
+    abundance: 'abundance',
+    occurrence: 'occurrence',
+    proteomic: 'proteomics',
+    epidemiological: 'epidemiology'
+  };
+
+const LEGACY_TO_CANONICAL_SOURCE_DB: Partial<Record<LegacyDatabase, SourceDb>> = {
+  px: 'proteomexchange',
+  vd: 'vecdyn',
+  vt: 'vectraits',
+  gbif: 'gbif',
+  hub: 'hub'
+};
+
+const CANONICAL_TO_LEGACY_CATEGORY: Record<DatasetCategory, LegacyCategory> = {
+  occurrence: 'occurrence',
+  abundance: 'abundance',
+  traits: 'trait',
+  proteomics: 'proteomic',
+  epidemiology: 'epidemiological'
+};
+
+const CANONICAL_TO_LEGACY_SOURCE_DB: Record<SourceDb, LegacyDatabase> = {
+  gbif: 'gbif',
+  proteomexchange: 'px',
+  vecdyn: 'vd',
+  vectraits: 'vt',
+  hub: 'hub'
+};
 
 const WKT_GEOMETRY_REGEX = /^(POLYGON|MULTIPOLYGON)\s*\(.+\)$/i;
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE_TIME_REGEX =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})$/;
 
-const searchRequestBodySchema = {
+const legacySearchQuerySchema = {
   type: 'object',
+  additionalProperties: false,
+  required: ['limit', 'page'],
   properties: {
     query: { type: 'string', minLength: 1, maxLength: 500 },
-    queryMode: { type: 'string', enum: [...SEARCH_QUERY_MODES] },
-    page: { type: 'integer', minimum: 1, default: DEFAULT_PAGE },
-    limit: { type: 'integer', minimum: 1, maximum: MAX_LIMIT, default: DEFAULT_LIMIT },
-    category: {
-      type: 'array',
-      items: { type: 'string', enum: [...DATASET_CATEGORIES] },
-      maxItems: 20
-    },
-    sourceDb: {
-      type: 'array',
-      items: { type: 'string', enum: [...SOURCE_DBS] },
-      maxItems: 20
-    },
-    publishedFrom: { type: 'string', format: 'date' },
-    publishedTo: { type: 'string', format: 'date' },
-    includeWithoutPublished: { type: 'boolean' },
+    exact: { type: 'boolean' },
+    limit: { type: 'integer', minimum: 1, maximum: MAX_LIMIT },
+    page: { type: 'integer', minimum: 1 },
+    category: { type: 'string' },
+    database: { type: 'string' },
+    publishedFrom: { type: 'string' },
+    publishedTo: { type: 'string' },
+    withoutPublished: { type: 'boolean' },
     geometry: { type: 'string', maxLength: 200_000 },
-    country: {
-      type: 'array',
-      items: { type: 'string', minLength: 1, maxLength: 100 },
-      maxItems: 200
-    },
-    taxonomyGbifIds: {
-      type: 'array',
-      items: { type: 'integer', minimum: 1 },
-      maxItems: 500
-    }
-  },
-  additionalProperties: false
+    taxonomy: { type: 'string' }
+  }
 } as const;
 
-const searchResponseSchema = {
+const legacySearchResponseSchema = {
   type: 'object',
-  required: ['items', 'meta'],
+  additionalProperties: false,
+  required: ['count', 'hits'],
   properties: {
-    items: {
+    count: { type: 'integer', minimum: 0 },
+    hits: {
       type: 'array',
       items: {
         type: 'object',
-        required: ['id', 'sourceKey', 'sourceDb', 'category', 'title'],
+        additionalProperties: false,
+        required: ['id', 'db', 'title', 'type'],
         properties: {
           id: { type: 'string' },
-          sourceKey: { type: 'string' },
-          sourceDb: { type: 'string', enum: [...SOURCE_DBS] },
-          category: { type: 'string', enum: [...DATASET_CATEGORIES] },
+          db: { type: 'string', enum: [...LEGACY_DATABASES] },
           title: { type: 'string' },
           description: { type: 'string' },
           doi: { type: 'string' },
-          publisher: { type: 'string' },
-          publishedAt: { type: 'string', format: 'date-time' }
+          type: { type: 'string', enum: [...LEGACY_CATEGORIES] },
+          published: { type: 'string', format: 'date-time' }
         }
-      }
-    },
-    meta: {
-      type: 'object',
-      required: [
-        'page',
-        'limit',
-        'total',
-        'totalPages',
-        'hasNextPage',
-        'hasPreviousPage'
-      ],
-      properties: {
-        page: { type: 'integer' },
-        limit: { type: 'integer' },
-        total: { type: 'integer' },
-        totalPages: { type: 'integer' },
-        hasNextPage: { type: 'boolean' },
-        hasPreviousPage: { type: 'boolean' }
       }
     }
   }
 } as const;
+
+const parseCsv = (value: unknown, fieldName: string): string[] | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value !== 'string') {
+    throw new SearchValidationError(`${fieldName} must be a CSV string`);
+  }
+
+  const parsed = value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  return parsed.length > 0 ? Array.from(new Set(parsed)) : undefined;
+};
+
+const dedupeStringArray = (
+  values: readonly string[] | undefined
+): string[] | undefined => {
+  if (!values?.length) return undefined;
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+};
+
+const dedupeIntArray = (
+  values: readonly number[] | undefined
+): number[] | undefined => {
+  if (!values?.length) return undefined;
+  return Array.from(new Set(values));
+};
+
+const parseDateFlexible = (value: unknown, fieldName: string): Date | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value !== 'string') {
+    throw new SearchValidationError(
+      `${fieldName} must be a valid ISO 8601 date string`
+    );
+  }
+
+  const isDateOnly = ISO_DATE_REGEX.test(value);
+  const isDateTime = ISO_DATE_TIME_REGEX.test(value);
+  if (!isDateOnly && !isDateTime) {
+    throw new SearchValidationError(
+      `${fieldName} must be a valid ISO 8601 date string`
+    );
+  }
+
+  const parsed = isDateOnly
+    ? new Date(`${value}T00:00:00.000Z`)
+    : new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new SearchValidationError(
+      `${fieldName} must be a valid ISO 8601 date string`
+    );
+  }
+
+  return parsed;
+};
 
 const normalizeQuery = (value: unknown): string | undefined => {
   if (value === undefined || value === null) return undefined;
@@ -117,34 +169,6 @@ const normalizeQuery = (value: unknown): string | undefined => {
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
-};
-
-const parseDateOnly = (value: unknown, fieldName: string): Date | undefined => {
-  if (value === undefined || value === null || value === '') return undefined;
-  if (typeof value !== 'string' || !ISO_DATE_REGEX.test(value)) {
-    throw new SearchValidationError(
-      `${fieldName} must be a valid ISO 8601 (YYYY-MM-DD) date string`
-    );
-  }
-
-  const parsed = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new SearchValidationError(
-      `${fieldName} must be a valid ISO 8601 (YYYY-MM-DD) date string`
-    );
-  }
-
-  return parsed;
-};
-
-const dedupeStringArray = (values: readonly string[] | undefined): string[] | undefined => {
-  if (!values?.length) return undefined;
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
-};
-
-const dedupeIntArray = (values: readonly number[] | undefined): number[] | undefined => {
-  if (!values?.length) return undefined;
-  return Array.from(new Set(values));
 };
 
 const normalizeWkt = (value: unknown): string | undefined => {
@@ -163,27 +187,72 @@ const normalizeWkt = (value: unknown): string | undefined => {
   return normalized;
 };
 
-const searchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
+const validateLegacyCategoryArray = (
+  values: string[] | undefined
+): LegacyCategory[] | undefined => {
+  if (!values?.length) return undefined;
+
+  const allowed = new Set(LEGACY_CATEGORIES);
+  const invalid = values.filter((value) => !allowed.has(value as LegacyCategory));
+  if (invalid.length > 0) {
+    throw new SearchValidationError(
+      `category contains invalid values: ${invalid.join(', ')}`
+    );
+  }
+
+  return values as LegacyCategory[];
+};
+
+const validateLegacyDatabaseArray = (
+  values: string[] | undefined
+): LegacyDatabase[] | undefined => {
+  if (!values?.length) return undefined;
+
+  const allowed = new Set(LEGACY_DATABASES);
+  const invalid = values.filter((value) => !allowed.has(value as LegacyDatabase));
+  if (invalid.length > 0) {
+    throw new SearchValidationError(
+      `database contains invalid values: ${invalid.join(', ')}`
+    );
+  }
+
+  return values as LegacyDatabase[];
+};
+
+const parseLegacyTaxonomyCsv = (value: unknown): number[] | undefined => {
+  const raw = parseCsv(value, 'taxonomy');
+  if (!raw?.length) return undefined;
+
+  const parsed = raw.map((entry) => Number.parseInt(entry, 10));
+  const hasInvalid = parsed.some(
+    (entry) => Number.isNaN(entry) || !Number.isInteger(entry) || entry < 1
+  );
+  if (hasInvalid) {
+    throw new SearchValidationError(
+      'taxonomy must contain positive GBIF taxon IDs'
+    );
+  }
+
+  return dedupeIntArray(parsed);
+};
+
+const legacySearchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
 ): Promise<void> => {
-  fastify.post(
+  fastify.get(
     '/',
     {
       schema: {
-        tags: ['search'],
-        summary: 'Search datasets',
-        description:
-          'Search dataset metadata with full-text query and structured filters.',
-        body: searchRequestBodySchema,
+        querystring: legacySearchQuerySchema,
         response: {
-          200: searchResponseSchema
+          200: legacySearchResponseSchema
         }
       }
     },
     async (request) => {
       try {
-        const page = request.body.page ?? DEFAULT_PAGE;
-        const limit = request.body.limit ?? DEFAULT_LIMIT;
+        const page = request.query.page;
+        const limit = request.query.limit;
 
         if (limit * page > MAX_WINDOW) {
           throw new SearchValidationError(
@@ -191,41 +260,73 @@ const searchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           );
         }
 
-        const query = normalizeQuery(request.body.query);
-        const queryMode: SearchQueryMode = request.body.queryMode ?? 'fulltext';
-        const publishedFrom = parseDateOnly(request.body.publishedFrom, 'publishedFrom');
-        const publishedTo = parseDateOnly(request.body.publishedTo, 'publishedTo');
-
+        const publishedFrom = parseDateFlexible(
+          request.query.publishedFrom,
+          'publishedFrom'
+        );
+        const publishedTo = parseDateFlexible(
+          request.query.publishedTo,
+          'publishedTo'
+        );
         if (publishedFrom && publishedTo && publishedFrom > publishedTo) {
           throw new SearchValidationError(
             'publishedFrom must be earlier than or equal to publishedTo'
           );
         }
 
-        const category = dedupeStringArray(request.body.category) as
-          | DatasetCategory[]
-          | undefined;
-        const sourceDb = dedupeStringArray(request.body.sourceDb) as
-          | SourceDb[]
-          | undefined;
-        const country = dedupeStringArray(request.body.country);
-        const taxonomyGbifIds = dedupeIntArray(request.body.taxonomyGbifIds);
-        const geometry = normalizeWkt(request.body.geometry);
+        const legacyCategories = validateLegacyCategoryArray(
+          parseCsv(request.query.category, 'category')
+        );
+        const legacyDatabases = validateLegacyDatabaseArray(
+          parseCsv(request.query.database, 'database')
+        );
 
-        return await fastify.searchService.search({
-          query,
-          queryMode,
+        const mappedCategories = dedupeStringArray(
+          legacyCategories
+            ?.map((category) => LEGACY_TO_CANONICAL_CATEGORY[category])
+            .filter((value): value is DatasetCategory => Boolean(value))
+        ) as DatasetCategory[] | undefined;
+
+        const mappedSourceDbs = dedupeStringArray(
+          legacyDatabases
+            ?.map((database) => LEGACY_TO_CANONICAL_SOURCE_DB[database])
+            .filter((value): value is SourceDb => Boolean(value))
+        ) as SourceDb[] | undefined;
+
+        if (legacyCategories?.length && !mappedCategories?.length) {
+          return { count: 0, hits: [] };
+        }
+
+        if (legacyDatabases?.length && !mappedSourceDbs?.length) {
+          return { count: 0, hits: [] };
+        }
+
+        const response = await fastify.searchService.search({
+          query: normalizeQuery(request.query.query),
+          queryMode: request.query.exact ? 'exact' : 'fulltext',
           page,
           limit,
-          category,
-          sourceDb,
+          category: mappedCategories,
+          sourceDb: mappedSourceDbs,
           publishedFrom,
           publishedTo,
-          includeWithoutPublished: request.body.includeWithoutPublished,
-          geometry,
-          country,
-          taxonomyGbifIds
+          includeWithoutPublished: request.query.withoutPublished,
+          geometry: normalizeWkt(request.query.geometry),
+          taxonomyGbifIds: parseLegacyTaxonomyCsv(request.query.taxonomy)
         });
+
+        return {
+          count: response.meta.total,
+          hits: response.items.map((item) => ({
+            id: item.sourceKey,
+            db: CANONICAL_TO_LEGACY_SOURCE_DB[item.sourceDb],
+            title: item.title,
+            description: item.description,
+            doi: item.doi,
+            type: CANONICAL_TO_LEGACY_CATEGORY[item.category],
+            published: item.publishedAt
+          }))
+        };
       } catch (error) {
         if (error instanceof SearchValidationError) {
           throw fastify.httpErrors.badRequest(error.message);
@@ -236,4 +337,4 @@ const searchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
   );
 };
 
-export default searchRoute;
+export default legacySearchRoute;

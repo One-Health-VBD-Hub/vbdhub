@@ -83,7 +83,7 @@ export const useSearchResults = ({
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/search`,
+        `${process.env.NEXT_PUBLIC_API_URL}/search-new`,
         {
           method: 'POST',
           headers: {
