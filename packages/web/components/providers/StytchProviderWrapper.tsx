@@ -2,12 +2,7 @@
 
 import { ReactNode } from 'react';
 
-import { StytchProvider } from '@stytch/nextjs';
-import { createStytchUIClient } from '@stytch/nextjs/ui';
-
-type StytchProviderWrapperProps = {
-  children: ReactNode;
-};
+import { StytchProvider, createStytchClient } from '@stytch/nextjs';
 
 // object for configuring SDK cookie behavior, currently showing defaults
 const stytchOptions = {
@@ -20,7 +15,7 @@ const stytchOptions = {
   }
 };
 
-const stytchClient = createStytchUIClient(
+const stytchClient = createStytchClient(
   process.env.NEXT_PUBLIC_STYTCH_PUBLIC_TOKEN ?? '',
   stytchOptions
 );
@@ -29,6 +24,8 @@ const stytchClient = createStytchUIClient(
 // built according to https://stytch.com/docs/quickstarts/nextjs on 11/11/2024
 export const StytchProviderWrapper = ({
   children
-}: StytchProviderWrapperProps) => {
+}: {
+  children: ReactNode;
+}) => {
   return <StytchProvider stytch={stytchClient}>{children}</StytchProvider>;
 };
