@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActionableNotification,
   Button,
@@ -28,19 +28,6 @@ import Anchor from '@/components/Anchor';
 export default function Layout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
-  // wake up server on mount
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}`, { method: 'HEAD' })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Server not responding');
-        }
-      })
-      .catch((error) => {
-        console.error('Error connecting to server:', error);
-      });
-  }, []); // Empty dependency array ensures this runs only once on mount
-
   const [isSideNavExpanded, setIsSideNavExpanded] = useState(false);
   const path = usePathname();
   let lastComponent = path.split('/').filter(Boolean).pop();
