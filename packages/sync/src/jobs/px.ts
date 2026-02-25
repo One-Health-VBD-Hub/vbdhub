@@ -288,6 +288,17 @@ export const pxSyncJob: JobDefinition = {
                 signal
               );
               const speciesNames = extractSpeciesNames(detail);
+              if (isHumanOnlyDataset(speciesNames)) {
+                counters.skipped += 1;
+                logger.debug(
+                  {
+                    sourceKey: compactDataset.accession,
+                    speciesNames
+                  },
+                  'Skipping human-only ProteomeXchange dataset'
+                );
+                return;
+              }
               const dataset = await upsertDataset(prisma, compactDataset, detail);
               const taxaLinked = await linkDatasetTaxa(
                 prisma,
@@ -963,6 +974,18 @@ function cleanupSpeciesName(value: string): string | null {
   const cleaned = value.replace(/\s+\([^)]*\)\s*$/, '').trim();
   if (!cleaned) return null;
   return cleaned;
+}
+
+function isHumanOnlyDataset(speciesNames: string[]): boolean {
+  if (speciesNames.length !== 1) return false;
+
+  const firstSpecies = speciesNames[0];
+  if (!firstSpecies) return false;
+
+  const normalized = cleanupSpeciesName(firstSpecies)?.toLowerCase();
+  if (!normalized) return false;
+
+  return normalized === 'homo sapiens';
 }
 
 function extractHomepageUrl(detail: PxDetailResponse, sourceKey: string): string {
