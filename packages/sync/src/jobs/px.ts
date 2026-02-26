@@ -10,9 +10,9 @@ const PX_CATEGORY = 'proteomics';
 const PX_DEFAULT_PAGE_SIZE = 500;
 const PX_DEFAULT_DETAIL_CONCURRENCY = 1;
 const GLOBALNAMES_RETRY_ATTEMPTS = 4;
-const GLOBALNAMES_RETRY_BASE_MS = 400;
-const GLOBALNAMES_RETRY_MAX_MS = 4000;
-const GLOBALNAMES_BATCH_SIZE = 20;
+const GLOBALNAMES_RETRY_BASE_MS = 500;
+const GLOBALNAMES_RETRY_MAX_MS = 5000;
+const GLOBALNAMES_BATCH_SIZE = 10;
 const RETRYABLE_HTTP_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 type SupportedTaxonRank =
@@ -154,7 +154,8 @@ const globalNamesMatchResultSchema = z
 const globalNamesNameResultSchema = z
   .object({
     name: nullableStringSchema.optional(),
-    results: z.array(globalNamesMatchResultSchema).default([])
+    results: z.array(globalNamesMatchResultSchema).default([]),
+    bestResult: globalNamesMatchResultSchema.optional()
   })
   .passthrough();
 
@@ -643,10 +644,10 @@ async function resolveGbifTaxaFromNames(
 
     const body = {
       nameStrings: batch,
-      withAllMatches: true,
+      withRelaxedFuzzyMatch: true,
       withCapitalization: true,
       withUninomialFuzzyMatch: true,
-      preferredSources: [11]
+      dataSources: [11]
     };
 
     const response = await withRetry(
@@ -672,7 +673,13 @@ async function resolveGbifTaxaFromNames(
     for (const item of response.names ?? []) {
       const name = normalizeTaxonQueryName(item.name ?? '');
       if (!name) continue;
-      const resolved = parseGlobalNamesGbifMatch(item.results ?? []);
+      const matches =
+        item.results && item.results.length > 0
+          ? item.results
+          : item.bestResult
+            ? [item.bestResult]
+            : [];
+      const resolved = parseGlobalNamesGbifMatch(matches);
       resultMap.set(name, resolved);
     }
   }

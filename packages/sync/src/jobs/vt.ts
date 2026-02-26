@@ -67,6 +67,7 @@ interface GlobalNamesVerificationResponse {
 interface GlobalNamesNameResult {
   name?: string;
   results?: GlobalNamesMatchResult[];
+  bestResult?: GlobalNamesMatchResult;
 }
 
 interface GlobalNamesMatchResult {
@@ -790,10 +791,10 @@ async function resolveGbifTaxaFromNames(
 ): Promise<Map<string, ResolvedGbifTaxon | null>> {
   const body = {
     nameStrings: names,
-    withAllMatches: true,
+    withRelaxedFuzzyMatch: true,
     withCapitalization: true,
     withUninomialFuzzyMatch: true,
-    preferredSources: [11]
+    dataSources: [11]
   };
 
   const response = await fetchJsonWithInit<GlobalNamesVerificationResponse>(
@@ -812,7 +813,13 @@ async function resolveGbifTaxaFromNames(
   for (const item of response.names ?? []) {
     const name = normalizeTaxonQueryName(item.name ?? '');
     if (!name) continue;
-    const resolved = parseGlobalNamesGbifMatch(item.results ?? []);
+    const matches =
+      item.results && item.results.length > 0
+        ? item.results
+        : item.bestResult
+          ? [item.bestResult]
+          : [];
+    const resolved = parseGlobalNamesGbifMatch(matches);
     resultMap.set(name, resolved);
   }
 
