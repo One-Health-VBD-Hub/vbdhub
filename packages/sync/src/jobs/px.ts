@@ -2,6 +2,20 @@ import { createPrismaClient } from '@vbdhub/db';
 import type { Prisma } from '@prisma/client';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { z } from 'zod';
+import {
+  buildGlobalNamesRequestBody,
+  linkDatasetTaxa as linkDatasetTaxaShared,
+  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
+  type ResolvedGbifTaxon
+} from './shared/taxonomy.js';
+import {
+  globalNamesVerificationResponseSchema,
+  nullableStringSchema
+} from './shared/schemas.js';
+import {
+  normalizeNullableString as normalizeNullableStringShared,
+  parseDateOnly as parseDateOnlyShared
+} from './shared/values.js';
 import type { JobDefinition } from '../types.js';
 
 const PX_BASE_URL = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1';
@@ -12,75 +26,31 @@ const PX_DEFAULT_DETAIL_CONCURRENCY = 1;
 const GLOBALNAMES_RETRY_ATTEMPTS = 4;
 const GLOBALNAMES_RETRY_BASE_MS = 500;
 const GLOBALNAMES_RETRY_MAX_MS = 5000;
-const GLOBALNAMES_BATCH_SIZE = 10;
+const GLOBALNAMES_BATCH_SIZE = 1000;
 const RETRYABLE_HTTP_STATUSES = new Set([429, 500, 502, 503, 504]);
-
-type SupportedTaxonRank =
-  | 'kingdom'
-  | 'phylum'
-  | 'class'
-  | 'order'
-  | 'family'
-  | 'genus'
-  | 'species'
-  | 'subspecies';
-
-interface ResolvedGbifTaxon {
-  gbifTaxonId: number;
-  scientificName: string;
-  nameNorm: string;
-  rank: SupportedTaxonRank | null;
-  parentGbifTaxonId: number | null;
-  kingdomId: number | null;
-  phylumId: number | null;
-  classId: number | null;
-  orderId: number | null;
-  familyId: number | null;
-  genusId: number | null;
-  ancestors: Array<{
-    gbifTaxonId: number;
-    scientificName: string;
-    nameNorm: string;
-    rank: SupportedTaxonRank | null;
-    parentGbifTaxonId: number | null;
-    kingdomId: number | null;
-    phylumId: number | null;
-    classId: number | null;
-    orderId: number | null;
-    familyId: number | null;
-    genusId: number | null;
-  }>;
-}
-
-const nullableStringSchema = z.preprocess(
-  (value) => normalizeNullableString(value),
-  z.string().nullable()
-);
 
 const pxCompactDatasetRowSchema = z.array(z.unknown()).min(1);
 
-const pxCompactResponseSchema = z
-  .object({
-    datasets: z.array(pxCompactDatasetRowSchema).default([]),
-    result_set: z
-      .object({
-        n_available_pages: z.coerce.number().int().positive().optional(),
-        n_available_rows: z.coerce.number().int().positive().optional(),
-        n_rows_returned: z.coerce.number().int().nonnegative().optional(),
-        page_number: z.coerce.number().int().positive().optional(),
-        page_size: z.coerce.number().int().positive().optional()
-      })
-      .optional(),
-    status: z
-      .object({
-        description: z.string().optional(),
-        error_code: z.string().nullable().optional(),
-        status: z.string().optional(),
-        status_code: z.coerce.number().int().optional()
-      })
-      .optional()
-  })
-  .passthrough();
+const pxCompactResponseSchema = z.looseObject({
+  datasets: z.array(pxCompactDatasetRowSchema).default([]),
+  result_set: z
+    .object({
+      n_available_pages: z.coerce.number().int().positive().optional(),
+      n_available_rows: z.coerce.number().int().positive().optional(),
+      n_rows_returned: z.coerce.number().int().nonnegative().optional(),
+      page_number: z.coerce.number().int().positive().optional(),
+      page_size: z.coerce.number().int().positive().optional()
+    })
+    .optional(),
+  status: z
+    .object({
+      description: z.string().optional(),
+      error_code: z.string().nullable().optional(),
+      status: z.string().optional(),
+      status_code: z.coerce.number().int().optional()
+    })
+    .optional()
+});
 
 interface PxCompactDataset {
   accession: string;
@@ -122,48 +92,13 @@ const pxDetailResponseSchema = z.object({
   title: nullableStringSchema
 });
 
-const pxStatusErrorPayloadSchema = z
-  .object({
-    description: z.string().optional(),
-    error_code: z.string().optional(),
-    status: z.string().optional(),
-    status_code: z.coerce.number().int().optional(),
-    repository: z.string().optional()
-  })
-  .passthrough();
-
-const globalNamesMatchResultSchema = z
-  .object({
-    dataSourceId: z.number().optional(),
-    sortScore: z.number().optional(),
-    taxonomicStatus: nullableStringSchema.optional(),
-    isSynonym: z.boolean().optional(),
-    recordId: nullableStringSchema.optional(),
-    currentRecordId: nullableStringSchema.optional(),
-    currentCanonicalSimple: nullableStringSchema.optional(),
-    currentCanonicalFull: nullableStringSchema.optional(),
-    matchedCanonicalSimple: nullableStringSchema.optional(),
-    matchedCanonicalFull: nullableStringSchema.optional(),
-    currentName: nullableStringSchema.optional(),
-    classificationPath: nullableStringSchema.optional(),
-    classificationRanks: nullableStringSchema.optional(),
-    classificationIds: nullableStringSchema.optional()
-  })
-  .passthrough();
-
-const globalNamesNameResultSchema = z
-  .object({
-    name: nullableStringSchema.optional(),
-    results: z.array(globalNamesMatchResultSchema).default([]),
-    bestResult: globalNamesMatchResultSchema.optional()
-  })
-  .passthrough();
-
-const globalNamesVerificationResponseSchema = z
-  .object({
-    names: z.array(globalNamesNameResultSchema).default([])
-  })
-  .passthrough();
+const pxStatusErrorPayloadSchema = z.looseObject({
+  description: z.string().optional(),
+  error_code: z.string().optional(),
+  status: z.string().optional(),
+  status_code: z.coerce.number().int().optional(),
+  repository: z.string().optional()
+});
 
 type PxCompactDatasetRow = z.infer<typeof pxCompactDatasetRowSchema>;
 type PxCompactResponse = z.infer<typeof pxCompactResponseSchema>;
@@ -171,11 +106,6 @@ type PxTerm = z.infer<typeof pxTermSchema>;
 type PxTermGroup = z.infer<typeof pxTermGroupSchema>;
 type PxDetailResponse = z.infer<typeof pxDetailResponseSchema>;
 type PxStatusErrorPayload = z.infer<typeof pxStatusErrorPayloadSchema>;
-type GlobalNamesMatchResult = z.infer<typeof globalNamesMatchResultSchema>;
-type GlobalNamesNameResult = z.infer<typeof globalNamesNameResultSchema>;
-type GlobalNamesVerificationResponse = z.infer<
-  typeof globalNamesVerificationResponseSchema
->;
 
 interface PxSyncOptions {
   pageSize: number;
@@ -576,381 +506,47 @@ async function linkDatasetTaxa(
   signal: AbortSignal,
   taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>
 ): Promise<number> {
-  if (speciesNames.length === 0) return 0;
-
-  const queryNames = Array.from(
-    new Set(
-      speciesNames
-        .map(normalizeTaxonQueryName)
-        .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
-    )
+  return linkDatasetTaxaShared(
+    prisma,
+    datasetId,
+    speciesNames,
+    signal,
+    taxonomyResolutionCache,
+    resolveGbifTaxaFromNames
   );
-  if (queryNames.length === 0) return 0;
-
-  const unresolvedNames = queryNames.filter(
-    (name) => !taxonomyResolutionCache.has(name)
-  );
-
-  if (unresolvedNames.length > 0) {
-    const resolvedFromApi = await resolveGbifTaxaFromNames(
-      unresolvedNames,
-      signal
-    );
-    for (const name of unresolvedNames) {
-      taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
-    }
-  }
-
-  const uniqueTaxonIds = new Set<number>();
-  for (const name of queryNames) {
-    const resolved = taxonomyResolutionCache.get(name);
-    if (!resolved) continue;
-
-    await upsertResolvedTaxon(prisma, resolved);
-    uniqueTaxonIds.add(resolved.gbifTaxonId);
-  }
-
-  if (uniqueTaxonIds.size === 0) return 0;
-
-  const created = await prisma.datasetTaxon.createMany({
-    data: Array.from(uniqueTaxonIds, (gbifTaxonId) => ({
-      datasetId,
-      gbifTaxonId
-    })),
-    skipDuplicates: true
-  });
-
-  return created.count;
-}
-
-function normalizeTaxonQueryName(name: string): string {
-  return name
-    .replace(/\bcomplex\b/gi, '')
-    .replace(/\bmorphological group\b/gi, '')
-    .replace(/\bsp\.\b/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 async function resolveGbifTaxaFromNames(
   names: string[],
   signal: AbortSignal
 ): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  const resultMap = new Map<string, ResolvedGbifTaxon | null>();
-
-  for (let i = 0; i < names.length; i += GLOBALNAMES_BATCH_SIZE) {
-    const batch = names.slice(i, i + GLOBALNAMES_BATCH_SIZE);
-    if (batch.length === 0) continue;
-
-    const body = {
-      nameStrings: batch,
-      withRelaxedFuzzyMatch: true,
-      withCapitalization: true,
-      withUninomialFuzzyMatch: true,
-      dataSources: [11]
-    };
-
-    const response = await withRetry(
-      () =>
-        fetchJsonWithInit(
-          'https://verifier.globalnames.org/api/v1/verifications',
-          signal,
-          globalNamesVerificationResponseSchema,
-          {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify(body)
-          }
-        ),
-      signal,
-      GLOBALNAMES_RETRY_ATTEMPTS,
-      GLOBALNAMES_RETRY_BASE_MS,
-      GLOBALNAMES_RETRY_MAX_MS
-    );
-
-    for (const item of response.names ?? []) {
-      const name = normalizeTaxonQueryName(item.name ?? '');
-      if (!name) continue;
-      const matches =
-        item.results && item.results.length > 0
-          ? item.results
-          : item.bestResult
-            ? [item.bestResult]
-            : [];
-      const resolved = parseGlobalNamesGbifMatch(matches);
-      resultMap.set(name, resolved);
+  return resolveGbifTaxaFromNamesShared(
+    names,
+    signal,
+    (batchNames, batchSignal) =>
+      withRetry(
+        () =>
+          fetchJsonWithInit(
+            'https://verifier.globalnames.org/api/v1/verifications',
+            batchSignal,
+            globalNamesVerificationResponseSchema,
+            {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json'
+              },
+              body: JSON.stringify(buildGlobalNamesRequestBody(batchNames))
+            }
+          ),
+        batchSignal,
+        GLOBALNAMES_RETRY_ATTEMPTS,
+        GLOBALNAMES_RETRY_BASE_MS,
+        GLOBALNAMES_RETRY_MAX_MS
+      ),
+    {
+      batchSize: GLOBALNAMES_BATCH_SIZE
     }
-  }
-
-  for (const name of names) {
-    if (!resultMap.has(name)) resultMap.set(name, null);
-  }
-
-  return resultMap;
-}
-
-function parseGlobalNamesGbifMatch(
-  matches: GlobalNamesMatchResult[]
-): ResolvedGbifTaxon | null {
-  const gbifMatches = matches.filter((match) => match.dataSourceId === 11);
-  if (gbifMatches.length === 0) return null;
-
-  const acceptedNonSynonym = gbifMatches
-    .filter(
-      (match) =>
-        (match.taxonomicStatus ?? '').toLowerCase() === 'accepted' &&
-        match.isSynonym === false
-    )
-    .sort((a, b) => (b.sortScore ?? 0) - (a.sortScore ?? 0));
-  const best = acceptedNonSynonym[0];
-  if (!best) return null;
-
-  const focalId = parseGbifId(best.currentRecordId ?? best.recordId);
-  if (!focalId) return null;
-
-  const pathNames = splitPipe(best.classificationPath);
-  const pathRanks = splitPipe(best.classificationRanks);
-  const pathIds = splitPipe(best.classificationIds);
-
-  const lineage = extractLineageIds(pathRanks, pathIds);
-  const ancestryRows = extractAncestryRows(pathNames, pathRanks, pathIds);
-
-  const focalNodeIndex = pathIds.findIndex((id) => parseGbifId(id) === focalId);
-  const focalRank =
-    focalNodeIndex >= 0 ? toSupportedTaxonRank(pathRanks[focalNodeIndex]) : null;
-  const focalParentId =
-    focalNodeIndex > 0 ? parseGbifId(pathIds[focalNodeIndex - 1]) : null;
-
-  const scientificName =
-    best.currentCanonicalFull ??
-    best.matchedCanonicalFull ??
-    best.currentCanonicalSimple ??
-    best.matchedCanonicalSimple ??
-    best.currentName ??
-    pathNames[focalNodeIndex] ??
-    `GBIF ${focalId}`;
-
-  return {
-    gbifTaxonId: focalId,
-    scientificName,
-    nameNorm: normalizeTaxonName(scientificName),
-    rank: focalRank,
-    parentGbifTaxonId: focalParentId,
-    kingdomId: lineage.kingdomId,
-    phylumId: lineage.phylumId,
-    classId: lineage.classId,
-    orderId: lineage.orderId,
-    familyId: lineage.familyId,
-    genusId: lineage.genusId,
-    ancestors: ancestryRows.filter((row) => row.gbifTaxonId !== focalId)
-  };
-}
-
-function splitPipe(value: string | null | undefined): string[] {
-  if (!value) return [];
-  return value.split('|').map((part) => part.trim());
-}
-
-function extractLineageIds(
-  ranks: string[],
-  ids: string[]
-): {
-  kingdomId: number | null;
-  phylumId: number | null;
-  classId: number | null;
-  orderId: number | null;
-  familyId: number | null;
-  genusId: number | null;
-} {
-  let kingdomId: number | null = null;
-  let phylumId: number | null = null;
-  let classId: number | null = null;
-  let orderId: number | null = null;
-  let familyId: number | null = null;
-  let genusId: number | null = null;
-
-  for (let i = 0; i < ranks.length; i += 1) {
-    const rank = toSupportedTaxonRank(ranks[i]);
-    const id = parseGbifId(ids[i]);
-    if (!rank || !id) continue;
-
-    if (rank === 'kingdom') kingdomId = id;
-    if (rank === 'phylum') phylumId = id;
-    if (rank === 'class') classId = id;
-    if (rank === 'order') orderId = id;
-    if (rank === 'family') familyId = id;
-    if (rank === 'genus') genusId = id;
-  }
-
-  return { kingdomId, phylumId, classId, orderId, familyId, genusId };
-}
-
-function extractAncestryRows(
-  names: string[],
-  ranks: string[],
-  ids: string[]
-): Array<{
-  gbifTaxonId: number;
-  scientificName: string;
-  nameNorm: string;
-  rank: SupportedTaxonRank | null;
-  parentGbifTaxonId: number | null;
-  kingdomId: number | null;
-  phylumId: number | null;
-  classId: number | null;
-  orderId: number | null;
-  familyId: number | null;
-  genusId: number | null;
-}> {
-  const rows: Array<{
-    gbifTaxonId: number;
-    scientificName: string;
-    nameNorm: string;
-    rank: SupportedTaxonRank | null;
-    parentGbifTaxonId: number | null;
-    kingdomId: number | null;
-    phylumId: number | null;
-    classId: number | null;
-    orderId: number | null;
-    familyId: number | null;
-    genusId: number | null;
-  }> = [];
-
-  let lastNumericId: number | null = null;
-  let kingdomId: number | null = null;
-  let phylumId: number | null = null;
-  let classId: number | null = null;
-  let orderId: number | null = null;
-  let familyId: number | null = null;
-  let genusId: number | null = null;
-
-  for (let i = 0; i < ids.length; i += 1) {
-    const gbifTaxonId = parseGbifId(ids[i]);
-    if (!gbifTaxonId) continue;
-
-    const scientificName = names[i] || `GBIF ${gbifTaxonId}`;
-    const rank = toSupportedTaxonRank(ranks[i]);
-
-    if (rank === 'kingdom') kingdomId = gbifTaxonId;
-    if (rank === 'phylum') phylumId = gbifTaxonId;
-    if (rank === 'class') classId = gbifTaxonId;
-    if (rank === 'order') orderId = gbifTaxonId;
-    if (rank === 'family') familyId = gbifTaxonId;
-    if (rank === 'genus') genusId = gbifTaxonId;
-
-    rows.push({
-      gbifTaxonId,
-      scientificName,
-      nameNorm: normalizeTaxonName(scientificName),
-      rank,
-      parentGbifTaxonId: lastNumericId,
-      kingdomId,
-      phylumId,
-      classId,
-      orderId,
-      familyId,
-      genusId
-    });
-    lastNumericId = gbifTaxonId;
-  }
-
-  return rows;
-}
-
-function parseGbifId(value: string | null | undefined): number | null {
-  if (!value) return null;
-  if (!/^\d+$/.test(value)) return null;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) ? parsed : null;
-}
-
-function toSupportedTaxonRank(
-  rank: string | null | undefined
-): SupportedTaxonRank | null {
-  if (!rank) return null;
-  const normalized = rank.trim().toLowerCase();
-
-  if (
-    normalized === 'kingdom' ||
-    normalized === 'phylum' ||
-    normalized === 'class' ||
-    normalized === 'order' ||
-    normalized === 'family' ||
-    normalized === 'genus' ||
-    normalized === 'species' ||
-    normalized === 'subspecies'
-  ) {
-    return normalized;
-  }
-
-  return null;
-}
-
-async function upsertResolvedTaxon(
-  prisma: ReturnType<typeof createPrismaClient>,
-  resolved: ResolvedGbifTaxon
-): Promise<void> {
-  for (const ancestor of resolved.ancestors) {
-    await prisma.taxon.upsert({
-      where: { gbifTaxonId: ancestor.gbifTaxonId },
-      create: {
-        gbifTaxonId: ancestor.gbifTaxonId,
-        scientificName: ancestor.scientificName,
-        nameNorm: ancestor.nameNorm,
-        rank: ancestor.rank,
-        parentGbifTaxonId: ancestor.parentGbifTaxonId,
-        kingdomId: ancestor.kingdomId,
-        phylumId: ancestor.phylumId,
-        classId: ancestor.classId,
-        orderId: ancestor.orderId,
-        familyId: ancestor.familyId,
-        genusId: ancestor.genusId
-      },
-      update: {
-        scientificName: ancestor.scientificName,
-        nameNorm: ancestor.nameNorm,
-        rank: ancestor.rank,
-        parentGbifTaxonId: ancestor.parentGbifTaxonId,
-        kingdomId: ancestor.kingdomId,
-        phylumId: ancestor.phylumId,
-        classId: ancestor.classId,
-        orderId: ancestor.orderId,
-        familyId: ancestor.familyId,
-        genusId: ancestor.genusId
-      }
-    });
-  }
-
-  await prisma.taxon.upsert({
-    where: { gbifTaxonId: resolved.gbifTaxonId },
-    create: {
-      gbifTaxonId: resolved.gbifTaxonId,
-      scientificName: resolved.scientificName,
-      nameNorm: resolved.nameNorm,
-      rank: resolved.rank,
-      parentGbifTaxonId: resolved.parentGbifTaxonId,
-      kingdomId: resolved.kingdomId,
-      phylumId: resolved.phylumId,
-      classId: resolved.classId,
-      orderId: resolved.orderId,
-      familyId: resolved.familyId,
-      genusId: resolved.genusId
-    },
-    update: {
-      scientificName: resolved.scientificName,
-      nameNorm: resolved.nameNorm,
-      rank: resolved.rank,
-      parentGbifTaxonId: resolved.parentGbifTaxonId,
-      kingdomId: resolved.kingdomId,
-      phylumId: resolved.phylumId,
-      classId: resolved.classId,
-      orderId: resolved.orderId,
-      familyId: resolved.familyId,
-      genusId: resolved.genusId
-    }
-  });
+  );
 }
 
 function extractSpeciesNames(detail: PxDetailResponse): string[] {
@@ -1162,31 +758,11 @@ function getTermValue(term: PxTerm): string | null {
 }
 
 function normalizeNullableString(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  return trimmed;
+  return normalizeNullableStringShared(value);
 }
 
 function parseDateOnly(value: string | null): Date | null {
-  if (!value) return null;
-
-  const trimmed = value.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
-
-  const parsed = new Date(`${trimmed}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
-}
-
-function normalizeTaxonName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\bcomplex\b/g, '')
-    .replace(/\bmorphological group\b/g, '')
-    .replace(/\bsp\.\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return parseDateOnlyShared(value);
 }
 
 function isIgnorablePxError(error: unknown): error is PxApiError {
@@ -1260,7 +836,9 @@ async function runWithConcurrency<T>(
       const currentIndex = index;
       index += 1;
       if (currentIndex >= items.length) break;
-      await worker(items[currentIndex] as T);
+      const item = items[currentIndex];
+      if (item === undefined) break;
+      await worker(item);
     }
   });
 

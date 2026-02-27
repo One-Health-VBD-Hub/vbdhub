@@ -1,152 +1,107 @@
 import { createPrismaClient } from '@vbdhub/db';
 import type { Prisma } from '@prisma/client';
+import { z } from 'zod';
+import {
+  buildGlobalNamesRequestBody,
+  linkDatasetTaxa as linkDatasetTaxaShared,
+  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
+  type ResolvedGbifTaxon
+} from './shared/taxonomy.js';
+import {
+  globalNamesVerificationResponseSchema,
+  nullableStringSchema
+} from './shared/schemas.js';
+import { fetchJson as fetchJsonShared, fetchJsonWithInit as fetchJsonWithInitShared } from './shared/http.js';
+import {
+  getBoundingBox as getBoundingBoxShared,
+  upsertSpatialGeometry as upsertSpatialGeometryShared,
+  type BoundingBox,
+  type Coordinate
+} from './shared/spatial.js';
+import {
+  normalizeNullableString as normalizeNullableStringShared,
+  parseDateOnly as parseDateOnlyShared
+} from './shared/values.js';
 import type { JobDefinition } from '../types.js';
 
 const VECDYN_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
 const VECDYN_SOURCE_DB = 'vecdyn';
 const VECDYN_CATEGORY = 'abundance';
 
-type SupportedTaxonRank =
-  | 'kingdom'
-  | 'phylum'
-  | 'class'
-  | 'order'
-  | 'family'
-  | 'genus'
-  | 'species'
-  | 'subspecies';
+const vecDynIdsResponseSchema = z.looseObject({
+  ids: z.array(z.coerce.number().int()).default([])
+});
 
-interface VecDynIdsResponse {
-  ids: number[];
-}
+const vecDynDetailResultsSchema = z.looseObject({
+  Id: z.coerce.number().int().optional(),
+  Species: z.array(z.string()).default([]),
+  Years: z.array(z.string()).default([]),
+  CollectionMethods: z.array(z.string()).default([]),
+  Tags: z.array(z.string()).default([])
+});
 
-interface VecDynDetailResults {
-  Id?: number;
-  Species?: string[];
-  Years?: string[];
-  CollectionMethods?: string[];
-  Tags?: string[];
-  [key: string]: unknown;
-}
+const vecDynDetailResponseSchema = z.looseObject({
+  results: vecDynDetailResultsSchema.optional()
+});
 
-interface VecDynDetailResponse {
-  results?: VecDynDetailResults;
-  [key: string]: unknown;
-}
+const vecDynMapResponseSchema = z.array(
+  z.tuple([
+    z.union([z.string(), z.number()]),
+    z.union([z.string(), z.number()])
+  ])
+);
 
-type VecDynMapResponse = [string, string][];
+const vecDynCsvConsistentDataSchema = z.looseObject({
+  email: nullableStringSchema.optional(),
+  title: nullableStringSchema.optional(),
+  description: nullableStringSchema.optional(),
+  datasetid: z.coerce.number().int().optional(),
+  sample_unit: nullableStringSchema.optional(),
+  submittedby: nullableStringSchema.optional(),
+  contact_name: nullableStringSchema.optional(),
+  sample_stage: nullableStringSchema.optional(),
+  sample_location: nullableStringSchema.optional(),
+  contributoremail: nullableStringSchema.optional(),
+  species_id_method: nullableStringSchema.optional(),
+  contact_affiliation: nullableStringSchema.optional(),
+  digitized_from_graph: nullableStringSchema.optional(),
+  gps_obfuscation_info: nullableStringSchema.optional(),
+  date_uncertainty_due_to_graph: nullableStringSchema.optional(),
+  curatedbycitation: nullableStringSchema.optional(),
+  curatedbydoi: nullableStringSchema.optional(),
+  location_description: nullableStringSchema.optional(),
+  doi: nullableStringSchema.optional(),
+  citation: nullableStringSchema.optional()
+});
 
-interface VecDynCsvConsistentData {
-  email?: string;
-  title?: string;
-  description?: string;
-  datasetid?: number;
-  sample_unit?: string;
-  submittedby?: string;
-  contact_name?: string;
-  sample_stage?: string;
-  sample_location?: string;
-  contributoremail?: string;
-  species_id_method?: string;
-  contact_affiliation?: string;
-  digitized_from_graph?: string;
-  gps_obfuscation_info?: string;
-  date_uncertainty_due_to_graph?: string;
-  curatedbycitation?: string;
-  curatedbydoi?: string;
-  location_description?: string;
-  doi?: string;
-  citation?: string;
-  [key: string]: unknown;
-}
+const vecDynCsvResultSchema = z.looseObject({
+  species: nullableStringSchema.optional(),
+  sample_start_date: nullableStringSchema.optional(),
+  sample_end_date: nullableStringSchema.optional(),
+  sample_value: nullableStringSchema.optional(),
+  sample_sex: nullableStringSchema.optional(),
+  sample_lat_dd: nullableStringSchema.optional(),
+  sample_long_dd: nullableStringSchema.optional(),
+  sampling_method: nullableStringSchema.optional()
+});
 
-interface VecDynCsvResult {
-  species?: string;
-  sample_start_date?: string;
-  sample_end_date?: string;
-  sample_value?: string;
-  sample_sex?: string;
-  sample_lat_dd?: string;
-  sample_long_dd?: string;
-  sampling_method?: string;
-  [key: string]: unknown;
-}
+const vecDynCsvResponseSchema = z.looseObject({
+  count: z.coerce.number().int().optional(),
+  digitized_from_graph: z.union([z.boolean(), z.string()]).optional(),
+  consistent_data: vecDynCsvConsistentDataSchema.optional(),
+  results: z.array(vecDynCsvResultSchema).default([])
+});
 
-interface VecDynCsvResponse {
-  count?: number;
-  digitized_from_graph?: boolean | string;
-  consistent_data?: VecDynCsvConsistentData;
-  results?: VecDynCsvResult[];
-  [key: string]: unknown;
-}
+const vecDynSpeciesByDateResponseSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.coerce.number())
+);
 
-type VecDynSpeciesByDateResponse = Record<string, Record<string, number>>;
-
-interface GlobalNamesVerificationResponse {
-  names?: GlobalNamesNameResult[];
-}
-
-interface GlobalNamesNameResult {
-  name?: string;
-  results?: GlobalNamesMatchResult[];
-  bestResult?: GlobalNamesMatchResult;
-}
-
-interface GlobalNamesMatchResult {
-  dataSourceId?: number;
-  sortScore?: number;
-  taxonomicStatus?: string;
-  isSynonym?: boolean;
-  recordId?: string;
-  currentRecordId?: string;
-  currentCanonicalSimple?: string;
-  currentCanonicalFull?: string;
-  matchedCanonicalSimple?: string;
-  matchedCanonicalFull?: string;
-  currentName?: string;
-  classificationPath?: string;
-  classificationRanks?: string;
-  classificationIds?: string;
-}
-
-interface Coordinate {
-  lat: number;
-  lon: number;
-}
-
-interface BoundingBox {
-  minLat: number;
-  minLon: number;
-  maxLat: number;
-  maxLon: number;
-}
-
-interface ResolvedGbifTaxon {
-  gbifTaxonId: number;
-  scientificName: string;
-  nameNorm: string;
-  rank: SupportedTaxonRank | null;
-  parentGbifTaxonId: number | null;
-  kingdomId: number | null;
-  phylumId: number | null;
-  classId: number | null;
-  orderId: number | null;
-  familyId: number | null;
-  genusId: number | null;
-  ancestors: Array<{
-    gbifTaxonId: number;
-    scientificName: string;
-    nameNorm: string;
-    rank: SupportedTaxonRank | null;
-    parentGbifTaxonId: number | null;
-    kingdomId: number | null;
-    phylumId: number | null;
-    classId: number | null;
-    orderId: number | null;
-    familyId: number | null;
-    genusId: number | null;
-  }>;
-}
+type VecDynDetailResponse = z.infer<typeof vecDynDetailResponseSchema>;
+type VecDynMapResponse = z.infer<typeof vecDynMapResponseSchema>;
+type VecDynCsvConsistentData = z.infer<typeof vecDynCsvConsistentDataSchema>;
+type VecDynCsvResponse = z.infer<typeof vecDynCsvResponseSchema>;
+type VecDynSpeciesByDateResponse = z.infer<typeof vecDynSpeciesByDateResponseSchema>;
 
 export const vdSyncJob: JobDefinition = {
   name: 'vd',
@@ -166,24 +121,28 @@ export const vdSyncJob: JobDefinition = {
         if (signal.aborted) throw new Error('Job aborted');
 
         try {
-          const detail = await fetchJson<VecDynDetailResponse>(
+          const detail = await fetchJson(
             `${VECDYN_BASE_URL}/vecdyn-detail/${id}`,
-            signal
+            signal,
+            vecDynDetailResponseSchema
           );
-          const csv = await fetchJson<VecDynCsvResponse>(
+          const csv = await fetchJson(
             `${VECDYN_BASE_URL}/vecdyncsv/?${new URLSearchParams({
               page: '1',
               piids: String(id)
             }).toString()}`,
-            signal
+            signal,
+            vecDynCsvResponseSchema
           );
-          const speciesByDate = await fetchJson<VecDynSpeciesByDateResponse>(
+          const speciesByDate = await fetchJson(
             `${VECDYN_BASE_URL}/vecdyn-detail-species-by-date/${id}`,
-            signal
+            signal,
+            vecDynSpeciesByDateResponseSchema
           );
-          const mapData = await fetchJson<VecDynMapResponse>(
+          const mapData = await fetchJson(
             `${VECDYN_BASE_URL}/vecdyn-get-map-data/${id}`,
-            signal
+            signal,
+            vecDynMapResponseSchema
           );
 
           const coordinates = parseCoordinates(mapData);
@@ -208,8 +167,8 @@ export const vdSyncJob: JobDefinition = {
           const homepageUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
           const sourceKey = String(id);
 
-          const rawPayload = {
-            detail,
+          const rawPayload: Prisma.InputJsonObject = {
+            detail: buildVecDynDetailRaw(detail),
             csvMeta: buildCsvRawMeta(csv),
             temporalCoverage: {
               startDate: temporalCoverage.startDate
@@ -222,7 +181,7 @@ export const vdSyncJob: JobDefinition = {
               speciesCount: temporalCoverage.speciesCount
             },
             mapPointCount: coordinates.length
-          } as Prisma.InputJsonValue;
+          };
 
           const dataset = await prisma.dataset.upsert({
             where: {
@@ -305,33 +264,25 @@ async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
       sort_column: 'Id',
       sort_dir: 'asc'
     }).toString();
-  const res = await fetchJson<VecDynIdsResponse>(url, signal);
+  const res = await fetchJson(url, signal, vecDynIdsResponseSchema);
   return res.ids ?? [];
 }
 
-async function fetchJson<T>(url: string, signal: AbortSignal): Promise<T> {
-  return fetchJsonWithInit<T>(url, signal);
+async function fetchJson<T>(
+  url: string,
+  signal: AbortSignal,
+  schema: z.ZodType<T>
+): Promise<T> {
+  return fetchJsonShared<T>(url, signal, schema);
 }
 
 async function fetchJsonWithInit<T>(
   url: string,
   signal: AbortSignal,
+  schema: z.ZodType<T>,
   init?: RequestInit
 ): Promise<T> {
-  const response = await fetch(url, {
-    signal,
-    ...init,
-    headers: {
-      accept: 'application/json',
-      ...(init?.headers ?? {})
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${url}`);
-  }
-
-  return (await response.json()) as T;
+  return fetchJsonWithInitShared<T>(url, signal, schema, init);
 }
 
 function parseCoordinates(raw: VecDynMapResponse): Coordinate[] {
@@ -348,21 +299,7 @@ function parseCoordinates(raw: VecDynMapResponse): Coordinate[] {
 }
 
 function getBoundingBox(coords: Coordinate[]): BoundingBox | null {
-  if (coords.length === 0) return null;
-
-  let minLat = coords[0]!.lat;
-  let maxLat = coords[0]!.lat;
-  let minLon = coords[0]!.lon;
-  let maxLon = coords[0]!.lon;
-
-  for (const point of coords) {
-    if (point.lat < minLat) minLat = point.lat;
-    if (point.lat > maxLat) maxLat = point.lat;
-    if (point.lon < minLon) minLon = point.lon;
-    if (point.lon > maxLon) maxLon = point.lon;
-  }
-
-  return { minLat, minLon, maxLat, maxLon };
+  return getBoundingBoxShared(coords);
 }
 
 function parsePublishedAtFromYears(years: string[] | undefined): Date | null {
@@ -373,14 +310,7 @@ function parsePublishedAtFromYears(years: string[] | undefined): Date | null {
 }
 
 function parseDateOnly(value: string | undefined): Date | null {
-  if (!value) return null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
-  if (!match) return null;
-  const year = Number(match[1]);
-  const monthIndex = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const date = new Date(Date.UTC(year, monthIndex, day, 0, 0, 0));
-  return Number.isNaN(date.getTime()) ? null : date;
+  return parseDateOnlyShared(value);
 }
 
 function extractSpeciesNamesFromDetail(detail: VecDynDetailResponse): string[] {
@@ -441,10 +371,20 @@ function buildDescription(
   return parts.join(' | ');
 }
 
-function normalizeNullableString(value: string | undefined): string | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
+function normalizeNullableString(value: unknown): string | null {
+  return normalizeNullableStringShared(value);
+}
+
+function buildVecDynDetailRaw(detail: VecDynDetailResponse): Prisma.InputJsonObject {
+  const results = detail.results;
+
+  return {
+    id: results?.Id ?? null,
+    species: results?.Species ?? [],
+    years: results?.Years ?? [],
+    collectionMethods: results?.CollectionMethods ?? [],
+    tags: results?.Tags ?? []
+  };
 }
 
 function buildCsvRawMeta(csv: VecDynCsvResponse): Prisma.InputJsonObject {
@@ -455,7 +395,7 @@ function buildCsvRawMeta(csv: VecDynCsvResponse): Prisma.InputJsonObject {
     count: csv.count ?? null,
     rowCount,
     digitized_from_graph: csv.digitized_from_graph ?? null,
-    consistent_data: (consistentData ?? null) as Prisma.InputJsonValue,
+    consistent_data: buildConsistentDataRaw(consistentData),
     extracted: {
       citation: normalizeNullableString(consistentData?.citation),
       contributorEmail: normalizeNullableString(consistentData?.contributoremail),
@@ -475,31 +415,43 @@ function buildCsvRawMeta(csv: VecDynCsvResponse): Prisma.InputJsonObject {
   };
 }
 
+function buildConsistentDataRaw(
+  consistentData: VecDynCsvConsistentData | undefined
+): Prisma.InputJsonObject | null {
+  if (!consistentData) return null;
+
+  return {
+    email: normalizeNullableString(consistentData.email),
+    title: normalizeNullableString(consistentData.title),
+    description: normalizeNullableString(consistentData.description),
+    datasetid: consistentData.datasetid ?? null,
+    sample_unit: normalizeNullableString(consistentData.sample_unit),
+    submittedby: normalizeNullableString(consistentData.submittedby),
+    contact_name: normalizeNullableString(consistentData.contact_name),
+    sample_stage: normalizeNullableString(consistentData.sample_stage),
+    sample_location: normalizeNullableString(consistentData.sample_location),
+    contributoremail: normalizeNullableString(consistentData.contributoremail),
+    species_id_method: normalizeNullableString(consistentData.species_id_method),
+    contact_affiliation: normalizeNullableString(consistentData.contact_affiliation),
+    digitized_from_graph: normalizeNullableString(consistentData.digitized_from_graph),
+    gps_obfuscation_info: normalizeNullableString(consistentData.gps_obfuscation_info),
+    date_uncertainty_due_to_graph: normalizeNullableString(
+      consistentData.date_uncertainty_due_to_graph
+    ),
+    curatedbycitation: normalizeNullableString(consistentData.curatedbycitation),
+    curatedbydoi: normalizeNullableString(consistentData.curatedbydoi),
+    location_description: normalizeNullableString(consistentData.location_description),
+    doi: normalizeNullableString(consistentData.doi),
+    citation: normalizeNullableString(consistentData.citation)
+  };
+}
+
 function parseBoolish(value: string | null): boolean | null {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
   if (normalized === 'true') return true;
   if (normalized === 'false') return false;
   return null;
-}
-
-function normalizeTaxonName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\bcomplex\b/g, '')
-    .replace(/\bmorphological group\b/g, '')
-    .replace(/\bsp\.\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function normalizeTaxonQueryName(name: string): string {
-  return name
-    .replace(/\bcomplex\b/gi, '')
-    .replace(/\bmorphological group\b/gi, '')
-    .replace(/\bsp\.\b/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 async function linkDatasetTaxa(
@@ -509,356 +461,37 @@ async function linkDatasetTaxa(
   signal: AbortSignal,
   taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>
 ): Promise<number> {
-  if (speciesNames.length === 0) return 0;
-
-  const queryNames = Array.from(
-    new Set(
-      speciesNames
-        .map(normalizeTaxonQueryName)
-        .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
-    )
+  return linkDatasetTaxaShared(
+    prisma,
+    datasetId,
+    speciesNames,
+    signal,
+    taxonomyResolutionCache,
+    resolveGbifTaxaFromNames
   );
-  if (queryNames.length === 0) return 0;
-
-  const unresolvedNames = queryNames.filter(
-    (name) => !taxonomyResolutionCache.has(name)
-  );
-
-  if (unresolvedNames.length > 0) {
-    const resolvedFromApi = await resolveGbifTaxaFromNames(
-      unresolvedNames,
-      signal
-    );
-    for (const name of unresolvedNames) {
-      taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
-    }
-  }
-
-  const uniqueTaxonIds = new Set<number>();
-  for (const name of queryNames) {
-    const resolved = taxonomyResolutionCache.get(name);
-    if (!resolved) continue;
-
-    await upsertResolvedTaxon(prisma, resolved);
-    uniqueTaxonIds.add(resolved.gbifTaxonId);
-  }
-
-  if (uniqueTaxonIds.size === 0) return 0;
-
-  const created = await prisma.datasetTaxon.createMany({
-    data: Array.from(uniqueTaxonIds, (gbifTaxonId) => ({
-      datasetId,
-      gbifTaxonId
-    })),
-    skipDuplicates: true
-  });
-
-  return created.count;
 }
 
 async function resolveGbifTaxaFromNames(
   names: string[],
   signal: AbortSignal
 ): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  const body = {
-    nameStrings: names,
-    withRelaxedFuzzyMatch: true,
-    withCapitalization: true,
-    withUninomialFuzzyMatch: true,
-    dataSources: [11]
-  };
-
-  const response = await fetchJsonWithInit<GlobalNamesVerificationResponse>(
-    'https://verifier.globalnames.org/api/v1/verifications',
+  return resolveGbifTaxaFromNamesShared(
+    names,
     signal,
-    {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    }
+    (batchNames, batchSignal) =>
+      fetchJsonWithInit(
+        'https://verifier.globalnames.org/api/v1/verifications',
+        batchSignal,
+        globalNamesVerificationResponseSchema,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify(buildGlobalNamesRequestBody(batchNames))
+        }
+      )
   );
-
-  const resultMap = new Map<string, ResolvedGbifTaxon | null>();
-  for (const item of response.names ?? []) {
-    const name = normalizeTaxonQueryName(item.name ?? '');
-    if (!name) continue;
-    const matches =
-      item.results && item.results.length > 0
-        ? item.results
-        : item.bestResult
-          ? [item.bestResult]
-          : [];
-    const resolved = parseGlobalNamesGbifMatch(matches);
-    resultMap.set(name, resolved);
-  }
-
-  for (const name of names) {
-    if (!resultMap.has(name)) resultMap.set(name, null);
-  }
-
-  return resultMap;
-}
-
-function parseGlobalNamesGbifMatch(
-  matches: GlobalNamesMatchResult[]
-): ResolvedGbifTaxon | null {
-  const gbifMatches = matches.filter((match) => match.dataSourceId === 11);
-  if (gbifMatches.length === 0) return null;
-
-  const acceptedNonSynonym = gbifMatches
-    .filter(
-      (match) =>
-        (match.taxonomicStatus ?? '').toLowerCase() === 'accepted' &&
-        match.isSynonym === false
-    )
-    .sort((a, b) => (b.sortScore ?? 0) - (a.sortScore ?? 0));
-  const best = acceptedNonSynonym[0];
-  if (!best) return null;
-
-  const focalId = parseGbifId(best.currentRecordId ?? best.recordId);
-  if (!focalId) return null;
-
-  const pathNames = splitPipe(best.classificationPath);
-  const pathRanks = splitPipe(best.classificationRanks);
-  const pathIds = splitPipe(best.classificationIds);
-
-  const lineage = extractLineageIds(pathRanks, pathIds);
-  const ancestryRows = extractAncestryRows(pathNames, pathRanks, pathIds);
-
-  const focalNodeIndex = pathIds.findIndex((id) => parseGbifId(id) === focalId);
-  const focalRank =
-    focalNodeIndex >= 0 ? toSupportedTaxonRank(pathRanks[focalNodeIndex]) : null;
-  const focalParentId =
-    focalNodeIndex > 0 ? parseGbifId(pathIds[focalNodeIndex - 1]) : null;
-
-  const scientificName =
-    best.currentCanonicalFull ??
-    best.matchedCanonicalFull ??
-    best.currentCanonicalSimple ??
-    best.matchedCanonicalSimple ??
-    best.currentName ??
-    pathNames[focalNodeIndex] ??
-    `GBIF ${focalId}`;
-
-  return {
-    gbifTaxonId: focalId,
-    scientificName,
-    nameNorm: normalizeTaxonName(scientificName),
-    rank: focalRank,
-    parentGbifTaxonId: focalParentId,
-    kingdomId: lineage.kingdomId,
-    phylumId: lineage.phylumId,
-    classId: lineage.classId,
-    orderId: lineage.orderId,
-    familyId: lineage.familyId,
-    genusId: lineage.genusId,
-    ancestors: ancestryRows.filter((row) => row.gbifTaxonId !== focalId)
-  };
-}
-
-function splitPipe(value: string | undefined): string[] {
-  if (!value) return [];
-  return value.split('|').map((part) => part.trim());
-}
-
-function extractLineageIds(
-  ranks: string[],
-  ids: string[]
-): {
-  kingdomId: number | null;
-  phylumId: number | null;
-  classId: number | null;
-  orderId: number | null;
-  familyId: number | null;
-  genusId: number | null;
-} {
-  let kingdomId: number | null = null;
-  let phylumId: number | null = null;
-  let classId: number | null = null;
-  let orderId: number | null = null;
-  let familyId: number | null = null;
-  let genusId: number | null = null;
-
-  for (let i = 0; i < ranks.length; i += 1) {
-    const rank = toSupportedTaxonRank(ranks[i]);
-    const id = parseGbifId(ids[i]);
-    if (!rank || !id) continue;
-
-    if (rank === 'kingdom') kingdomId = id;
-    if (rank === 'phylum') phylumId = id;
-    if (rank === 'class') classId = id;
-    if (rank === 'order') orderId = id;
-    if (rank === 'family') familyId = id;
-    if (rank === 'genus') genusId = id;
-  }
-
-  return { kingdomId, phylumId, classId, orderId, familyId, genusId };
-}
-
-function extractAncestryRows(
-  names: string[],
-  ranks: string[],
-  ids: string[]
-): Array<{
-  gbifTaxonId: number;
-  scientificName: string;
-  nameNorm: string;
-  rank: SupportedTaxonRank | null;
-  parentGbifTaxonId: number | null;
-  kingdomId: number | null;
-  phylumId: number | null;
-  classId: number | null;
-  orderId: number | null;
-  familyId: number | null;
-  genusId: number | null;
-}> {
-  const rows: Array<{
-    gbifTaxonId: number;
-    scientificName: string;
-    nameNorm: string;
-    rank: SupportedTaxonRank | null;
-    parentGbifTaxonId: number | null;
-    kingdomId: number | null;
-    phylumId: number | null;
-    classId: number | null;
-    orderId: number | null;
-    familyId: number | null;
-    genusId: number | null;
-  }> = [];
-
-  let lastNumericId: number | null = null;
-  let kingdomId: number | null = null;
-  let phylumId: number | null = null;
-  let classId: number | null = null;
-  let orderId: number | null = null;
-  let familyId: number | null = null;
-  let genusId: number | null = null;
-
-  for (let i = 0; i < ids.length; i += 1) {
-    const gbifTaxonId = parseGbifId(ids[i]);
-    if (!gbifTaxonId) continue;
-
-    const scientificName = names[i] || `GBIF ${gbifTaxonId}`;
-    const rank = toSupportedTaxonRank(ranks[i]);
-
-    if (rank === 'kingdom') kingdomId = gbifTaxonId;
-    if (rank === 'phylum') phylumId = gbifTaxonId;
-    if (rank === 'class') classId = gbifTaxonId;
-    if (rank === 'order') orderId = gbifTaxonId;
-    if (rank === 'family') familyId = gbifTaxonId;
-    if (rank === 'genus') genusId = gbifTaxonId;
-
-    rows.push({
-      gbifTaxonId,
-      scientificName,
-      nameNorm: normalizeTaxonName(scientificName),
-      rank,
-      parentGbifTaxonId: lastNumericId,
-      kingdomId,
-      phylumId,
-      classId,
-      orderId,
-      familyId,
-      genusId
-    });
-    lastNumericId = gbifTaxonId;
-  }
-
-  return rows;
-}
-
-function parseGbifId(value: string | undefined): number | null {
-  if (!value) return null;
-  if (!/^\d+$/.test(value)) return null;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) ? parsed : null;
-}
-
-function toSupportedTaxonRank(rank: string | undefined): SupportedTaxonRank | null {
-  if (!rank) return null;
-  const normalized = rank.trim().toLowerCase();
-
-  if (
-    normalized === 'kingdom' ||
-    normalized === 'phylum' ||
-    normalized === 'class' ||
-    normalized === 'order' ||
-    normalized === 'family' ||
-    normalized === 'genus' ||
-    normalized === 'species' ||
-    normalized === 'subspecies'
-  ) {
-    return normalized;
-  }
-
-  return null;
-}
-
-async function upsertResolvedTaxon(
-  prisma: ReturnType<typeof createPrismaClient>,
-  resolved: ResolvedGbifTaxon
-): Promise<void> {
-  for (const ancestor of resolved.ancestors) {
-    await prisma.taxon.upsert({
-      where: { gbifTaxonId: ancestor.gbifTaxonId },
-      create: {
-        gbifTaxonId: ancestor.gbifTaxonId,
-        scientificName: ancestor.scientificName,
-        nameNorm: ancestor.nameNorm,
-        rank: ancestor.rank,
-        parentGbifTaxonId: ancestor.parentGbifTaxonId,
-        kingdomId: ancestor.kingdomId,
-        phylumId: ancestor.phylumId,
-        classId: ancestor.classId,
-        orderId: ancestor.orderId,
-        familyId: ancestor.familyId,
-        genusId: ancestor.genusId
-      },
-      update: {
-        scientificName: ancestor.scientificName,
-        nameNorm: ancestor.nameNorm,
-        rank: ancestor.rank,
-        parentGbifTaxonId: ancestor.parentGbifTaxonId,
-        kingdomId: ancestor.kingdomId,
-        phylumId: ancestor.phylumId,
-        classId: ancestor.classId,
-        orderId: ancestor.orderId,
-        familyId: ancestor.familyId,
-        genusId: ancestor.genusId
-      }
-    });
-  }
-
-  await prisma.taxon.upsert({
-    where: { gbifTaxonId: resolved.gbifTaxonId },
-    create: {
-      gbifTaxonId: resolved.gbifTaxonId,
-      scientificName: resolved.scientificName,
-      nameNorm: resolved.nameNorm,
-      rank: resolved.rank,
-      parentGbifTaxonId: resolved.parentGbifTaxonId,
-      kingdomId: resolved.kingdomId,
-      phylumId: resolved.phylumId,
-      classId: resolved.classId,
-      orderId: resolved.orderId,
-      familyId: resolved.familyId,
-      genusId: resolved.genusId
-    },
-    update: {
-      scientificName: resolved.scientificName,
-      nameNorm: resolved.nameNorm,
-      rank: resolved.rank,
-      parentGbifTaxonId: resolved.parentGbifTaxonId,
-      kingdomId: resolved.kingdomId,
-      phylumId: resolved.phylumId,
-      classId: resolved.classId,
-      orderId: resolved.orderId,
-      familyId: resolved.familyId,
-      genusId: resolved.genusId
-    }
-  });
 }
 
 async function upsertSpatialGeometry(
@@ -866,23 +499,5 @@ async function upsertSpatialGeometry(
   datasetId: string,
   coordinates: Coordinate[]
 ): Promise<void> {
-  if (coordinates.length === 0) {
-    await prisma.$executeRaw`
-      UPDATE "Dataset"
-      SET "spatialGeom" = NULL
-      WHERE "id" = ${datasetId}
-    `;
-    return;
-  }
-
-  const geoJson = JSON.stringify({
-    type: 'MultiPoint',
-    coordinates: coordinates.map((point) => [point.lon, point.lat])
-  });
-
-  await prisma.$executeRaw`
-    UPDATE "Dataset"
-    SET "spatialGeom" = ST_SetSRID(ST_GeomFromGeoJSON(${geoJson}), 4326)
-    WHERE "id" = ${datasetId}
-  `;
+  return upsertSpatialGeometryShared(prisma, datasetId, coordinates);
 }
