@@ -584,7 +584,11 @@ function parseCoordinates(rows: VecTraitsDatasetRow[]): Coordinate[] {
 
 function parseNumber(value: number | string | null | undefined): number {
   if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number(value);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return Number.NaN;
+    return Number(trimmed);
+  }
   return Number.NaN;
 }
 

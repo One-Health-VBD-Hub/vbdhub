@@ -34,14 +34,14 @@ const vecDynIdsResponseSchema = z.looseObject({
 
 const vecDynDetailResultsSchema = z.looseObject({
   Id: z.coerce.number().int().optional(),
-  Species: z.array(z.string()).default([]),
-  Years: z.array(z.string()).default([]),
-  CollectionMethods: z.array(z.string()).default([]),
-  Tags: z.array(z.string()).default([])
+  Species: z.array(z.string()).nullish().transform((value) => value ?? []),
+  Years: z.array(z.string()).nullish().transform((value) => value ?? []),
+  CollectionMethods: z.array(z.string()).nullish().transform((value) => value ?? []),
+  Tags: z.array(z.string()).nullish().transform((value) => value ?? [])
 });
 
 const vecDynDetailResponseSchema = z.looseObject({
-  results: vecDynDetailResultsSchema.optional()
+  results: vecDynDetailResultsSchema.nullish()
 });
 
 const vecDynMapResponseSchema = z.array(
@@ -289,13 +289,20 @@ function parseCoordinates(raw: VecDynMapResponse): Coordinate[] {
   const parsed: Coordinate[] = [];
 
   for (const entry of raw) {
-    const lat = Number(entry[0]);
-    const lon = Number(entry[1]);
+    const lat = parseCoordinateNumber(entry[0]);
+    const lon = parseCoordinateNumber(entry[1]);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     parsed.push({ lat, lon });
   }
 
   return parsed;
+}
+
+function parseCoordinateNumber(value: string | number): number {
+  if (typeof value === 'number') return value;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return Number.NaN;
+  return Number(trimmed);
 }
 
 function getBoundingBox(coords: Coordinate[]): BoundingBox | null {
