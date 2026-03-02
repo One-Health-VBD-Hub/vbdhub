@@ -70,14 +70,14 @@ export function buildGlobalNamesRequestBody(nameStrings: string[]): {
   nameStrings: string[];
   withRelaxedFuzzyMatch: true;
   withCapitalization: true;
-  withUninomialFuzzyMatch: true;
+  withUninomialFuzzyMatch: false;
   dataSources: [11];
 } {
   return {
     nameStrings,
     withRelaxedFuzzyMatch: true,
     withCapitalization: true,
-    withUninomialFuzzyMatch: true,
+    withUninomialFuzzyMatch: false,
     dataSources: [11]
   };
 }
