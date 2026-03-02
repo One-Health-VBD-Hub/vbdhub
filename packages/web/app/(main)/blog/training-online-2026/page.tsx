@@ -26,7 +26,7 @@ export default function Page() {
       </div>
 
       <Heading id='training'>
-        Training workshop on data sharing and analysis
+        Training workshops on data sharing and analysis
       </Heading>
 
       <p>

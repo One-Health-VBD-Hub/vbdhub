@@ -19,7 +19,7 @@ export const metadata = {
 const posts = [
   {
     id: 6,
-    title: 'Training workshop on data sharing and analysis',
+    title: 'Training workshops on data sharing and analysis',
     href: '/blog/training-online-2026',
     description: (
       <>
