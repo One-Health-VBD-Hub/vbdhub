@@ -24,7 +24,8 @@
   "dependencies": {
     "@vbdhub/db": "^0.1.0",
     "dotenv": "^17",
-    "pino": "^10"
+    "pino": "^10",
+    "zod": "^4"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22",

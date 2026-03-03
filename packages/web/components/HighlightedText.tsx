@@ -5,7 +5,7 @@ function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-const HighlightedText = ({ text, query }: { text: string; query: string }) => {
+function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query) {
     return <span>{text}</span>;
   }
@@ -17,16 +17,17 @@ const HighlightedText = ({ text, query }: { text: string; query: string }) => {
     .map((word) => escapeRegExp(word));
 
   // Create a case-insensitive regex that matches any of the query words
-  const regex = new RegExp(`(${queryWords.join('|')})`, 'gi');
+  const splitRegex = new RegExp(`(${queryWords.join('|')})`, 'gi');
+  const exactMatchRegex = new RegExp(`^(${queryWords.join('|')})$`, 'i');
 
   // Split the text with the regex capturing group so that matching words are included in the result
-  const parts = text.split(regex);
+  const parts = text.split(splitRegex);
 
   return (
     <span>
       {parts.map((part, index) =>
         // Check if the part matches any of the query words (case-insensitive)
-        regex.test(part) ? (
+        exactMatchRegex.test(part) ? (
           <span key={index} className='bg-yellow-200'>
             {part}
           </span>
@@ -36,6 +37,6 @@ const HighlightedText = ({ text, query }: { text: string; query: string }) => {
       )}
     </span>
   );
-};
+}
 
 export default HighlightedText;
