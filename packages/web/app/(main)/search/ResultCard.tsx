@@ -3,15 +3,13 @@ import Link from 'next/link';
 import HighlightedText from '@/components/HighlightedText';
 import { Checkbox, Tooltip } from '@carbon/react';
 import { ArrowRight } from '@carbon/icons-react';
-import { useTaxonomy } from '@/app/(main)/search/useSearchFilters';
 import { Information } from '@carbon/icons-react';
 import { SearchDatasetItem } from '@/types/search';
 
-interface ResultCardRecord
-  extends Pick<
-    SearchDatasetItem,
-    'sourceKey' | 'sourceDb' | 'title' | 'description' | 'publishedAt'
-  > {}
+type ResultCardRecord = Pick<
+  SearchDatasetItem,
+  'sourceKey' | 'sourceDb' | 'title' | 'description' | 'publishedAt'
+>;
 
 export function dbToFullName(db: string) {
   switch (db) {
@@ -34,15 +32,16 @@ export default function ResultCard({
   result,
   query = '',
   selected = false,
-  gbifAggregated = false
+  gbifAggregated = false,
+  taxonomy = []
 }: {
   result: ResultCardRecord;
   query?: string;
   selected?: boolean;
   gbifAggregated?: boolean;
+  taxonomy?: string[];
 }) {
   const id = `${result.sourceDb}-${result.sourceKey}`;
-  const [taxonomy] = useTaxonomy();
 
   const href = gbifAggregated
     ? `https://www.gbif.org/occurrence/search?taxon_key=${taxonomy.join(

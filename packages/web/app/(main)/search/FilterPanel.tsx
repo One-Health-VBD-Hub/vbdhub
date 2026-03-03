@@ -70,7 +70,7 @@ export default function FilterPanel() {
   const [category, setCategory] = useCategory();
   const [sourceDb, setSourceDb] = useSourceDb();
   const [taxonomy, setTaxonomy] = useTaxonomy();
-  const [_, setCurrentPage] = useCurrentPage();
+  const [, setCurrentPage] = useCurrentPage();
   const [publishedFrom, setPublishedFrom] = usePublishedFrom();
   const [publishedTo, setPublishedTo] = usePublishedTo();
   const [withoutPublished, setWithoutPublished] = useWithoutPublished();
@@ -103,6 +103,7 @@ export default function FilterPanel() {
     if (!isSearchCategory(e.currentTarget.value))
       throw new Error(`Invalid category value ${e.currentTarget.value}`);
 
+    setCurrentPage(1);
     setCategory(
       e.currentTarget.checked
         ? [...category, e.currentTarget.value]
@@ -118,6 +119,7 @@ export default function FilterPanel() {
     if (!isSearchSourceDb(e.currentTarget.value))
       throw new Error(`Invalid database value ${e.currentTarget.value}`);
 
+    setCurrentPage(1);
     setSourceDb(
       e.currentTarget.checked
         ? [...sourceDb, e.currentTarget.value]

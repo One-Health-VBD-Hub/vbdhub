@@ -3,7 +3,6 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchResults } from '@/lib/hooks/useSearchResults';
 import ResultCard from '@/app/(main)/search/ResultCard';
-import SearchBar from '@/app/(main)/search/SearchBar';
 import {
   Button,
   InlineLoading,
@@ -26,6 +25,7 @@ import {
   useTaxonomy,
   useWithoutPublished
 } from '@/app/(main)/search/useSearchFilters';
+import { useMediaQuery } from 'react-responsive';
 
 export default function SearchPageWrapper() {
   return (
@@ -36,10 +36,12 @@ export default function SearchPageWrapper() {
 }
 
 function SearchPage() {
+  const MAX_SEARCH_PAGES = 2000;
   const resultsPerPage = 5;
 
   // for filter modal on mobile view
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const isDesktopFilters = useMediaQuery({ minWidth: 1280 });
 
   const [searchQuery] = useSearchQuery();
   const [currentPage, setCurrentPage] = useCurrentPage();
@@ -64,7 +66,7 @@ function SearchPage() {
       withoutPublished,
       exactOnly
     },
-    page: currentPage,
+    page: Math.min(currentPage, MAX_SEARCH_PAGES),
     limit: resultsPerPage
   });
 
@@ -82,13 +84,19 @@ function SearchPage() {
     : 0;
 
   const totalPages = data?.meta.totalPages ?? 0;
+  const effectiveTotalPages = Math.min(totalPages, MAX_SEARCH_PAGES);
+  const shouldRenderMobileFilters = !isDesktopFilters && filterModalOpen;
 
   // set to last page if the current page (from URL) is greater than total pages
   useEffect(() => {
-    if (!isPending && currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
+    if (
+      !isPending &&
+      currentPage > effectiveTotalPages &&
+      effectiveTotalPages > 0
+    ) {
+      setCurrentPage(effectiveTotalPages);
     }
-  }, [currentPage, isPending, setCurrentPage, totalPages]);
+  }, [currentPage, effectiveTotalPages, isPending, setCurrentPage]);
 
   // determine whether to show the GBIF aggregated dataset card
   const showAggregateDatasetGBIF =
@@ -103,22 +111,26 @@ function SearchPage() {
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
       <h1 className='sr-only'>Search data</h1>
       <div className='gap-4 lg:flex'>
-        <div className='hidden xl:block'>
-          <FilterPanel key='filter-desktop' />
-        </div>
+        {isDesktopFilters && (
+          <div className='hidden xl:block'>
+            <FilterPanel />
+          </div>
+        )}
 
         <div className='min-w-0 flex-1'>
           {/*<SearchBar className='mb-4' />*/}
           <>
             <div className='mb-2 flex items-end justify-between align-middle 2xl:justify-end'>
-              <Button
-                className='xl:hidden'
-                kind='tertiary'
-                renderIcon={Filter}
-                onClick={() => setFilterModalOpen(true)}
-              >
-                Filter
-              </Button>
+              {!isDesktopFilters && (
+                <Button
+                  className='xl:hidden'
+                  kind='tertiary'
+                  renderIcon={Filter}
+                  onClick={() => setFilterModalOpen(true)}
+                >
+                  Filter
+                </Button>
+              )}
               {currentResults && (
                 <div className='text-xs'>
                   Found{' '}
@@ -131,29 +143,30 @@ function SearchPage() {
             </div>
             <div className='filter-modal-mobile'>
               <Modal
-                open={filterModalOpen}
+                open={shouldRenderMobileFilters}
                 onRequestClose={() => setFilterModalOpen(false)}
                 primaryButtonText='See results'
                 onRequestSubmit={() => setFilterModalOpen(false)} // TODO: actually implement
                 modalLabel='Filter'
                 secondaryButtonText='Close'
               >
-                <FilterPanel key='filter-mobile' />
+                {shouldRenderMobileFilters && <FilterPanel />}
               </Modal>
             </div>
           </>
 
-          {currentPage === 2000 && currentPage <= totalPages && (
-            <InlineNotification
-              style={{ maxInlineSize: 'fit-content' }}
-              className='my-4'
-              hideCloseButton
-              lowContrast
-              kind='info'
-              title='Maximum number of pages reached'
-              subtitle='The maximum number of pages is 2,000. Please refine your search.'
-            />
-          )}
+          {currentPage === MAX_SEARCH_PAGES &&
+            totalPages > MAX_SEARCH_PAGES && (
+              <InlineNotification
+                style={{ maxInlineSize: 'fit-content' }}
+                className='my-4'
+                hideCloseButton
+                lowContrast
+                kind='info'
+                title='Maximum number of pages reached'
+                subtitle='The maximum number of pages is 2,000. Please refine your search.'
+              />
+            )}
 
           {isPending ? (
             <div className='w-full *:mx-auto *:w-fit'>
@@ -167,6 +180,7 @@ function SearchPage() {
                     <ResultCard
                       gbifAggregated
                       key={taxonomy.join()}
+                      taxonomy={taxonomy}
                       result={{
                         sourceKey: 'gbif-aggregated',
                         sourceDb: 'gbif',
@@ -193,9 +207,9 @@ function SearchPage() {
             </>
           )}
 
-          {!!data?.meta.total && currentPage <= totalPages && (
+          {!!data?.meta.total && currentPage <= effectiveTotalPages && (
             <Pagination
-              totalPages={totalPages}
+              totalPages={effectiveTotalPages}
               setCurrentPage={setCurrentPage}
               currentPage={currentPage}
             />
