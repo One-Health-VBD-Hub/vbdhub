@@ -18,6 +18,58 @@ export const metadata = {
 
 const posts = [
   {
+    id: 6,
+    title: 'Training workshops on data sharing and analysis',
+    href: '/blog/training-online-2026',
+    description: (
+      <>
+        <span className='font-medium'>
+          <time dateTime='2026-03-19'>
+            March 19<span className='align-super text-xs'>th</span>
+          </time>{' '}
+          and{' '}
+          <time dateTime='2026-03-26'>
+            26<span className='align-super text-xs'>th</span> 2026
+          </time>
+        </span>
+        , virtual training sessions on data visualisations in R and data
+        wrangling with Hub search and ohvbd package.
+      </>
+    ),
+    date: 'Feb 18, 2026',
+    datetime: '2026-02-18',
+    category: { title: 'Training', href: '#' },
+    author: {
+      name: 'Chloe Coxshall',
+      role: 'Experienced Instructor',
+      imageUrl: '/members/chloe.webp',
+      imageWidth: 560,
+      imageHeight: 560
+    }
+  },
+  {
+    id: 5,
+    title: 'ohvbd 1.0.0 has been released on CRAN!',
+    href: '/blog/ohvbd-cran-release',
+    description: (
+      <>
+        Announcing ohvbd v1.0.0 on CRAN: a unified R interface for retrieval,
+        harmonisation, and citation-aware workflows for vector-borne disease
+        data.
+      </>
+    ),
+    date: 'Feb 11, 2026',
+    datetime: '2026-02-11',
+    category: { title: 'Announcements', href: '#' },
+    author: {
+      name: 'Francis Windram',
+      role: 'Research Associate',
+      imageUrl: '/members/francis.webp',
+      imageWidth: 800,
+      imageHeight: 800
+    }
+  },
+  {
     id: 4,
     title: 'Launching the VBD Hub community forum',
     href: '/blog/community-forum',

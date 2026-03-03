@@ -1,20 +1,18 @@
 import Link from 'next/link';
-import { memo } from 'react';
 
-const CarbonBadge = memo(
-  ({
-    co2,
-    percentage,
-    url
-  }: {
-    co2: number;
-    percentage: number;
-    url: string;
-  }) => (
-    <div className='flex flex-col items-center gap-2 md:flex-row'>
-      <div className='codepen_wrapper'>
-        <style>
-          {`
+const CarbonBadge = ({
+  co2,
+  percentage,
+  url
+}: {
+  co2: number;
+  percentage: number;
+  url: string;
+}) => (
+  <div className='flex flex-col items-center gap-2 md:flex-row'>
+    <div className='codepen_wrapper'>
+      <style>
+        {`
           #wcb.carbonbadge {
             --b1: #0e11a8;
             --b2: #00ffbc;
@@ -70,26 +68,25 @@ const CarbonBadge = memo(
             color: #fff;
           }
         `}
-        </style>
-        <div id='wcb' className='carbonbadge text-[#0e11a8]'>
-          <div id='wcb_p'>
-            <span id='wcb_g'>
-              {co2}g of CO<sub>2</sub>/view
-            </span>
-            <Link
-              id='wcb_a'
-              target='_blank'
-              rel='nofollow noopener'
-              href={`https://www.websitecarbon.com/website/${url}`}
-            >
-              Website Carbon
-            </Link>
-          </div>
+      </style>
+      <div id='wcb' className='carbonbadge text-[#0e11a8]'>
+        <div id='wcb_p'>
+          <span id='wcb_g'>
+            {co2}g of CO<sub>2</sub>/view
+          </span>
+          <Link
+            id='wcb_a'
+            target='_blank'
+            rel='nofollow noopener'
+            href={`https://www.websitecarbon.com/website/${url}`}
+          >
+            Website Carbon
+          </Link>
         </div>
       </div>
-      <span>&nbsp;Cleaner than {percentage}% of pages tested</span>
     </div>
-  )
+    <span>&nbsp;Cleaner than {percentage}% of pages tested</span>
+  </div>
 );
 CarbonBadge.displayName = 'CarbonBadge';
 export default CarbonBadge;

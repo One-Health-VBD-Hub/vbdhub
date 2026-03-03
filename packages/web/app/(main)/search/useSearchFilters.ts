@@ -4,11 +4,13 @@ import {
   parseAsInteger,
   parseAsIsoDate,
   parseAsJson,
+  parseAsStringLiteral,
   parseAsString,
   useQueryState
 } from 'nuqs';
 import { z } from 'zod';
 import { Feature as GeoJSONFeature } from 'geojson';
+import { SEARCH_CATEGORIES, SEARCH_SOURCE_DBS } from '@/types/search';
 
 const GeoJSONFeatureZod = z.custom<GeoJSONFeature>((val) => {
   // runtime check – keep it simple, Zod is mainly here as a guard
@@ -24,7 +26,7 @@ export function useResetSearchFilters() {
   const [, setCurrentPage] = useCurrentPage();
   const [, setExactOnly] = useExactOnly();
   const [, setCategory] = useCategory();
-  const [, setDatabase] = useDatabase();
+  const [, setSourceDb] = useSourceDb();
   const [, setTaxonomy] = useTaxonomy();
   const [, setWithoutPublished] = useWithoutPublished();
   const [, setGeometry] = useGeometry();
@@ -36,7 +38,7 @@ export function useResetSearchFilters() {
     setCurrentPage(null);
     setExactOnly(null);
     setCategory(null);
-    setDatabase(null);
+    setSourceDb(null);
     setTaxonomy(null);
     setWithoutPublished(null);
     setGeometry(null);
@@ -89,14 +91,18 @@ export function useExactOnly() {
 export function useCategory() {
   return useQueryState(
     'category',
-    parseAsArrayOf(parseAsString).withDefault([]).withOptions(historyPushOption)
+    parseAsArrayOf(parseAsStringLiteral(SEARCH_CATEGORIES))
+      .withDefault([])
+      .withOptions(historyPushOption)
   );
 }
 
-export function useDatabase() {
+export function useSourceDb() {
   return useQueryState(
-    'database',
-    parseAsArrayOf(parseAsString).withDefault([]).withOptions(historyPushOption)
+    'sourceDb',
+    parseAsArrayOf(parseAsStringLiteral(SEARCH_SOURCE_DBS))
+      .withDefault([])
+      .withOptions(historyPushOption)
   );
 }
 

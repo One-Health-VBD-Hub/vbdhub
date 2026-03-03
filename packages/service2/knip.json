@@ -1,0 +1,7 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "tags": ["-lintignore"],
+  "entry": ["src/app.ts", "src/plugins/**/*.ts", "src/routes/**/*.ts"],
+  "project": "tsconfig.json",
+  "ignore": ["dist/**"]
+}

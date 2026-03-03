@@ -4,7 +4,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
 import type { ControlPosition } from 'react-map-gl/mapbox';
 import { Feature as GeoJSONFeature } from 'geojson';
-import { memo, useEffect } from 'react';
+import { useEffect } from 'react';
 
 type DrawControlProps = ConstructorParameters<typeof MapboxDraw>[0] & {
   position?: ControlPosition;
@@ -15,7 +15,7 @@ type DrawControlProps = ConstructorParameters<typeof MapboxDraw>[0] & {
   onDelete: (evt: { features: GeoJSONFeature[] }) => void;
 };
 
-export default memo(function DrawControl(props: DrawControlProps) {
+export default function DrawControl(props: DrawControlProps) {
   const draw = useControl<MapboxDraw>(
     () => new MapboxDraw(props),
     ({ map }) => {
@@ -43,4 +43,4 @@ export default memo(function DrawControl(props: DrawControlProps) {
   }, [draw, props.features]);
 
   return null;
-});
+}

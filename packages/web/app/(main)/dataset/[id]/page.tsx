@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 export const dynamic = 'force-static';
 
 import Stack from '@/components/Stack';
-import { AnyRecord, Database, isDatabase } from '@/types/indexed';
+import { SEARCH_SOURCE_DBS, SearchSourceDb } from '@/types/search';
 import Heading from '@/components/Heading';
 import React from 'react';
 import { Metadata } from 'next';
@@ -13,9 +13,24 @@ import { Download, IbmCloudDatabases } from '@carbon/react/icons';
 import { dbToFullName } from '@/app/(main)/search/ResultCard';
 import Link from 'next/link';
 
+type DatasetRouteDb = SearchSourceDb;
+
+interface DatasetSummary {
+  id: string;
+  title: string;
+  description?: string;
+  db: SearchSourceDb;
+  type?: string;
+  doi?: string;
+}
+
+function isDatasetRouteDb(value: string): value is DatasetRouteDb {
+  return SEARCH_SOURCE_DBS.includes(value as SearchSourceDb);
+}
+
 async function getDataset(id: string) {
   const db = id.split('-')[0];
-  if (!db || !isDatabase(db)) notFound();
+  if (!db || !isDatasetRouteDb(db)) notFound();
 
   const datasetId = id.slice(db.length + 1);
   if (!datasetId) notFound();
@@ -30,7 +45,7 @@ async function getDataset(id: string) {
     throw new Error(`Dataset API error: ${r.status}`);
   }
 
-  const datasetData: AnyRecord = await r.json();
+  const datasetData: DatasetSummary = await r.json();
 
   return datasetData;
 }
@@ -47,7 +62,7 @@ export async function generateMetadata(
   };
 }
 
-function DatasetBar({ id, db }: { id: string; db: Database }) {
+function DatasetBar({ id, db }: { id: string; db: SearchSourceDb }) {
   return (
     <div className='mb-4 flex justify-between'>
       <Tag size='md' type='gray'>
@@ -137,11 +152,11 @@ function buildUrlForDb(id: string, db: string) {
   switch (db) {
     case 'gbif':
       return `https://www.gbif.org/dataset/${originalId}`;
-    case 'px':
+    case 'proteomexchange':
       return `https://proteomecentral.proteomexchange.org/cgi/GetDataset?ID=${originalId}`;
-    case 'vd':
+    case 'vecdyn':
       return `https://vectorbyte.crc.nd.edu/vecdyn-detail/${originalId}`;
-    case 'vt':
+    case 'vectraits':
       return `https://vectorbyte.crc.nd.edu/vectraits-dataset/${originalId}`;
     default:
       return '';
