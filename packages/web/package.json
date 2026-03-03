@@ -54,7 +54,6 @@
     "@tanstack/eslint-plugin-query": "^5",
     "@types/geojson": "^7946",
     "@types/mapbox__mapbox-gl-draw": "^1",
-    "@types/mapbox-gl": "^3",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
