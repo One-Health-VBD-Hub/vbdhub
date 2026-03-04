@@ -20,18 +20,20 @@
     "@fastify/swagger": "^9",
     "@fastify/swagger-ui": "^5",
     "@fastify/under-pressure": "^9",
+    "@terraformer/wkt": "^2.2.1",
+    "@turf/rewind": "^7.3.4",
     "@vbdhub/db": "^0.1",
+    "dotenv": "^17",
     "fastify": "^5",
     "fastify-cli": "^7",
-    "fastify-plugin": "^5",
-    "dotenv": "^17"
+    "fastify-plugin": "^5"
   },
   "devDependencies": {
-    "@types/node": "^22",
     "@fastify/type-provider-json-schema-to-ts": "^5",
+    "@types/node": "^22",
+    "concurrently": "^9",
     "fastify-tsconfig": "^3",
     "knip": "latest",
-    "concurrently": "^9",
     "typescript": "^5"
   }
 }
