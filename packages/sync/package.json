@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build -w @vbdhub/db && tsc",
     "sync": "node dist/cli.js",
     "sync:gbif": "npm run sync -- --job gbif",
     "sync:hub": "npm run sync -- --job hub",
