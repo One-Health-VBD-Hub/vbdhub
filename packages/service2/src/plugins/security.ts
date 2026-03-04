@@ -8,7 +8,13 @@ export default fp(async (fastify) => {
   await fastify.register(cors, {
     origin: true,
     methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type']
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'sentry-trace',
+      'baggage',
+      'traceparent'
+    ]
   });
   await fastify.register(helmet, { global: true }); // per-route override via route opts
   await fastify.register(rateLimit, {
