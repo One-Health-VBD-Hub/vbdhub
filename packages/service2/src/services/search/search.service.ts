@@ -1,5 +1,6 @@
 import { PrismaClient } from '@vbdhub/db';
 import type { DatasetCategory, Prisma, SourceDb } from '@prisma/client';
+import { normalizeWktForGbif } from './gbif-geometry';
 
 const MAX_TEXT_MATCH_CANDIDATES = 50_000;
 const GBIF_API_BASE_URL = 'https://api.gbif.org/v1/';
@@ -474,6 +475,9 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
     input: SearchInput;
   }): Promise<string[]> => {
     const query = input.query?.trim();
+    const gbifGeometry = input.geometry
+      ? normalizeWktForGbif(input.geometry)
+      : undefined;
     const modifiedRange = formatGbifModifiedRange({
       publishedFrom: input.publishedFrom,
       publishedTo: input.publishedTo
@@ -483,7 +487,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
       : '';
     const cacheKey = [
       `q=${query ?? ''}`,
-      `geometry=${input.geometry ?? ''}`,
+      `geometry=${gbifGeometry ?? ''}`,
       `modified=${modifiedRange ?? ''}`,
       `taxonomy=${taxonomy}`
     ].join('|');
@@ -504,7 +508,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
     url.searchParams.set('hasCoordinate', 'true');
     // Occurrence API supports free-text q only; exact/contains modes are treated as q.
     if (query) url.searchParams.set('q', query);
-    if (input.geometry) url.searchParams.set('geometry', input.geometry);
+    if (gbifGeometry) url.searchParams.set('geometry', gbifGeometry);
     // Approximate publishedFrom/publishedTo using occurrence "modified" range.
     if (modifiedRange) url.searchParams.set('modified', modifiedRange);
     input.taxonomyGbifIds?.forEach((taxonId) =>
