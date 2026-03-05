@@ -1,9 +1,11 @@
 import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
 import type { DatasetCategory, SourceDb } from '@prisma/client';
 import { SearchValidationError } from '../../services/search/search.service';
+import { buildCacheKey } from '../../common/cache-key';
 
 const MAX_LIMIT = 50;
 const MAX_WINDOW = 10_000;
+const LEGACY_SEARCH_CACHE_TTL_MS = 60_000;
 
 const LEGACY_CATEGORIES = [
   'trait',
@@ -156,20 +158,6 @@ const parseCsv = (value: unknown, fieldName: string): string[] | undefined => {
   return parsed.length > 0 ? Array.from(new Set(parsed)) : undefined;
 };
 
-const dedupeStringArray = (
-  values: readonly string[] | undefined
-): string[] | undefined => {
-  if (!values?.length) return undefined;
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
-};
-
-const dedupeIntArray = (
-  values: readonly number[] | undefined
-): number[] | undefined => {
-  if (!values?.length) return undefined;
-  return Array.from(new Set(values));
-};
-
 const parseDateFlexible = (value: unknown, fieldName: string): Date | undefined => {
   if (value === undefined || value === null || value === '') return undefined;
   if (typeof value !== 'string') {
@@ -274,7 +262,7 @@ const parseLegacyTaxonomyCsv = (value: unknown): number[] | undefined => {
     );
   }
 
-  return dedupeIntArray(parsed);
+  return parsed;
 };
 
 const legacySearchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
@@ -290,7 +278,7 @@ const legacySearchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
         }
       }
     },
-    async (request) => {
+    async (request, reply) => {
       try {
         const page = request.query.page;
         const limit = request.query.limit;
@@ -322,17 +310,13 @@ const legacySearchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           parseCsv(request.query.database, 'database')
         );
 
-        const mappedCategories = dedupeStringArray(
-          legacyCategories
-            ?.map((category) => LEGACY_TO_CANONICAL_CATEGORY[category])
-            .filter((value): value is DatasetCategory => Boolean(value))
-        ) as DatasetCategory[] | undefined;
+        const mappedCategories = legacyCategories
+          ?.map((category) => LEGACY_TO_CANONICAL_CATEGORY[category])
+          .filter((value): value is DatasetCategory => Boolean(value));
 
-        const mappedSourceDbs = dedupeStringArray(
-          legacyDatabases
-            ?.map((database) => LEGACY_TO_CANONICAL_SOURCE_DB[database])
-            .filter((value): value is SourceDb => Boolean(value))
-        ) as SourceDb[] | undefined;
+        const mappedSourceDbs = legacyDatabases
+          ?.map((database) => LEGACY_TO_CANONICAL_SOURCE_DB[database])
+          .filter((value): value is SourceDb => Boolean(value));
 
         if (legacyCategories?.length && !mappedCategories?.length) {
           return { count: 0, hits: [] };
@@ -342,21 +326,47 @@ const legacySearchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           return { count: 0, hits: [] };
         }
 
-        const response = await fastify.searchService.search({
-          query: normalizeQuery(request.query.query),
-          queryMode: request.query.exact ? 'exact' : 'fulltext',
+        const query = normalizeQuery(request.query.query);
+        const queryMode = request.query.exact ? 'exact' : 'fulltext';
+        const includeWithoutPublished = request.query.withoutPublished;
+        const geometry = normalizeWkt(request.query.geometry);
+        const taxonomyGbifIds = parseLegacyTaxonomyCsv(request.query.taxonomy);
+
+        const cacheKey = buildCacheKey('search-legacy', {
+          query,
+          queryMode,
           page,
           limit,
           category: mappedCategories,
           sourceDb: mappedSourceDbs,
           publishedFrom,
           publishedTo,
-          includeWithoutPublished: request.query.withoutPublished,
-          geometry: normalizeWkt(request.query.geometry),
-          taxonomyGbifIds: parseLegacyTaxonomyCsv(request.query.taxonomy)
+          includeWithoutPublished,
+          geometry,
+          taxonomyGbifIds
         });
 
-        return {
+        const cached = await fastify.cache.get(cacheKey);
+        if (cached !== undefined) {
+          reply.header('x-cache', 'HIT');
+          return cached;
+        }
+
+        const response = await fastify.searchService.search({
+          query,
+          queryMode,
+          page,
+          limit,
+          category: mappedCategories,
+          sourceDb: mappedSourceDbs,
+          publishedFrom,
+          publishedTo,
+          includeWithoutPublished,
+          geometry,
+          taxonomyGbifIds
+        });
+
+        const payload = {
           count: response.meta.total,
           hits: response.items.map((item) => ({
             id: item.sourceKey,
@@ -368,6 +378,11 @@ const legacySearchRoute: FastifyPluginAsyncJsonSchemaToTs = async (
             published: item.publishedAt
           }))
         };
+
+        await fastify.cache.set(cacheKey, payload, LEGACY_SEARCH_CACHE_TTL_MS);
+        reply.header('x-cache', 'MISS');
+
+        return payload;
       } catch (error) {
         if (error instanceof SearchValidationError) {
           throw fastify.httpErrors.badRequest(error.message);

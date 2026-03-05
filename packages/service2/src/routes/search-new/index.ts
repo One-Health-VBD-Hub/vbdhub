@@ -1,15 +1,16 @@
 import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
-import type { DatasetCategory, SourceDb } from '@prisma/client';
 import {
   SEARCH_QUERY_MODES,
   SearchQueryMode,
   SearchValidationError
 } from '../../services/search/search.service';
+import { buildCacheKey } from '../../common/cache-key';
 
 const MAX_LIMIT = 50;
 const MAX_WINDOW = 10_000;
 const DEFAULT_LIMIT = 20;
 const DEFAULT_PAGE = 1;
+const SEARCH_CACHE_TTL_MS = 60_000;
 
 const DATASET_CATEGORIES = [
   'occurrence',
@@ -155,21 +156,6 @@ const parseDateOnly = (value: unknown, fieldName: string): Date | undefined => {
   return parsed;
 };
 
-const dedupeStringArray = (
-  values: readonly string[] | undefined
-): string[] | undefined => {
-  if (!values?.length) return undefined;
-  // Trim + dedupe to keep filter payload canonical before it reaches the service.
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
-};
-
-const dedupeIntArray = (
-  values: readonly number[] | undefined
-): number[] | undefined => {
-  if (!values?.length) return undefined;
-  return Array.from(new Set(values));
-};
-
 const normalizeWkt = (value: unknown): string | undefined => {
   if (value === undefined || value === null || value === '') return undefined;
   if (typeof value !== 'string') {
@@ -200,7 +186,7 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
         }
       }
     },
-    async (request) => {
+    async (request, reply) => {
       try {
         const page = request.body.page ?? DEFAULT_PAGE;
         const limit = request.body.limit ?? DEFAULT_LIMIT;
@@ -218,7 +204,10 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           request.body.publishedFrom,
           'publishedFrom'
         );
-        const publishedTo = parseDateOnly(request.body.publishedTo, 'publishedTo');
+        const publishedTo = parseDateOnly(
+          request.body.publishedTo,
+          'publishedTo'
+        );
 
         if (publishedFrom && publishedTo && publishedFrom > publishedTo) {
           throw new SearchValidationError(
@@ -226,16 +215,13 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           );
         }
 
-        const category = dedupeStringArray(request.body.category) as
-          | DatasetCategory[]
-          | undefined;
-        const sourceDb = dedupeStringArray(request.body.sourceDb) as
-          | SourceDb[]
-          | undefined;
-        const taxonomyGbifIds = dedupeIntArray(request.body.taxonomyGbifIds);
+        const category = request.body.category;
+        const sourceDb = request.body.sourceDb;
+        const taxonomyGbifIds = request.body.taxonomyGbifIds;
         const geometry = normalizeWkt(request.body.geometry);
+        const includeWithoutPublished = request.body.includeWithoutPublished;
 
-        return await fastify.searchService.search({
+        const cacheKey = buildCacheKey('search-new', {
           query,
           queryMode,
           page,
@@ -244,10 +230,35 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           sourceDb,
           publishedFrom,
           publishedTo,
-          includeWithoutPublished: request.body.includeWithoutPublished,
+          includeWithoutPublished,
           geometry,
           taxonomyGbifIds
         });
+
+        const cached = await fastify.cache.get(cacheKey);
+        if (cached !== undefined) {
+          reply.header('x-cache', 'HIT');
+          return cached;
+        }
+
+        const response = await fastify.searchService.search({
+          query,
+          queryMode,
+          page,
+          limit,
+          category,
+          sourceDb,
+          publishedFrom,
+          publishedTo,
+          includeWithoutPublished,
+          geometry,
+          taxonomyGbifIds
+        });
+
+        await fastify.cache.set(cacheKey, response, SEARCH_CACHE_TTL_MS);
+        reply.header('x-cache', 'MISS');
+
+        return response;
       } catch (error) {
         // Surface expected validation failures as 400 responses.
         if (error instanceof SearchValidationError) {

@@ -8,10 +8,10 @@ export default fp(
   async (fastify) => {
     fastify.decorate(
       'searchService',
-      buildSearchService({ prisma: fastify.prisma })
+      buildSearchService({ prisma: fastify.prisma, cache: fastify.cache })
     );
   },
-  { name: 'search', dependencies: ['prisma'] }
+  { name: 'search', dependencies: ['prisma', 'cache'] }
 );
 
 declare module 'fastify' {
