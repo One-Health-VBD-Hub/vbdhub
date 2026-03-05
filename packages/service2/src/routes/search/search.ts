@@ -57,9 +57,10 @@ const CANONICAL_TO_LEGACY_SOURCE_DB: Record<SourceDb, LegacyDatabase> = {
 const WKT_GEOMETRY_REGEX = /^(POLYGON|MULTIPOLYGON)\s*\(.+\)$/i;
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_DATE_TIME_REGEX =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})$/;
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})?$/;
+const DATE_TIME_HAS_TIMEZONE_REGEX = /(Z|[+\-]\d{2}:\d{2})$/;
 const ISO_DATE_OR_DATE_TIME_PATTERN =
-  '^(?:$|\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+\\-]\\d{2}:\\d{2}))?)$';
+  '^(?:$|\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+\\-]\\d{2}:\\d{2})?)?)$';
 const WKT_GEOMETRY_PATTERN =
   '^(?:$|(?:[Pp][Oo][Ll][Yy][Gg][Oo][Nn]|[Mm][Uu][Ll][Tt][Ii][Pp][Oo][Ll][Yy][Gg][Oo][Nn])\\s*\\(.+\\))$';
 const escapeRegex = (value: string): string =>
@@ -185,9 +186,12 @@ const parseDateFlexible = (value: unknown, fieldName: string): Date | undefined 
     );
   }
 
-  const parsed = isDateOnly
-    ? new Date(`${value}T00:00:00.000Z`)
-    : new Date(value);
+  const parsedValue = isDateOnly
+    ? `${value}T00:00:00.000Z`
+    : DATE_TIME_HAS_TIMEZONE_REGEX.test(value)
+      ? value
+      : `${value}Z`;
+  const parsed = new Date(parsedValue);
 
   if (Number.isNaN(parsed.getTime())) {
     throw new SearchValidationError(
