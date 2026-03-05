@@ -58,6 +58,20 @@ const WKT_GEOMETRY_REGEX = /^(POLYGON|MULTIPOLYGON)\s*\(.+\)$/i;
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_DATE_TIME_REGEX =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})$/;
+const ISO_DATE_OR_DATE_TIME_PATTERN =
+  '^(?:$|\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+\\-]\\d{2}:\\d{2}))?)$';
+const WKT_GEOMETRY_PATTERN =
+  '^(?:$|(?:[Pp][Oo][Ll][Yy][Gg][Oo][Nn]|[Mm][Uu][Ll][Tt][Ii][Pp][Oo][Ll][Yy][Gg][Oo][Nn])\\s*\\(.+\\))$';
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const buildOptionalCsvEnumPattern = (values: readonly string[]): string => {
+  const alternatives = values.map(escapeRegex).join('|');
+  return `^(?:$|(?:${alternatives})(?:\\s*,\\s*(?:${alternatives}))*)$`;
+};
+const LEGACY_CATEGORY_CSV_PATTERN =
+  buildOptionalCsvEnumPattern(LEGACY_CATEGORIES);
+const LEGACY_DATABASE_CSV_PATTERN = buildOptionalCsvEnumPattern(LEGACY_DATABASES);
+const POSITIVE_INT_CSV_PATTERN = '^(?:$|\\d+(?:\\s*,\\s*\\d+)*)$';
 
 const legacySearchQuerySchema = {
   type: 'object',
@@ -65,16 +79,38 @@ const legacySearchQuerySchema = {
   required: ['limit', 'page'],
   properties: {
     query: { type: 'string', minLength: 1, maxLength: 500 },
-    exact: { type: 'boolean' },
+    exact: { type: 'boolean', default: false },
     limit: { type: 'integer', minimum: 1, maximum: MAX_LIMIT },
     page: { type: 'integer', minimum: 1 },
-    category: { type: 'string' },
-    database: { type: 'string' },
-    publishedFrom: { type: 'string' },
-    publishedTo: { type: 'string' },
-    withoutPublished: { type: 'boolean' },
-    geometry: { type: 'string', maxLength: 200_000 },
-    taxonomy: { type: 'string' }
+    category: {
+      type: 'string',
+      maxLength: 300,
+      pattern: LEGACY_CATEGORY_CSV_PATTERN
+    },
+    database: {
+      type: 'string',
+      maxLength: 120,
+      pattern: LEGACY_DATABASE_CSV_PATTERN
+    },
+    publishedFrom: {
+      type: 'string',
+      pattern: ISO_DATE_OR_DATE_TIME_PATTERN
+    },
+    publishedTo: {
+      type: 'string',
+      pattern: ISO_DATE_OR_DATE_TIME_PATTERN
+    },
+    withoutPublished: { type: 'boolean', default: false },
+    geometry: {
+      type: 'string',
+      maxLength: 200_000,
+      pattern: WKT_GEOMETRY_PATTERN
+    },
+    taxonomy: {
+      type: 'string',
+      maxLength: 8_000,
+      pattern: POSITIVE_INT_CSV_PATTERN
+    }
   }
 } as const;
 
@@ -86,16 +122,17 @@ const legacySearchResponseSchema = {
     count: { type: 'integer', minimum: 0 },
     hits: {
       type: 'array',
+      maxItems: MAX_LIMIT,
       items: {
         type: 'object',
         additionalProperties: false,
         required: ['id', 'db', 'title', 'type'],
         properties: {
-          id: { type: 'string' },
+          id: { type: 'string', minLength: 1 },
           db: { type: 'string', enum: [...LEGACY_DATABASES] },
-          title: { type: 'string' },
+          title: { type: 'string', minLength: 1 },
           description: { type: 'string' },
-          doi: { type: 'string' },
+          doi: { type: 'string', maxLength: 2_048 },
           type: { type: 'string', enum: [...LEGACY_CATEGORIES] },
           published: { type: 'string', format: 'date-time' }
         }
