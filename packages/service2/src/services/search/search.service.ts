@@ -1,14 +1,15 @@
 import { PrismaClient } from '@vbdhub/db';
 import type { DatasetCategory, Prisma, SourceDb } from '@prisma/client';
-import { normalizeWktForGbif } from './gbif-geometry';
+import type Keyv from 'keyv';
+import { normalizeWktForGbif } from './geometry';
 
 const MAX_TEXT_MATCH_CANDIDATES = 50_000;
 const GBIF_API_BASE_URL = 'https://api.gbif.org/v1/';
 const GBIF_REQUEST_TIMEOUT_MS = 10_000;
 const GBIF_OCCURRENCE_FACET_LIMIT = 1_200_000;
 const GBIF_DETAIL_CONCURRENCY = 8;
-const GBIF_OCCURRENCE_CACHE_TTL_MS = 5 * 60 * 1000;
-const GBIF_DATASET_DETAIL_CACHE_TTL_MS = 30 * 60 * 1000;
+const GBIF_OCCURRENCE_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const GBIF_DATASET_DETAIL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export const SEARCH_QUERY_MODES = ['fulltext', 'contains', 'exact'] as const;
 export type SearchQueryMode = (typeof SEARCH_QUERY_MODES)[number];
@@ -288,15 +289,13 @@ const mapWithConcurrency = async <T, R>({
   return results;
 };
 
-export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
-  const gbifOccurrenceKeysCache = new Map<
-    string,
-    { value: string[]; expiresAt: number }
-  >();
-  const gbifDatasetDetailCache = new Map<
-    string,
-    { value: GbifDatasetDetailResponse | null; expiresAt: number }
-  >();
+export const buildSearchService = ({
+  prisma,
+  cache
+}: {
+  prisma: PrismaClient;
+  cache: Keyv;
+}) => {
 
   const searchLocalProvider = async ({
     input,
@@ -491,12 +490,12 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
       `modified=${modifiedRange ?? ''}`,
       `taxonomy=${taxonomy}`
     ].join('|');
+    const scopedCacheKey = `search:gbif:occurrence-keys:${cacheKey}`;
 
-    const cached = gbifOccurrenceKeysCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.value;
+    const cached = await cache.get<string[]>(scopedCacheKey);
+    if (cached !== undefined) {
+      return cached;
     }
-    if (cached) gbifOccurrenceKeysCache.delete(cacheKey);
 
     const seen = new Set<string>();
 
@@ -523,21 +522,18 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
     }
 
     const result = Array.from(seen);
-    gbifOccurrenceKeysCache.set(cacheKey, {
-      value: result,
-      expiresAt: Date.now() + GBIF_OCCURRENCE_CACHE_TTL_MS
-    });
+    await cache.set(scopedCacheKey, result, GBIF_OCCURRENCE_CACHE_TTL_MS);
     return result;
   };
 
   const fetchGbifDatasetDetail = async (
     key: string
   ): Promise<GbifDatasetDetailResponse | null> => {
-    const cached = gbifDatasetDetailCache.get(key);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.value;
+    const cacheKey = `search:gbif:dataset-detail:${key}`;
+    const cached = await cache.get<GbifDatasetDetailResponse | null>(cacheKey);
+    if (cached !== undefined) {
+      return cached;
     }
-    if (cached) gbifDatasetDetailCache.delete(key);
 
     const url = new URL(`dataset/${key}`, GBIF_API_BASE_URL);
     const rawDetail = await fetchGbifJson<GbifDatasetDetailResponse>(url, {
@@ -549,10 +545,7 @@ export const buildSearchService = ({ prisma }: { prisma: PrismaClient }) => {
           description: sanitizeGbifDescription(rawDetail.description)
         }
       : null;
-    gbifDatasetDetailCache.set(key, {
-      value: detail,
-      expiresAt: Date.now() + GBIF_DATASET_DETAIL_CACHE_TTL_MS
-    });
+    await cache.set(cacheKey, detail, GBIF_DATASET_DETAIL_CACHE_TTL_MS);
     return detail;
   };
 
