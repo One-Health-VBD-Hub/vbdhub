@@ -29,12 +29,18 @@ const SOURCE_DBS = [
 
 const WKT_GEOMETRY_REGEX = /^(POLYGON|MULTIPOLYGON)\s*\(.+\)$/i;
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const WKT_GEOMETRY_PATTERN =
+  '^(?:$|(?:[Pp][Oo][Ll][Yy][Gg][Oo][Nn]|[Mm][Uu][Ll][Tt][Ii][Pp][Oo][Ll][Yy][Gg][Oo][Nn])\\s*\\(.+\\))$';
 
 const searchRequestBodySchema = {
   type: 'object',
   properties: {
     query: { type: 'string', minLength: 1, maxLength: 500 },
-    queryMode: { type: 'string', enum: [...SEARCH_QUERY_MODES] },
+    queryMode: {
+      type: 'string',
+      enum: [...SEARCH_QUERY_MODES],
+      default: 'fulltext'
+    },
     page: { type: 'integer', minimum: 1, default: DEFAULT_PAGE },
     limit: {
       type: 'integer',
@@ -45,20 +51,27 @@ const searchRequestBodySchema = {
     category: {
       type: 'array',
       items: { type: 'string', enum: [...DATASET_CATEGORIES] },
+      uniqueItems: true,
       maxItems: 20
     },
     sourceDb: {
       type: 'array',
       items: { type: 'string', enum: [...SOURCE_DBS] },
+      uniqueItems: true,
       maxItems: 20
     },
     publishedFrom: { type: 'string', format: 'date' },
     publishedTo: { type: 'string', format: 'date' },
-    includeWithoutPublished: { type: 'boolean' },
-    geometry: { type: 'string', maxLength: 200_000 },
+    includeWithoutPublished: { type: 'boolean', default: false },
+    geometry: {
+      type: 'string',
+      maxLength: 200_000,
+      pattern: WKT_GEOMETRY_PATTERN
+    },
     taxonomyGbifIds: {
       type: 'array',
       items: { type: 'integer', minimum: 1 },
+      uniqueItems: true,
       maxItems: 500
     }
   },
@@ -72,18 +85,19 @@ const searchResponseSchema = {
   properties: {
     items: {
       type: 'array',
+      maxItems: MAX_LIMIT,
       items: {
         type: 'object',
         additionalProperties: false,
         required: ['id', 'sourceKey', 'sourceDb', 'category', 'title'],
         properties: {
-          id: { type: 'string' },
-          sourceKey: { type: 'string' },
+          id: { type: 'string', minLength: 1 },
+          sourceKey: { type: 'string', minLength: 1 },
           sourceDb: { type: 'string', enum: [...SOURCE_DBS] },
           category: { type: 'string', enum: [...DATASET_CATEGORIES] },
-          title: { type: 'string' },
+          title: { type: 'string', minLength: 1 },
           description: { type: 'string' },
-          doi: { type: 'string' },
+          doi: { type: 'string', maxLength: 2_048 },
           publisher: { type: 'string' },
           publishedAt: { type: 'string', format: 'date-time' }
         }
@@ -101,10 +115,10 @@ const searchResponseSchema = {
         'hasPreviousPage'
       ],
       properties: {
-        page: { type: 'integer' },
-        limit: { type: 'integer' },
-        total: { type: 'integer' },
-        totalPages: { type: 'integer' },
+        page: { type: 'integer', minimum: 1 },
+        limit: { type: 'integer', minimum: 1, maximum: MAX_LIMIT },
+        total: { type: 'integer', minimum: 0 },
+        totalPages: { type: 'integer', minimum: 0 },
         hasNextPage: { type: 'boolean' },
         hasPreviousPage: { type: 'boolean' }
       }
