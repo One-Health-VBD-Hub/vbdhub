@@ -8,7 +8,6 @@ import Map, {
 } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import DrawControl from '@/components/maps/DrawControl';
-import { useMemo } from 'react';
 import { Feature as GeoJSONFeature } from 'geojson';
 import { useGeometry } from '@/app/(main)/search/useSearchFilters';
 
@@ -76,13 +75,10 @@ export default function MapboxMap({
           features={features}
           position='top-left'
           displayControlsDefault={false}
-          controls={useMemo(
-            () => ({
-              polygon: true,
-              trash: true
-            }),
-            []
-          )}
+          controls={{
+            polygon: true,
+            trash: true
+          }}
           onCreate={onUpdate}
           onUpdate={onUpdate}
           onDelete={onDelete}

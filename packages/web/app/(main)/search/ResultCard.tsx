@@ -1,21 +1,25 @@
 import React from 'react';
-import { AnyRecord } from '@/types/indexed';
 import Link from 'next/link';
 import HighlightedText from '@/components/HighlightedText';
 import { Checkbox, Tooltip } from '@carbon/react';
 import { ArrowRight } from '@carbon/icons-react';
-import { useTaxonomy } from '@/app/(main)/search/useSearchFilters';
 import { Information } from '@carbon/icons-react';
+import { SearchDatasetItem } from '@/types/search';
+
+type ResultCardRecord = Pick<
+  SearchDatasetItem,
+  'sourceKey' | 'sourceDb' | 'title' | 'description' | 'publishedAt'
+>;
 
 export function dbToFullName(db: string) {
   switch (db) {
     case 'gbif':
       return 'GBIF';
-    case 'px':
+    case 'proteomexchange':
       return 'ProteomeXchange';
-    case 'vd':
+    case 'vecdyn':
       return 'VecDyn (VectorByte)';
-    case 'vt':
+    case 'vectraits':
       return 'VecTraits (VectorByte)';
     case 'hub':
       return 'VBD Hub repository';
@@ -28,15 +32,16 @@ export default function ResultCard({
   result,
   query = '',
   selected = false,
-  gbifAggregated = false
+  gbifAggregated = false,
+  taxonomy = []
 }: {
-  result: AnyRecord;
+  result: ResultCardRecord;
   query?: string;
   selected?: boolean;
   gbifAggregated?: boolean;
+  taxonomy?: string[];
 }) {
-  const id = `${result.db}-${result.id}`;
-  const [taxonomy] = useTaxonomy();
+  const id = `${result.sourceDb}-${result.sourceKey}`;
 
   const href = gbifAggregated
     ? `https://www.gbif.org/occurrence/search?taxon_key=${taxonomy.join(
@@ -45,7 +50,7 @@ export default function ResultCard({
     : `/dataset/${id}`;
   return (
     <div
-      key={result.id}
+      key={`${result.sourceDb}-${result.sourceKey}`}
       className={`flex justify-between gap-4 bg-[#f4f4f4] p-4 text-sm ${selected ? 'border' : ''}`}
     >
       <div className='min-w-0'>
@@ -83,22 +88,22 @@ export default function ResultCard({
           {<HighlightedText text={result.description ?? ''} query={query} />}
         </p>
 
-        {result.pubDate && (
+        {result.publishedAt && (
           <p>
             <span className='font-medium'>publication date:</span>{' '}
-            <span>{new Date(result.pubDate).toDateString()}</span>
+            <span>{new Date(result.publishedAt).toDateString()}</span>
           </p>
         )}
 
         <p>
           <span className='font-medium'>source:</span>{' '}
-          <span>{dbToFullName(result.db)}</span>
+          <span>{dbToFullName(result.sourceDb)}</span>
         </p>
       </div>
       <div className='flex flex-col'>
         {/* TODO: unhide once complete */}
         <Checkbox
-          id={result.id}
+          id={result.sourceKey}
           labelText=''
           title='Select'
           className='hidden'

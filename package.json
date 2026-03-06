@@ -6,8 +6,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev --workspace=@vbdhub/web",
-    "dev:service": "npm run start:dev --workspace=@vbdhub/service"
+    "dev:web": "npm run dev -w @vbdhub/web",
+    "dev:service": "npm run start:dev -w @vbdhub/service",
+    "dev:service2": "npm run dev -w @vbdhub/service2",
+    "db:prisma:generate": "npm run prisma:generate -w @vbdhub/db",
+    "db:prisma:migrate:dev": "npm run prisma:migrate:dev -w @vbdhub/db",
+    "db:prisma:migrate:deploy": "npm run prisma:migrate:deploy -w @vbdhub/db"
   },
   "prettier": {
     "singleQuote": true,
@@ -15,7 +19,6 @@
     "trailingComma": "none"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22",
     "typescript": "^5"
   }
 }

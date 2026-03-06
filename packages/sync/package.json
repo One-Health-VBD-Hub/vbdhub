@@ -1,0 +1,35 @@
+{
+  "name": "@vbdhub/sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run build -w @vbdhub/db && tsc",
+    "sync": "node dist/cli.js",
+    "sync:gbif": "npm run sync -- --job gbif",
+    "sync:hub": "npm run sync -- --job hub",
+    "sync:px": "npm run sync -- --job px",
+    "sync:vd": "npm run sync -- --job vd",
+    "sync:vt": "npm run sync -- --job vt"
+  },
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@vbdhub/db": "^0.1.0",
+    "dotenv": "^17",
+    "pino": "^10",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22",
+    "@types/node": "^22",
+    "typescript": "^5"
+  }
+}
