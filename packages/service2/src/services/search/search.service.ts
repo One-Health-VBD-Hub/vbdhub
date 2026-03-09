@@ -2,6 +2,7 @@ import { PrismaClient } from '@vbdhub/db';
 import type { DatasetCategory, Prisma, SourceDb } from '@prisma/client';
 import type Keyv from 'keyv';
 import { normalizeWktForGbif } from './geometry';
+import { sanitizeHtmlText } from '../../common/html';
 
 const MAX_TEXT_MATCH_CANDIDATES = 50_000;
 const GBIF_API_BASE_URL = 'https://api.gbif.org/v1/';
@@ -127,69 +128,6 @@ const toIsoDateStringOrUndefined = (value: string | undefined): string | undefin
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return undefined;
   return parsed.toISOString();
-};
-
-const HTML_ENTITY_MAP: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-  nbsp: ' '
-};
-
-const stripHtmlTags = (value: string): string =>
-  value.replace(/<[^>]*>/g, ' ');
-
-const decodeHtmlEntities = (value: string): string =>
-  value.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, entity) => {
-    if (entity.startsWith('#')) {
-      const isHex = entity[1]?.toLowerCase() === 'x';
-      const codePointText = isHex ? entity.slice(2) : entity.slice(1);
-      const codePoint = Number.parseInt(codePointText, isHex ? 16 : 10);
-      if (Number.isNaN(codePoint)) return match;
-      try {
-        return String.fromCodePoint(codePoint);
-      } catch {
-        return match;
-      }
-    }
-
-    return HTML_ENTITY_MAP[entity.toLowerCase()] ?? match;
-  });
-
-const sanitizeGbifDescription = (
-  description: string | undefined
-): string | undefined => {
-  if (!description) return undefined;
-
-  // Fast path: plain text without tags/entities only needs trim.
-  if (!description.includes('<') && !description.includes('&')) {
-    const trimmed = description.trim();
-    return trimmed || undefined;
-  }
-
-  let text = description;
-
-  if (text.includes('<')) {
-    text = stripHtmlTags(text);
-  }
-
-  if (text.includes('&')) {
-    text = decodeHtmlEntities(text);
-  }
-
-  // Decode can introduce tags from entities like `&lt;p&gt;...`.
-  if (text.includes('<')) {
-    text = stripHtmlTags(text);
-  }
-
-  if (/\s{2,}|\r|\n|\t/.test(text)) {
-    text = text.replace(/\s+/g, ' ');
-  }
-
-  const normalized = text.trim();
-  return normalized || undefined;
 };
 
 const mapGbifDatasetToResult = ({
@@ -537,12 +475,12 @@ export const buildSearchService = ({
 
     const url = new URL(`dataset/${key}`, GBIF_API_BASE_URL);
     const rawDetail = await fetchGbifJson<GbifDatasetDetailResponse>(url, {
-      allow404: true
+        allow404: true
     });
     const detail = rawDetail
       ? {
           ...rawDetail,
-          description: sanitizeGbifDescription(rawDetail.description)
+          description: sanitizeHtmlText(rawDetail.description)
         }
       : null;
     await cache.set(cacheKey, detail, GBIF_DATASET_DETAIL_CACHE_TTL_MS);
