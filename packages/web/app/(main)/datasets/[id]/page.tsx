@@ -36,7 +36,7 @@ async function getDataset(id: string) {
   if (!datasetId) notFound();
 
   const r = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/dataset/${datasetId}?db=${db}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/datasets/${datasetId}?db=${db}`,
     { next: { revalidate: 60 * 60 * 24 * 2 } } // revalidate every 48 hours
   );
 
@@ -51,7 +51,7 @@ async function getDataset(id: string) {
 }
 
 export async function generateMetadata(
-  props: PageProps<'/dataset/[id]'>
+  props: PageProps<'/datasets/[id]'>
 ): Promise<Metadata> {
   const { id } = await props.params;
   const dataset = await getDataset(id);
@@ -87,7 +87,7 @@ function DatasetBar({ id, db }: { id: string; db: SearchSourceDb }) {
   );
 }
 
-export default async function DatasetPage(props: PageProps<'/dataset/[id]'>) {
+export default async function DatasetPage(props: PageProps<'/datasets/[id]'>) {
   const { id } = await props.params;
   const datasetData = await getDataset(id);
 
