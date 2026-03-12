@@ -47,7 +47,7 @@ export default function ResultCard({
     ? `https://www.gbif.org/occurrence/search?taxon_key=${taxonomy.join(
         '&taxon_key='
       )}&occurrence_status=present`
-    : `/dataset/${id}`;
+    : `/datasets/${id}`;
   return (
     <div
       key={`${result.sourceDb}-${result.sourceKey}`}
