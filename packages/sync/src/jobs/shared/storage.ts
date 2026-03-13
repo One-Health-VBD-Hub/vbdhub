@@ -1,14 +1,6 @@
 import type { BucketItem } from 'minio';
 import * as Minio from 'minio';
 import type { Readable } from 'node:stream';
-import { z } from 'zod';
-
-const storageEnvSchema = z.object({
-  endPoint: z.string().trim().min(1).default('t3.storageapi.dev'),
-  accessKey: z.string().trim().min(1),
-  secretKey: z.string().trim().min(1),
-  bucket: z.string().trim().min(1)
-});
 
 export interface HubBucketObject {
   key: string;
@@ -28,16 +20,14 @@ interface GetObjectStreamParams {
   bucket?: string | undefined;
 }
 
-export function createHubStorageClient() {
-  const env = storageEnvSchema.parse({
-    endPoint: process.env.S3_ENDPOINT,
-    accessKey: process.env.S3_ACCESS_KEY_ID,
-    secretKey: process.env.S3_SECRET_ACCESS_KEY,
-    bucket: process.env.S3_BUCKET_NAME
-  });
-
+export function createHubStorageClient(env: {
+  endPoint?: string;
+  accessKey: string;
+  secretKey: string;
+  bucket: string;
+}) {
   const client = new Minio.Client({
-    endPoint: env.endPoint,
+    endPoint: env.endPoint ?? 't3.storageapi.dev',
     useSSL: true,
     accessKey: env.accessKey,
     secretKey: env.secretKey
@@ -50,7 +40,11 @@ export function createHubStorageClient() {
   }: ListObjectsParams): Promise<HubBucketObject[]> {
     const bucketName = bucket ?? env.bucket;
     const normalizedPrefix = prefix.trim();
-    const stream = client.listObjectsV2(bucketName, normalizedPrefix, recursive);
+    const stream = client.listObjectsV2(
+      bucketName,
+      normalizedPrefix,
+      recursive
+    );
     const objects: HubBucketObject[] = [];
 
     for await (const object of stream as AsyncIterable<BucketItem>) {
