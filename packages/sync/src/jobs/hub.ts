@@ -15,7 +15,10 @@ import {
   type Coordinate
 } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/values.js';
-import { createHubStorageClient, type HubBucketObject } from './shared/storage.js';
+import {
+  createHubStorageClient,
+  type HubBucketObject
+} from './shared/storage.js';
 import type { JobDefinition } from '../types.js';
 
 const HUB_SOURCE_DB = 'hub';
@@ -35,7 +38,12 @@ const metadataFieldAliases = {
   homepageUrl: ['homepageurl', 'homepage', 'url'],
   license: ['license', 'licence'],
   publisher: ['contactaffiliation', 'publisher', 'submittedby'],
-  publishedAt: ['publishedat', 'publicationdate', 'dateusedforstatistics', 'year']
+  publishedAt: [
+    'publishedat',
+    'publicationdate',
+    'dateusedforstatistics',
+    'year'
+  ]
 } as const;
 
 const personFieldAliases = {
@@ -53,8 +61,19 @@ const taxonIdFieldAliases = {
 
 const speciesFieldAliases = ['scientificname', 'species'];
 const genusFieldAliases = ['genus'];
-const latitudeFieldAliases = ['latitude', 'lat', 'decimallatitude', 'samplelatdd'];
-const longitudeFieldAliases = ['longitude', 'lon', 'lng', 'decimallongitude', 'samplelongdd'];
+const latitudeFieldAliases = [
+  'latitude',
+  'lat',
+  'decimallatitude',
+  'samplelatdd'
+];
+const longitudeFieldAliases = [
+  'longitude',
+  'lon',
+  'lng',
+  'decimallongitude',
+  'samplelongdd'
+];
 const yearFieldAliases = ['year'];
 const dateFieldAliases = [
   'dateusedforstatistics',
@@ -107,7 +126,20 @@ export const hubSyncJob: JobDefinition = {
     if (signal.aborted) throw new Error('Job aborted before start');
 
     const prisma = createPrismaClient();
-    const storage = createHubStorageClient();
+
+    if (
+      !process.env.S3_BUCKET_NAME ||
+      !process.env.S3_ACCESS_KEY_ID ||
+      !process.env.S3_SECRET_ACCESS_KEY
+    ) {
+      throw new Error('Hub storage client not configured');
+    }
+
+    const storage = createHubStorageClient({
+      accessKey: process.env.S3_ACCESS_KEY_ID,
+      secretKey: process.env.S3_SECRET_ACCESS_KEY,
+      bucket: process.env.S3_BUCKET_NAME
+    });
     const prefix = process.env.HUB_SYNC_PREFIX?.trim() ?? '';
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
 
@@ -125,7 +157,10 @@ export const hubSyncJob: JobDefinition = {
       });
       const datasets = collectDatasetFiles(objects, prefix);
 
-      logger.info({ objects: objects.length, datasets: datasets.length }, 'Hub inventory complete');
+      logger.info(
+        { objects: objects.length, datasets: datasets.length },
+        'Hub inventory complete'
+      );
 
       for (const dataset of datasets) {
         if (signal.aborted) throw new Error('Job aborted');
@@ -133,7 +168,11 @@ export const hubSyncJob: JobDefinition = {
         try {
           const snapshot = await processDataset(storage, dataset);
           const datasetRecord = await upsertDataset(prisma, snapshot);
-          await upsertSpatialGeometry(prisma, datasetRecord.id, snapshot.coordinates);
+          await upsertSpatialGeometry(
+            prisma,
+            datasetRecord.id,
+            snapshot.coordinates
+          );
 
           const taxaLinked = await linkDatasetTaxaShared(
             prisma,
@@ -157,7 +196,10 @@ export const hubSyncJob: JobDefinition = {
             'Hub dataset synchronised'
           );
         } catch (error) {
-          logger.error({ err: error, key: dataset.object.key }, 'Failed to sync hub dataset');
+          logger.error(
+            { err: error, key: dataset.object.key },
+            'Failed to sync hub dataset'
+          );
         }
       }
     } finally {
@@ -166,7 +208,10 @@ export const hubSyncJob: JobDefinition = {
   }
 };
 
-function collectDatasetFiles(objects: HubBucketObject[], prefix: string): HubDatasetFile[] {
+function collectDatasetFiles(
+  objects: HubBucketObject[],
+  prefix: string
+): HubDatasetFile[] {
   return objects
     .filter((object) => object.key.toLowerCase().endsWith('.csv'))
     .map((object) => {
@@ -191,7 +236,9 @@ function parseDatasetPath(
 
   const category = categoryMap[rawCategory.toLowerCase()];
   if (!category) {
-    throw new Error(`Unsupported hub category "${rawCategory}" in "${objectKey}"`);
+    throw new Error(
+      `Unsupported hub category "${rawCategory}" in "${objectKey}"`
+    );
   }
 
   const sourceKey = rest[0]!.replace(/\.csv$/i, '');
@@ -206,7 +253,9 @@ async function processDataset(
   storage: ReturnType<typeof createHubStorageClient>,
   dataset: HubDatasetFile
 ): Promise<DatasetSnapshot> {
-  const stream = await storage.getObjectStream({ objectKey: dataset.object.key });
+  const stream = await storage.getObjectStream({
+    objectKey: dataset.object.key
+  });
 
   const accumulator: DatasetAccumulator = {
     title: null,
@@ -258,13 +307,19 @@ async function processDataset(
           ? getFirstString(accumulator.firstRow, personFieldAliases.contactName)
           : null,
         contactAffiliation: accumulator.firstRow
-          ? getFirstString(accumulator.firstRow, personFieldAliases.contactAffiliation)
+          ? getFirstString(
+              accumulator.firstRow,
+              personFieldAliases.contactAffiliation
+            )
           : null,
         email: accumulator.firstRow
           ? getFirstString(accumulator.firstRow, personFieldAliases.email)
           : null,
         contributorEmail: accumulator.firstRow
-          ? getFirstString(accumulator.firstRow, personFieldAliases.contributorEmail)
+          ? getFirstString(
+              accumulator.firstRow,
+              personFieldAliases.contributorEmail
+            )
           : null,
         submittedBy: accumulator.firstRow
           ? getFirstString(accumulator.firstRow, personFieldAliases.submittedBy)
@@ -296,23 +351,38 @@ async function parseCsv(
   stream.pipe(parser);
 
   for await (const record of parser) {
-    absorbRecord(accumulator, normalizeRecord(record as Record<string, unknown>));
+    absorbRecord(
+      accumulator,
+      normalizeRecord(record as Record<string, unknown>)
+    );
   }
 }
 
-function absorbRecord(accumulator: DatasetAccumulator, record: Record<string, string>): void {
+function absorbRecord(
+  accumulator: DatasetAccumulator,
+  record: Record<string, string>
+): void {
   accumulator.recordCount += 1;
   accumulator.firstRow ??= record;
 
   accumulator.title ??= getFirstString(record, metadataFieldAliases.title);
-  accumulator.description ??= getFirstString(record, metadataFieldAliases.description);
+  accumulator.description ??= getFirstString(
+    record,
+    metadataFieldAliases.description
+  );
   accumulator.publisher ??=
     getFirstString(record, metadataFieldAliases.publisher) ??
     getFirstString(record, personFieldAliases.contactAffiliation);
-  accumulator.homepageUrl ??= getFirstString(record, metadataFieldAliases.homepageUrl);
+  accumulator.homepageUrl ??= getFirstString(
+    record,
+    metadataFieldAliases.homepageUrl
+  );
   accumulator.doi ??= getFirstString(record, metadataFieldAliases.doi);
   accumulator.license ??= getFirstString(record, metadataFieldAliases.license);
-  accumulator.publishedAt ??= extractDate(record, metadataFieldAliases.publishedAt);
+  accumulator.publishedAt ??= extractDate(
+    record,
+    metadataFieldAliases.publishedAt
+  );
 
   const speciesName = extractSpeciesName(record);
   if (speciesName) accumulator.speciesNames.add(speciesName);
@@ -324,9 +394,14 @@ function absorbRecord(accumulator: DatasetAccumulator, record: Record<string, st
   if (year !== null) accumulator.years.add(year);
 }
 
-function normalizeRecord(record: Record<string, unknown>): Record<string, string> {
+function normalizeRecord(
+  record: Record<string, unknown>
+): Record<string, string> {
   return Object.fromEntries(
-    Object.entries(record).map(([key, value]) => [normalizeFieldName(key), stringifyCell(value)])
+    Object.entries(record).map(([key, value]) => [
+      normalizeFieldName(key),
+      stringifyCell(value)
+    ])
   );
 }
 
@@ -400,13 +475,15 @@ function extractCoordinate(record: Record<string, string>): Coordinate | null {
   const latitude = getFirstNumber(record, latitudeFieldAliases);
   const longitude = getFirstNumber(record, longitudeFieldAliases);
   if (latitude === null || longitude === null) return null;
-  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
+    return null;
   return { lat: latitude, lon: longitude };
 }
 
 function extractYear(record: Record<string, string>): number | null {
   const directYear = getFirstNumber(record, yearFieldAliases);
-  if (directYear !== null && directYear >= 1000 && directYear <= 3000) return directYear;
+  if (directYear !== null && directYear >= 1000 && directYear <= 3000)
+    return directYear;
 
   const dated = extractDate(record, dateFieldAliases);
   return dated ? dated.getUTCFullYear() : null;
