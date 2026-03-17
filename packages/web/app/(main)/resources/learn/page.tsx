@@ -34,6 +34,47 @@ export default function Learn() {
 
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
         <ClickableTile
+          title='Training workshop on data visualisations in R'
+          className='h-44'
+          href='/resources/learn/online-training-2026-w1'
+          onClick={(e) => {
+            e.preventDefault();
+            router.push('/resources/learn/online-training-2026-w1');
+          }}
+        >
+          <Stack gap={3}>
+            <h3 className='text-lg font-medium'>Data visualisations in R 📈</h3>
+            <p className='pb-5'>
+              Developing effective visualisations for VBD data, such as
+              abundance plots. Patterns and data details that can be extracted
+              from them, and how to ensure they are accessible to different
+              audiences.
+            </p>
+          </Stack>
+        </ClickableTile>
+
+        <ClickableTile
+          title='Training workshop on data wrangling with Hubsearch and ohvbd'
+          className='h-44'
+          href='/resources/learn/online-training-2026-w2'
+          onClick={(e) => {
+            e.preventDefault();
+            router.push('/resources/learn/online-training-2026-w2');
+          }}
+        >
+          <Stack gap={3}>
+            <h3 className='text-lg font-medium'>
+              Data wrangling with Hub tools
+            </h3>
+            <p className='pb-5'>
+              Hub search, ohvbd and navigating the resources for VBD data
+              access. Practical examples with real datasets, accessing and
+              wrangling complex datasets in preparation for further analyses.
+            </p>
+          </Stack>
+        </ClickableTile>
+
+        <ClickableTile
           title='Training workshop on data sharing and analysis'
           className='h-44'
           href='/resources/learn/training-2025'
