@@ -102,8 +102,7 @@ function SearchPage() {
   const showAggregateDatasetGBIF =
     currentPage == 1 &&
     taxonomy.length > 0 &&
-    (category.length == 0 ||
-      sourceDb.length == 0 ||
+    ((category.length == 0 && sourceDb.length == 0) ||
       category.includes('occurrence') ||
       sourceDb.includes('gbif'));
 
