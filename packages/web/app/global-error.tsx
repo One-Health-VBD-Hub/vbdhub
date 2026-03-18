@@ -5,11 +5,7 @@ import { useEffect } from 'react';
 import { Button } from '@carbon/react';
 import Link from 'next/link';
 
-export default function GlobalError({
-  error
-}: {
-  error: Error & { digest?: string };
-}) {
+export default function GlobalError({ error }: { error: Error }) {
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
