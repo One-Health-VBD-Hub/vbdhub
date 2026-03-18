@@ -26,7 +26,7 @@
     ]
   },
   "dependencies": {
-    "@carbon/react": "^1.101",
+    "@carbon/react": "^1",
     "@formbricks/js": "^4",
     "@iframe-resizer/react": "^5",
     "@mapbox/mapbox-gl-draw": "^1",
@@ -46,7 +46,7 @@
     "tailwind-variants": "^0.3",
     "usehooks-ts": "^3",
     "wellknown": "^0.5",
-    "zod": "^4"
+    "zod": "^4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9",

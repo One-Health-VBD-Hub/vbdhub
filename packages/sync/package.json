@@ -27,7 +27,7 @@
     "dotenv": "^17",
     "minio": "^8",
     "pino": "^10",
-    "zod": "^4"
+    "zod": "^4.3"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22",

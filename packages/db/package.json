@@ -17,14 +17,14 @@
     "prisma:migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7",
-    "@prisma/client": "^7"
+    "@prisma/adapter-pg": "^7.5",
+    "@prisma/client": "^7.5"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22",
     "@types/node": "^22",
     "dotenv": "^17",
-    "prisma": "^7",
+    "prisma": "^7.5",
     "typescript": "^5"
   }
 }
