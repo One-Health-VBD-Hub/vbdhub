@@ -18,7 +18,6 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { UseComboboxInputValueChange } from 'downshift';
 import { Feature as GeoJSONFeature } from 'geojson';
-import dynamic from 'next/dynamic';
 import {
   SEARCH_CATEGORIES,
   SEARCH_SOURCE_DBS,
@@ -38,14 +37,7 @@ import {
   useCurrentPage,
   useExactOnly
 } from '@/app/(main)/search/useSearchFilters';
-
-// dynamically import the map component to avoid large bundle size
-const MapboxMap = dynamic(() => import('@/components/maps/MapboxMap'), {
-  ssr: false,
-  loading: () => (
-    <div className='mb-4 aspect-square animate-pulse bg-gray-100 lg:aspect-square lg:h-72' />
-  )
-});
+import MapboxMap from '@/components/maps/MapboxMap';
 
 export interface Filters {
   geometry: Record<string, GeoJSONFeature>;
@@ -392,6 +384,9 @@ export default function FilterPanel() {
           <MapboxMap
             className='mb-4 aspect-square lg:aspect-square lg:h-72'
             fullscreenControl
+            features={geometry}
+            setFeatures={setGeometry}
+            drawControl
           />
         </AccordionItem>
         <AccordionItem
