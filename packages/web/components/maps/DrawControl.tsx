@@ -1,7 +1,6 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import { useControl } from 'react-map-gl/mapbox';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
-
 import type { ControlPosition } from 'react-map-gl/mapbox';
 import { Feature as GeoJSONFeature } from 'geojson';
 import { useEffect } from 'react';

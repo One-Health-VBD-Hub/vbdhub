@@ -34,21 +34,22 @@ export default function Learn() {
 
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
         <ClickableTile
-          title='Training workshop on data visualisations in R'
+          title='Training workshop on data sharing and analysis'
           className='h-44'
-          href='/resources/learn/online-training-2026-w1'
+          href='/resources/learn/training-2025'
           onClick={(e) => {
             e.preventDefault();
-            router.push('/resources/learn/online-training-2026-w1');
+            router.push('/resources/learn/training-2025');
           }}
         >
           <Stack gap={3}>
-            <h3 className='text-lg font-medium'>Data visualisations in R 📈</h3>
+            <h3 className='text-lg font-medium'>
+              Workshop on data sharing and analysis 📊
+            </h3>
             <p className='pb-5'>
-              Developing effective visualisations for VBD data, such as
-              abundance plots. Patterns and data details that can be extracted
-              from them, and how to ensure they are accessible to different
-              audiences.
+              3-day course from 4-6 June 2025. Includes data wrangling &
+              visualizing data, linear & nonlinear models, time series (LM &
+              distributions), and more.
             </p>
           </Stack>
         </ClickableTile>
@@ -75,22 +76,21 @@ export default function Learn() {
         </ClickableTile>
 
         <ClickableTile
-          title='Training workshop on data sharing and analysis'
+          title='Training workshop on data visualisations in R'
           className='h-44'
-          href='/resources/learn/training-2025'
+          href='/resources/learn/online-training-2026-w1'
           onClick={(e) => {
             e.preventDefault();
-            router.push('/resources/learn/training-2025');
+            router.push('/resources/learn/online-training-2026-w1');
           }}
         >
           <Stack gap={3}>
-            <h3 className='text-lg font-medium'>
-              Workshop on data sharing and analysis 📊
-            </h3>
+            <h3 className='text-lg font-medium'>Data visualisations in R 📈</h3>
             <p className='pb-5'>
-              3-day course from 4-6 June 2025. Includes data wrangling &
-              visualizing data, linear & nonlinear models, time series (LM &
-              distributions), and more.
+              Developing effective visualisations for VBD data, such as
+              abundance plots. Patterns and data details that can be extracted
+              from them, and how to ensure they are accessible to different
+              audiences.
             </p>
           </Stack>
         </ClickableTile>

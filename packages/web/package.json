@@ -26,7 +26,7 @@
     ]
   },
   "dependencies": {
-    "@carbon/react": "^1",
+    "@carbon/react": "^1.103",
     "@formbricks/js": "^4",
     "@iframe-resizer/react": "^5",
     "@mapbox/mapbox-gl-draw": "^1",
@@ -61,7 +61,6 @@
     "babel-plugin-react-compiler": "^1.0",
     "eslint": "^9",
     "eslint-config-next": "^16",
-    "eslint-plugin-prettier": "^5",
     "knip": "^5",
     "next-sitemap": "^4",
     "postcss": "^8",

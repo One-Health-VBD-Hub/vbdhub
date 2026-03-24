@@ -16,9 +16,9 @@ import React, { useId, useState } from 'react';
 import { Reset } from '@carbon/icons-react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/lib/hooks/useDebounce';
+import { useGbifTaxonomyItems } from '@/lib/hooks/useGbifTaxonomyItems';
 import { UseComboboxInputValueChange } from 'downshift';
 import { Feature as GeoJSONFeature } from 'geojson';
-import dynamic from 'next/dynamic';
 import {
   SEARCH_CATEGORIES,
   SEARCH_SOURCE_DBS,
@@ -38,14 +38,8 @@ import {
   useCurrentPage,
   useExactOnly
 } from '@/app/(main)/search/useSearchFilters';
-
-// dynamically import the map component to avoid large bundle size
-const MapboxMap = dynamic(() => import('@/components/maps/MapboxMap'), {
-  ssr: false,
-  loading: () => (
-    <div className='mb-4 aspect-square animate-pulse bg-gray-100 lg:aspect-square lg:h-72' />
-  )
-});
+import MapboxMap from '@/components/maps/MapboxMap';
+import { TaxonomyItem } from '@/lib/gbif/taxonomy';
 
 export interface Filters {
   geometry: Record<string, GeoJSONFeature>;
@@ -128,12 +122,8 @@ export default function FilterPanel() {
   };
 
   // fetch taxonomy names from GBIF API using the selected taxonomy IDs
-  const { data: selectedTaxItems, isPending: taxItemsPending } = useQuery({
-    queryKey: ['selectedTaxItems', taxonomy],
-    placeholderData: keepPreviousData,
-    staleTime: Infinity, // enable request caching
-    queryFn: ({ signal }) => getTaxonomyNamesFromIDs(taxonomy, signal)
-  });
+  const { data: selectedTaxItems, isPending: taxItemsPending } =
+    useGbifTaxonomyItems(taxonomy);
 
   const numOfFilters =
     category.length +
@@ -392,6 +382,9 @@ export default function FilterPanel() {
           <MapboxMap
             className='mb-4 aspect-square lg:aspect-square lg:h-72'
             fullscreenControl
+            features={geometry}
+            setFeatures={setGeometry}
+            drawControl
           />
         </AccordionItem>
         <AccordionItem
@@ -495,19 +488,6 @@ export default function FilterPanel() {
   );
 }
 
-interface TaxonomyItem {
-  canonicalName?: string;
-  scientificName: string;
-  key: number; // GBIF id
-  rank: string; // taxonomic rank
-  kingdom: string;
-  phylum?: string;
-  order?: string;
-  family?: string;
-  genus?: string;
-  species?: string;
-}
-
 export function TaxonomyMultiSelect({
   baseId,
   id,
@@ -584,29 +564,4 @@ export function TaxonomyMultiSelect({
       />
     </div>
   );
-}
-
-/**
- * Fetches taxonomy names from GBIF API using a list of GBIF IDs.
- * @param gbifIDs - An array of GBIF IDs to fetch taxonomy names for.
- * @param signal - An optional AbortSignal to cancel the request if needed.
- * @returns A promise that resolves to an array of TaxonomyItem objects.
- */
-async function getTaxonomyNamesFromIDs(
-  gbifIDs: string[],
-  signal?: AbortSignal
-) {
-  const settled = await Promise.allSettled(
-    gbifIDs.map((id) =>
-      fetch(`https://api.gbif.org/v1/species/${id}`, { signal }).then((r) =>
-        r.ok ? r.json() : Promise.reject(r.statusText)
-      )
-    )
-  );
-
-  return settled
-    .filter(
-      (r): r is PromiseFulfilledResult<TaxonomyItem> => r.status === 'fulfilled'
-    )
-    .map((r) => r.value);
 }

@@ -1,5 +1,3 @@
-'use client';
-
 import Map, {
   FullscreenControl,
   GeolocateControl,
@@ -8,10 +6,16 @@ import Map, {
 } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import DrawControl from '@/components/maps/DrawControl';
-import { Feature as GeoJSONFeature } from 'geojson';
-import { useGeometry } from '@/app/(main)/search/useSearchFilters';
+import { Feature, Feature as GeoJSONFeature } from 'geojson';
+
+type FeatureMap = Record<string, Feature>;
+type SetFeaturesAction = FeatureMap | null | ((prevFeatures: FeatureMap) => FeatureMap);
+type SetFeatures = (value: SetFeaturesAction) => void | Promise<unknown>;
 
 interface Props {
+  features?: FeatureMap;
+  setFeatures?: SetFeatures;
+  drawControl?: boolean;
   scaleControl?: boolean;
   geoLocateControl?: boolean;
   fullscreenControl?: boolean;
@@ -20,33 +24,36 @@ interface Props {
 }
 
 export default function MapboxMap({
+  features,
+  setFeatures,
+  drawControl = false,
   scaleControl = false,
   geoLocateControl = false,
   fullscreenControl = false,
   navigationControl = false,
   className
 }: Props) {
-  const [features, setFeatures] = useGeometry();
-
   const onUpdate = (e: { features: GeoJSONFeature[] }) => {
-    setFeatures((prevFeatures) => {
+    if (!setFeatures) return;
+
+    void setFeatures((prevFeatures) => {
       const newFeatures = { ...prevFeatures };
 
-      for (const f of e.features) {
+      for (const f of e.features)
         if (f.id) newFeatures[f.id] = f;
-      }
 
       return newFeatures;
     });
   };
 
   const onDelete = (e: { features: GeoJSONFeature[] }) => {
-    setFeatures((prevFeatures) => {
+    if (!setFeatures) return;
+
+    void setFeatures((prevFeatures) => {
       const newFeatures = { ...prevFeatures };
 
-      for (const f of e.features) {
+      for (const f of e.features)
         if (f.id) delete newFeatures[f.id];
-      }
 
       return newFeatures;
     });
@@ -64,25 +71,27 @@ export default function MapboxMap({
           bearing: 0,
           pitch: 0
         }}
-        mapStyle='mapbox://styles/mapbox/light-v9'
+        mapStyle='mapbox://styles/mapbox/light-v10'
         mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
       >
         {geoLocateControl && <GeolocateControl />}
         {fullscreenControl && <FullscreenControl />}
         {navigationControl && <NavigationControl />}
         {scaleControl && <ScaleControl />}
-        <DrawControl
-          features={features}
-          position='top-left'
-          displayControlsDefault={false}
-          controls={{
-            polygon: true,
-            trash: true
-          }}
-          onCreate={onUpdate}
-          onUpdate={onUpdate}
-          onDelete={onDelete}
-        />
+        {drawControl && (
+          <DrawControl
+            features={features}
+            position='top-left'
+            displayControlsDefault={false}
+            controls={{
+              polygon: true,
+              trash: true
+            }}
+            onCreate={onUpdate}
+            onUpdate={onUpdate}
+            onDelete={onDelete}
+          />
+        )}
       </Map>
     </div>
   );
