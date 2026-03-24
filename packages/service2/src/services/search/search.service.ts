@@ -11,6 +11,7 @@ const GBIF_OCCURRENCE_FACET_LIMIT = 1_200_000;
 const GBIF_DETAIL_CONCURRENCY = 8;
 const GBIF_OCCURRENCE_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const GBIF_DATASET_DETAIL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const TAXON_DESCENDANT_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 export const SEARCH_QUERY_MODES = ['fulltext', 'contains', 'exact'] as const;
 export type SearchQueryMode = (typeof SEARCH_QUERY_MODES)[number];
@@ -234,6 +235,40 @@ export const buildSearchService = ({
   prisma: PrismaClient;
   cache: Keyv;
 }) => {
+  const expandTaxonomyGbifIds = async (
+    taxonomyGbifIds: number[]
+  ): Promise<number[]> => {
+    const normalizedTaxonomyGbifIds = [...new Set(taxonomyGbifIds)].sort(
+      (a, b) => a - b
+    );
+    const cacheKey = `search:taxonomy:expanded:${normalizedTaxonomyGbifIds.join(',')}`;
+    const cached = await cache.get<number[]>(cacheKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const matchingTaxa = await prisma.taxon.findMany({
+      where: {
+        OR: [
+          { gbifTaxonId: { in: normalizedTaxonomyGbifIds } },
+          { kingdomId: { in: normalizedTaxonomyGbifIds } },
+          { phylumId: { in: normalizedTaxonomyGbifIds } },
+          { classId: { in: normalizedTaxonomyGbifIds } },
+          { orderId: { in: normalizedTaxonomyGbifIds } },
+          { familyId: { in: normalizedTaxonomyGbifIds } },
+          { genusId: { in: normalizedTaxonomyGbifIds } }
+        ]
+      },
+      select: {
+        gbifTaxonId: true
+      }
+    });
+
+    const expandedTaxonomyGbifIds = [...new Set(matchingTaxa.map((taxon) => taxon.gbifTaxonId))]
+      .sort((a, b) => a - b);
+    await cache.set(cacheKey, expandedTaxonomyGbifIds, TAXON_DESCENDANT_CACHE_TTL_MS);
+    return expandedTaxonomyGbifIds;
+  };
 
   const searchLocalProvider = async ({
     input,
@@ -323,11 +358,16 @@ export const buildSearchService = ({
     }
 
     if (input.taxonomyGbifIds?.length) {
+      const expandedTaxonomyGbifIds = await expandTaxonomyGbifIds(
+        input.taxonomyGbifIds
+      );
+      if (!expandedTaxonomyGbifIds.length) return emptyProviderResult();
+
       andConditions.push({
         taxa: {
           some: {
             gbifTaxonId: {
-              in: input.taxonomyGbifIds
+              in: expandedTaxonomyGbifIds
             }
           }
         }
