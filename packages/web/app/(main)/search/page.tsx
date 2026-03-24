@@ -2,17 +2,17 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchResults } from '@/lib/hooks/useSearchResults';
-import ResultCard from '@/app/(main)/search/ResultCard';
+import { useGbifTaxonomyItems } from '@/lib/hooks/useGbifTaxonomyItems';
 import {
   Button,
-  InlineLoading,
+  ContentSwitcher,
   InlineNotification,
   Loading,
-  Modal
+  Modal,
+  Switch
 } from '@carbon/react';
 import FilterPanel from '@/app/(main)/search/FilterPanel';
 import { Filter } from '@carbon/icons-react';
-import Pagination from '@/app/(main)/search/Pagination';
 import {
   useCategory,
   useCurrentPage,
@@ -26,6 +26,8 @@ import {
   useWithoutPublished
 } from '@/app/(main)/search/useSearchFilters';
 import { useMediaQuery } from 'react-responsive';
+import TableView from '@/app/(main)/search/TableView';
+import MapLibreMap from '@/components/maps/MapLibreMap';
 
 export default function SearchPageWrapper() {
   return (
@@ -53,6 +55,9 @@ function SearchPage() {
   const [withoutPublished] = useWithoutPublished();
   const [publishedFrom] = usePublishedFrom();
   const [publishedTo] = usePublishedTo();
+
+  const [mapView, setMapView] = useState(false);
+  const { data: selectedTaxItems = [] } = useGbifTaxonomyItems(taxonomy);
 
   const { data, error, isPending } = useSearchResults({
     query: searchQuery,
@@ -86,6 +91,14 @@ function SearchPage() {
   const totalPages = data?.meta.totalPages ?? 0;
   const effectiveTotalPages = Math.min(totalPages, MAX_SEARCH_PAGES);
   const shouldRenderMobileFilters = !isDesktopFilters && filterModalOpen;
+  const mapTaxa = taxonomy.map((taxonKey) => {
+    const taxon = selectedTaxItems.find((item) => item.key.toString(10) === taxonKey);
+
+    return {
+      key: taxonKey,
+      name: taxon?.canonicalName ?? taxon?.scientificName ?? taxonKey
+    };
+  });
 
   // set to last page if the current page (from URL) is greater than total pages
   useEffect(() => {
@@ -97,15 +110,6 @@ function SearchPage() {
       setCurrentPage(effectiveTotalPages);
     }
   }, [currentPage, effectiveTotalPages, isPending, setCurrentPage]);
-
-  // determine whether to show the GBIF aggregated dataset card
-  const showAggregateDatasetGBIF =
-    currentPage == 1 &&
-    taxonomy.length > 0 &&
-    (category.length == 0 ||
-      sourceDb.length == 0 ||
-      category.includes('occurrence') ||
-      sourceDb.includes('gbif'));
 
   return (
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
@@ -119,6 +123,22 @@ function SearchPage() {
 
         <div className='min-w-0 flex-1'>
           {/*<SearchBar className='mb-4' />*/}
+          <ContentSwitcher className='my-2' onChange={function tTe() {}}>
+            <Switch
+              name='table'
+              text='Table view'
+              title='Switch to table view'
+              className='text-base'
+              onClick={() => setMapView(false)}
+            />
+            <Switch
+              name='map'
+              text='Map view'
+              title='Switch to map view'
+              className='text-base'
+              onClick={() => setMapView(true)}
+            />
+          </ContentSwitcher>
           <>
             <div className='mb-2 flex items-end justify-between align-middle 2xl:justify-end'>
               {!isDesktopFilters && (
@@ -168,50 +188,20 @@ function SearchPage() {
               />
             )}
 
-          {isPending ? (
-            <div className='w-full *:mx-auto *:w-fit'>
-              <InlineLoading />
-            </div>
+          {mapView ? (
+            <MapLibreMap
+              gbifTaxa={mapTaxa}
+              dbs={sourceDb}
+            />
           ) : (
-            <>
-              {currentResults && currentResults.length > 0 ? (
-                <div className='space-y-4'>
-                  {showAggregateDatasetGBIF && (
-                    <ResultCard
-                      gbifAggregated
-                      key={taxonomy.join()}
-                      taxonomy={taxonomy}
-                      result={{
-                        sourceKey: 'gbif-aggregated',
-                        sourceDb: 'gbif',
-                        title: `GBIF Aggregated Dataset (taxon IDs ${taxonomy.join(', ')})`,
-                        description:
-                          'Aggregated occurrence data from the Global Biodiversity Information Facility (GBIF).'
-                      }}
-                      query={searchQuery ?? undefined}
-                    />
-                  )}
-                  {currentResults?.map((result) => (
-                    <ResultCard
-                      key={`${result.sourceDb}-${result.sourceKey}`}
-                      result={result}
-                      query={searchQuery ?? undefined}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className='my-10 flex flex-col items-center text-center text-base'>
-                  No results found. Try widening your search criteria.
-                </div>
-              )}
-            </>
-          )}
-
-          {!!data?.meta.total && currentPage <= effectiveTotalPages && (
-            <Pagination
-              totalPages={effectiveTotalPages}
-              setCurrentPage={setCurrentPage}
+            <TableView
+              currentResults={currentResults}
               currentPage={currentPage}
+              effectiveTotalPages={effectiveTotalPages}
+              setCurrentPage={setCurrentPage}
+              isPending={isPending}
+              taxonomy={taxonomy}
+              searchQuery={searchQuery}
             />
           )}
         </div>

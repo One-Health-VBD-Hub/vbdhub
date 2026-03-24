@@ -45,8 +45,8 @@ const roadmapItems = [
   },
   {
     id: 4,
-    date: 'January 2026',
-    datetime: '2026-01',
+    date: 'April 2026',
+    datetime: '2026-04',
     title: 'Version 2 release',
     details: (
       <ul className='list-inside list-disc text-left'>
