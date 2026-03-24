@@ -25,6 +25,11 @@ const TAXON_COLORS = [
   '#0f766e'
 ];
 
+const MARTIN_TILE_SERVER_URL = process.env.NEXT_PUBLIC_MARTIN_TILE_SERVER_URL;
+if (!MARTIN_TILE_SERVER_URL) {
+  throw new Error('Missing NEXT_PUBLIC_MARTIN_TILE_SERVER_URL');
+}
+
 export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
   const taxa = gbifTaxa.filter(
     (taxon, index, self) =>
@@ -58,7 +63,7 @@ export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
       >
         {taxa.map(({ key: taxonKey }, index) => {
           const color = TAXON_COLORS[index % TAXON_COLORS.length];
-          const datasetTileUrl = `${process.env.NEXT_PUBLIC_MARTIN_TILE_SERVER_URL}/public.dataset_by_taxon/{z}/{x}/{y}?taxonKey=${taxonKey}`;
+          const datasetTileUrl = `${MARTIN_TILE_SERVER_URL}/public.dataset_by_taxon/{z}/{x}/{y}?taxonKey=${taxonKey}`;
           const gbifTileUrl = `https://api.gbif.org/v2/map/occurrence/density/{z}/{x}/{y}.mvt?srs=EPSG:3857&taxonKey=${taxonKey}`;
 
           return (
