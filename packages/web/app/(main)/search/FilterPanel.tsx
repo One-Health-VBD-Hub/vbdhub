@@ -510,7 +510,7 @@ export function TaxonomyMultiSelect({
   const { data: suggestedTaxonNames } = useQuery({
     queryKey: ['suggestedTaxonNames', debouncedInput],
     placeholderData: keepPreviousData,
-    staleTime: Infinity, // enable request caching
+    staleTime: 30 * 60 * 1000, // cache results for 30 minutes
     queryFn: async (): Promise<TaxonomyItem[]> => {
       const response = await fetch(
         `https://api.gbif.org/v1/species/suggest?q=${debouncedInput}&status=accepted&limit=10`
