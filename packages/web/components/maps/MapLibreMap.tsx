@@ -117,7 +117,7 @@ export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
         <div className='mb-2 font-semibold text-black'>Legend</div>
         {!hasTaxa && (
           <div className='text-black/70'>
-            Select a taxonomy filter to show data
+            Use the taxonomy filter to show data
           </div>
         )}
         {taxa.map(({ key: taxonKey, name }, index) => (
