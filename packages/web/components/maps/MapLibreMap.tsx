@@ -12,7 +12,18 @@ interface Props {
   dbs?: SearchSourceDb[];
 }
 
-const TAXON_COLORS = ['#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#0891b2'];
+const TAXON_COLORS = [
+  '#16a34a',
+  '#f59e0b',
+  '#dc2626',
+  '#7c3aed',
+  '#0891b2',
+  '#db2777',
+  '#ea580c',
+  '#65a30d',
+  '#2563eb',
+  '#0f766e'
+];
 
 export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
   const taxa = gbifTaxa.filter(
