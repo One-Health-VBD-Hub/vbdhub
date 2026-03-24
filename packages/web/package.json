@@ -26,7 +26,7 @@
     ]
   },
   "dependencies": {
-    "@carbon/react": "^1",
+    "@carbon/react": "^1.103",
     "@formbricks/js": "^4",
     "@iframe-resizer/react": "^5",
     "@mapbox/mapbox-gl-draw": "^1",
