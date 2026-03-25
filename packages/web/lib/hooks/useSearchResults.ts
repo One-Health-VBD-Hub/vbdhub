@@ -33,7 +33,7 @@ export const useSearchResults = ({
 }: UseSearchResultsProps) => {
   return useQuery({
     queryKey: [query, page, filters, limit],
-    staleTime: Infinity, // enable request caching
+    staleTime: 30 * 60 * 1000, // cache results for 30 minutes
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<SearchResults> => {
       const start = performance.now();
