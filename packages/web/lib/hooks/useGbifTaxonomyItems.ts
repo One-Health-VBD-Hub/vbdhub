@@ -5,7 +5,7 @@ export function useGbifTaxonomyItems(gbifIDs: string[]) {
   return useQuery({
     queryKey: ['selectedTaxItems', gbifIDs],
     placeholderData: keepPreviousData,
-    staleTime: Infinity,
+    staleTime: 30 * 60 * 1000,
     queryFn: ({ signal }) => getTaxonomyNamesFromIDs(gbifIDs, signal)
   });
 }
