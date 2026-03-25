@@ -80,7 +80,7 @@ export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
                     type='circle'
                     source={`dataset-${taxonKey}`}
                     source-layer='dataset_by_taxon'
-                    filter={datasetFilter}
+                    {...(datasetFilter ? { filter: datasetFilter } : {})}
                     paint={{
                       'circle-color': color,
                       'circle-radius': 4,
