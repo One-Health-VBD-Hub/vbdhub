@@ -2,14 +2,15 @@ import { Fragment } from 'react';
 import Map, { Layer, Source } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { FilterSpecification } from 'mapbox-gl';
-import type { SearchSourceDb } from '@/types/search';
+import type { SearchCategory, SearchSourceDb } from '@/types/search';
 
 interface Props {
   gbifTaxa?: Array<{
     key: string;
     name: string;
   }>;
-  dbs?: SearchSourceDb[];
+  categories?: SearchCategory[];
+  sourceDbs?: SearchSourceDb[];
 }
 
 const TAXON_COLORS = [
@@ -24,26 +25,49 @@ const TAXON_COLORS = [
   '#2563eb',
   '#0f766e'
 ];
+const POINT_PAINT = {
+  'circle-radius': 4,
+  'circle-stroke-color': '#ffffff',
+  'circle-stroke-width': 1,
+  'circle-opacity': 0.8
+} as const;
 
 const MARTIN_TILE_SERVER_URL = process.env.NEXT_PUBLIC_MARTIN_TILE_SERVER_URL;
 if (!MARTIN_TILE_SERVER_URL) {
   throw new Error('Missing NEXT_PUBLIC_MARTIN_TILE_SERVER_URL');
 }
 
-export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
+export default function MapLibreMap({
+  gbifTaxa = [],
+  categories = [],
+  sourceDbs = []
+}: Props) {
   const taxa = gbifTaxa.filter(
     (taxon, index, self) =>
       Boolean(taxon.key) &&
       index === self.findIndex((item) => item.key === taxon.key)
   );
   const hasTaxa = taxa.length > 0;
-  const datasetDbs = dbs.filter((db) => db !== 'gbif');
-  const showDataset = hasTaxa && (dbs.length === 0 || datasetDbs.length > 0);
-  const showGbif = hasTaxa && (dbs.length === 0 || dbs.includes('gbif'));
-  const datasetFilter: FilterSpecification | undefined =
-    datasetDbs.length > 0
-      ? ['in', ['get', 'sourceDb'], ['literal', datasetDbs]]
+  const datasetSourceDbs = sourceDbs.filter((db) => db !== 'gbif');
+  const showOccurrence = categories.length === 0 || categories.includes('occurrence');
+  const showDataset =
+    hasTaxa && (sourceDbs.length === 0 || datasetSourceDbs.length > 0);
+  const showGbif =
+    hasTaxa &&
+    showOccurrence &&
+    (sourceDbs.length === 0 || sourceDbs.includes('gbif'));
+  const sourceDbFilter =
+    datasetSourceDbs.length > 0
+      ? (['in', ['get', 'sourceDb'], ['literal', datasetSourceDbs]] satisfies FilterSpecification)
       : undefined;
+  const categoryFilter =
+    categories.length > 0
+      ? (['in', ['get', 'category'], ['literal', categories]] satisfies FilterSpecification)
+      : undefined;
+  const datasetFilter =
+    sourceDbFilter && categoryFilter
+      ? (['all', sourceDbFilter, categoryFilter] satisfies FilterSpecification)
+      : sourceDbFilter ?? categoryFilter;
 
   return (
     <div className='relative'>
@@ -54,9 +78,9 @@ export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
         style={{ height: 500 }}
         mapStyle='mapbox://styles/mapbox/light-v10'
         initialViewState={{
-          latitude: -8.85,
-          longitude: 26,
-          zoom: 1.4,
+          latitude: 53.5,
+          longitude: 0,
+          zoom: 4,
           bearing: 0,
           pitch: 0
         }}
@@ -69,46 +93,28 @@ export default function MapLibreMap({ gbifTaxa = [], dbs = [] }: Props) {
           return (
             <Fragment key={taxonKey}>
               {showDataset && (
-                <Source
-                  id={`dataset-${taxonKey}`}
-                  key={datasetTileUrl}
-                  type='vector'
-                  tiles={[datasetTileUrl]}
-                >
+                <Source id={`dataset-${taxonKey}`} type='vector' tiles={[datasetTileUrl]}>
                   <Layer
                     id={`dataset-${taxonKey}-points`}
                     type='circle'
-                    source={`dataset-${taxonKey}`}
                     source-layer='dataset_by_taxon'
-                    filter={datasetFilter}
+                    {...(datasetFilter ? { filter: datasetFilter } : {})}
                     paint={{
                       'circle-color': color,
-                      'circle-radius': 4,
-                      'circle-stroke-color': '#ffffff',
-                      'circle-stroke-width': 1,
-                      'circle-opacity': 0.8
+                      ...POINT_PAINT
                     }}
                   />
                 </Source>
               )}
               {showGbif && (
-                <Source
-                  id={`gbif-occurrence-density-${taxonKey}`}
-                  key={gbifTileUrl}
-                  type='vector'
-                  tiles={[gbifTileUrl]}
-                >
+                <Source id={`gbif-occurrence-density-${taxonKey}`} type='vector' tiles={[gbifTileUrl]}>
                   <Layer
                     id={`gbif-occurrence-points-${taxonKey}`}
                     type='circle'
-                    source={`gbif-occurrence-density-${taxonKey}`}
                     source-layer='occurrence'
                     paint={{
                       'circle-color': color,
-                      'circle-radius': 4,
-                      'circle-stroke-color': '#ffffff',
-                      'circle-stroke-width': 1,
-                      'circle-opacity': 0.8
+                      ...POINT_PAINT
                     }}
                   />
                 </Source>

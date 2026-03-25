@@ -76,6 +76,45 @@ const fetchGbifJson = async <T>(url: URL): Promise<T | null> => {
   }
 };
 
+export const getCachedGbifDatasetDetail = async ({
+  cache,
+  sourceKey
+}: {
+  cache: Keyv;
+  sourceKey: string;
+}): Promise<DatasetDetail | null> => {
+  const cacheKey = `datasets:gbif:detail:${sourceKey}`;
+  const cached = await cache.get<DatasetDetail | null>(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const url = new URL(`dataset/${sourceKey}`, GBIF_API_BASE_URL);
+  const rawDetail = await fetchGbifJson<GbifDatasetDetailResponse>(url);
+
+  if (!rawDetail) {
+    await cache.set(cacheKey, null, GBIF_DATASET_DETAIL_CACHE_TTL_MS);
+    return null;
+  }
+
+  const detail: DatasetDetail = {
+    id: `gbif-${rawDetail.key}`,
+    sourceKey: rawDetail.key,
+    db: 'gbif',
+    title: rawDetail.title?.trim() || 'Untitled dataset',
+    description: sanitizeHtmlText(rawDetail.description),
+    type: 'occurrence',
+    doi: rawDetail.doi ?? undefined,
+    publisher: rawDetail.publishingOrganizationTitle ?? undefined,
+    publishedAt: toIsoDateStringOrUndefined(rawDetail.pubDate),
+    homepageUrl: rawDetail.homepage ?? undefined,
+    license: rawDetail.license ?? undefined
+  };
+
+  await cache.set(cacheKey, detail, GBIF_DATASET_DETAIL_CACHE_TTL_MS);
+  return detail;
+};
+
 export const buildDatasetService = ({
   prisma,
   cache
@@ -83,39 +122,11 @@ export const buildDatasetService = ({
   const getGbifDatasetDetail = async (
     sourceKey: string
   ): Promise<DatasetDetail> => {
-    const cacheKey = `datasets:gbif:detail:${sourceKey}`;
-    const cached = await cache.get<DatasetDetail | null>(cacheKey);
-    if (cached !== undefined) {
-      if (!cached) {
-        throw new DatasetNotFoundError(`Dataset not found for source key "${sourceKey}"`);
-      }
-
-      return cached;
-    }
-
-    const url = new URL(`dataset/${sourceKey}`, GBIF_API_BASE_URL);
-    const rawDetail = await fetchGbifJson<GbifDatasetDetailResponse>(url);
-
-    if (!rawDetail) {
-      await cache.set(cacheKey, null, GBIF_DATASET_DETAIL_CACHE_TTL_MS);
+    const detail = await getCachedGbifDatasetDetail({ cache, sourceKey });
+    if (!detail) {
       throw new DatasetNotFoundError(`Dataset not found for source key "${sourceKey}"`);
     }
 
-    const detail: DatasetDetail = {
-      id: `gbif-${rawDetail.key}`,
-      sourceKey: rawDetail.key,
-      db: 'gbif',
-      title: rawDetail.title?.trim() || 'Untitled dataset',
-      description: sanitizeHtmlText(rawDetail.description),
-      type: 'occurrence',
-      doi: rawDetail.doi ?? undefined,
-      publisher: rawDetail.publishingOrganizationTitle ?? undefined,
-      publishedAt: toIsoDateStringOrUndefined(rawDetail.pubDate),
-      homepageUrl: rawDetail.homepage ?? undefined,
-      license: rawDetail.license ?? undefined
-    };
-
-    await cache.set(cacheKey, detail, GBIF_DATASET_DETAIL_CACHE_TTL_MS);
     return detail;
   };
 
