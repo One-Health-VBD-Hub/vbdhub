@@ -26,6 +26,7 @@ import {
   useWithoutPublished
 } from '@/app/(main)/search/useSearchFilters';
 import { useMediaQuery } from 'react-responsive';
+import { useLocalStorage } from 'usehooks-ts';
 import TableView from '@/app/(main)/search/TableView';
 import MapLibreMap from '@/components/maps/MapLibreMap';
 
@@ -55,8 +56,11 @@ function SearchPage() {
   const [withoutPublished] = useWithoutPublished();
   const [publishedFrom] = usePublishedFrom();
   const [publishedTo] = usePublishedTo();
-
-  const [mapView, setMapView] = useState(false);
+  const [mapView, setMapView] = useLocalStorage<boolean>(
+    'search-map-view',
+    false,
+    { initializeWithValue: false }
+  );
   const { data: selectedTaxItems = [] } = useGbifTaxonomyItems(taxonomy);
 
   const { data, error, isPending } = useSearchResults({
@@ -92,7 +96,9 @@ function SearchPage() {
   const effectiveTotalPages = Math.min(totalPages, MAX_SEARCH_PAGES);
   const shouldRenderMobileFilters = !isDesktopFilters && filterModalOpen;
   const mapTaxa = taxonomy.map((taxonKey) => {
-    const taxon = selectedTaxItems.find((item) => item.key.toString(10) === taxonKey);
+    const taxon = selectedTaxItems.find(
+      (item) => item.key.toString(10) === taxonKey
+    );
 
     return {
       key: taxonKey,
@@ -123,20 +129,24 @@ function SearchPage() {
 
         <div className='min-w-0 flex-1'>
           {/*<SearchBar className='mb-4' />*/}
-          <ContentSwitcher className='my-2' onChange={function tTe() {}}>
+          <ContentSwitcher
+            className='my-2'
+            selectedIndex={mapView ? 1 : 0}
+            onChange={({ name }) => {
+              setMapView(name === 'map');
+            }}
+          >
             <Switch
               name='table'
               text='Table view'
               title='Switch to table view'
               className='text-base'
-              onClick={() => setMapView(false)}
             />
             <Switch
               name='map'
               text='Map view'
               title='Switch to map view'
               className='text-base'
-              onClick={() => setMapView(true)}
             />
           </ContentSwitcher>
           <>
