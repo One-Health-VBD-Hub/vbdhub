@@ -43,7 +43,7 @@ export default function Page() {
         </Heading>
 
         <p>
-          Please follow the instructions on{' '}
+          Please follow the instructions on the dedicated{' '}
           <Anchor href='https://one-health-vbd-hub.github.io/vbd-hub-training-workshops/'>
             workshop site
           </Anchor>
