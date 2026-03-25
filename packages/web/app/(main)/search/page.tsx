@@ -191,7 +191,8 @@ function SearchPage() {
           {mapView ? (
             <MapLibreMap
               gbifTaxa={mapTaxa}
-              dbs={sourceDb}
+              categories={category}
+              sourceDbs={sourceDb}
             />
           ) : (
             <TableView
