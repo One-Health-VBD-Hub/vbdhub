@@ -21,7 +21,7 @@ const roadmapItems = [
     title: 'Soft launch',
     details: (
       <ul className='list-inside list-disc text-left'>
-        <li>Occurrence, abundance, trait data search.</li>
+        <li>Occurrence, proteomics, abundance and trait data search.</li>
         <li>SOPs for data types.</li>
       </ul>
     ),
@@ -34,11 +34,9 @@ const roadmapItems = [
     title: 'Hard launch',
     details: (
       <ul className='list-inside list-disc text-left'>
-        <li>Blog and newsletter.</li>
+        <li>Expanded filtering and search capabilities.</li>
         <li>Forum for networking and discussion.</li>
-        <li>
-          Genomic, epidemiological, micro array, transcriptomic data search.
-        </li>
+        <li>Blog and newsletter.</li>
       </ul>
     ),
     status: 'in-progress'
@@ -50,9 +48,9 @@ const roadmapItems = [
     title: 'Version 2 release',
     details: (
       <ul className='list-inside list-disc text-left'>
-        <li>Direct data download.</li>
+        <li>Direct and aggregate data download.</li>
         <li>Mapping and charting functionality.</li>
-        <li>Multi-language support.</li>
+        <li>Omics data search.</li>
       </ul>
     ),
     status: 'upcoming'
