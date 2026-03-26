@@ -95,6 +95,12 @@ function SearchPage() {
   const totalPages = data?.meta.totalPages ?? 0;
   const effectiveTotalPages = Math.min(totalPages, MAX_SEARCH_PAGES);
   const shouldRenderMobileFilters = !isDesktopFilters && filterModalOpen;
+  const showAggregateDatasetGBIF =
+    currentPage === 1 &&
+    taxonomy.length > 0 &&
+    ((category.length === 0 && sourceDb.length === 0) ||
+      category.includes('occurrence') ||
+      sourceDb.includes('gbif'));
   const mapTaxa = taxonomy.map((taxonKey) => {
     const taxon = selectedTaxItems.find(
       (item) => item.key.toString(10) === taxonKey
@@ -207,6 +213,7 @@ function SearchPage() {
           ) : (
             <TableView
               currentResults={currentResults}
+              showAggregateDatasetGBIF={showAggregateDatasetGBIF}
               currentPage={currentPage}
               effectiveTotalPages={effectiveTotalPages}
               setCurrentPage={setCurrentPage}
