@@ -21,7 +21,8 @@ const headlineStats: HeadlineStat[] = [
     section: 'Curation',
     value: '165',
     label: 'Public datasets curated',
-    detail: '60 in VecDyn, 102 in VecTraits, and 3 in GBIF'
+    detail:
+      '60 in VecDyn, 102 in VecTraits, 3 in GBIF and 1 in VBD Hub repository'
   },
   {
     section: 'Curation',
@@ -58,15 +59,15 @@ const curationPublicRows: MetricRow[] = [
 ];
 
 const curationEmbargoedRows: MetricRow[] = [
-  { label: 'GBIF', value: '2 datasets', detail: '319 rows' },
-  { label: 'VecDyn', value: '3 datasets', detail: '31,573 rows' },
-  { label: 'VecTraits', value: '1 dataset', detail: '241 rows' }
+  { label: 'GBIF', value: '2 datasets, 319 rows' },
+  { label: 'VecDyn', value: '3 datasets, 31,573 rows' },
+  { label: 'VecTraits', value: '1 dataset, 241 rows' }
 ];
 
 const communityRows: MetricRow[] = [
   { label: 'Social media views', value: '35,000 per year' },
   { label: 'People reached', value: '15,800 per year' },
-  { label: 'Followers', value: '1,200' },
+  { label: 'Followers', value: '3,200' },
   { label: 'Google Search views', value: '109,000 impressions' },
   { label: 'Forum users', value: '300' }
 ];
@@ -204,9 +205,17 @@ function SummaryTile({ section, value, label, detail }: HeadlineStat) {
   );
 }
 
-function MetricList({ rows }: { rows: MetricRow[] }) {
+function MetricList({
+  rows,
+  className = ''
+}: {
+  rows: MetricRow[];
+  className?: string;
+}) {
   return (
-    <dl className='border-t border-[var(--cds-border-subtle-01)]'>
+    <dl
+      className={`border-t border-[var(--cds-border-subtle-01)] ${className}`.trim()}
+    >
       {rows.map((row) => (
         <div
           key={`${row.label}-${row.value}-${row.detail ?? ''}`}
@@ -215,7 +224,7 @@ function MetricList({ rows }: { rows: MetricRow[] }) {
           <dt className='text-sm font-medium text-[var(--cds-text-primary)]'>
             {row.label}
           </dt>
-          <dd className='text-sm text-[var(--cds-text-primary)] sm:text-right'>
+          <dd className='text-sm text-[var(--cds-text-primary)]'>
             <span>{row.value}</span>
             {row.detail ? (
               <span className='block text-[var(--cds-text-secondary)]'>
@@ -280,7 +289,10 @@ export default function ImpactStats() {
                 Provisional
               </Tag>
             </div>
-            <MetricList rows={curationEmbargoedRows} />
+            <MetricList
+              rows={curationEmbargoedRows}
+              className='w-full lg:max-w-[calc(50%-0.75rem)]'
+            />
           </div>
         </Stack>
 
