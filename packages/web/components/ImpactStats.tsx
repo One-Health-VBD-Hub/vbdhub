@@ -133,8 +133,8 @@ function SummaryTile({ section, value, label, detail }: HeadlineStat) {
           {section}
         </Tag>
       </div>
-      <p className='text-5xl leading-none font-light'>{value}</p>
-      <p className='text-base font-medium'>{label}</p>
+      <p className='text-4xl leading-none'>{value}</p>
+      <p className='text-sm font-medium'>{label}</p>
       <p className='text-sm text-[#525252]'>{detail}</p>
     </Stack>
   );
@@ -165,9 +165,9 @@ export default function ImpactStats() {
         <Heading as='h2' id='impact'>
           Impact
         </Heading>
-        <p className='max-w-3xl text-lg text-[#525252]'>
-          Snapshot of the Hub’s current reach across curation, community
-          building, training, and website use.
+        <p className='max-w-3xl text-base text-[#525252]'>
+          A compact view of current Hub activity across curation, community,
+          training, and website use.
         </p>
       </Stack>
 
@@ -185,13 +185,9 @@ export default function ImpactStats() {
                 <Tag size='sm' type='blue'>
                   Curation
                 </Tag>
-                <Tag size='sm' type='warm-gray'>
-                  Sarah Kelly
-                </Tag>
               </div>
-              <h3 className='mt-3 text-2xl font-light'>
-                Public deposits are already substantial, with more curated data
-                still in embargo or waiting on provider information.
+              <h3 className='mt-3 text-xl'>
+                Deposits released and in pipeline
               </h3>
             </div>
           </div>
@@ -209,9 +205,7 @@ export default function ImpactStats() {
                 <Tag size='sm' type='blue'>
                   Public
                 </Tag>
-                <p className='text-sm text-[#525252]'>
-                  Released to VecDyn, VecTraits, and GBIF
-                </p>
+                <p className='text-sm text-[#525252]'>Released</p>
               </div>
               <MetricList rows={curationPublicRows} />
             </div>
@@ -227,8 +221,7 @@ export default function ImpactStats() {
               </div>
               <MetricList rows={curationEmbargoedRows} />
               <p className='mt-3 text-sm text-[#525252]'>
-                One additional VecTraits dataset representing 4,542 rows is
-                still being checked and is not rolled into the figures above.
+                Plus 1 VecTraits dataset under review: 4,542 rows.
               </p>
             </div>
           </div>
@@ -244,10 +237,7 @@ export default function ImpactStats() {
                 Networking
               </Tag>
             </div>
-            <h3 className='mt-3 text-2xl font-light'>
-              The Hub is reaching a specialist research audience across social
-              channels, search visibility, and the forum.
-            </h3>
+            <h3 className='mt-3 text-xl'>Research community reach</h3>
           </div>
 
           <MetricList rows={communityRows} />
@@ -268,10 +258,7 @@ export default function ImpactStats() {
                 Online + live
               </Tag>
             </div>
-            <h3 className='mt-3 text-2xl font-light'>
-              Demand is strong for both self-paced and instructor-led training,
-              with solid feedback from face-to-face delivery.
-            </h3>
+            <h3 className='mt-3 text-xl'>Training demand and quality</h3>
           </div>
 
           <MetricList rows={trainingRows} />
@@ -287,11 +274,7 @@ export default function ImpactStats() {
                 Analytics
               </Tag>
             </div>
-            <h3 className='mt-3 text-2xl font-light'>
-              Traffic is event-driven, but the quality of engagement has
-              improved markedly since early 2025 and stayed resilient through
-              the summer dip.
-            </h3>
+            <h3 className='mt-3 text-xl'>Traffic, search, and engagement</h3>
           </div>
 
           <div className='grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]'>
@@ -336,9 +319,8 @@ export default function ImpactStats() {
               </div>
 
               <p className='mt-4 text-sm text-[#525252]'>
-                Baseline traffic outside the April and June spikes sits at about
-                260 to 385 visits per month, with September showing a clean
-                rebound.
+                Baseline traffic outside the April and June spikes is about 260
+                to 385 visits per month, with a rebound in September.
               </p>
             </div>
           </div>
@@ -353,19 +335,16 @@ export default function ImpactStats() {
               Pending
             </Tag>
           </div>
-          <h3 className='text-2xl font-light'>
-            Package downloads are not yet populated.
-          </h3>
+          <h3 className='text-xl'>Package downloads pending</h3>
           <p className='text-sm text-[#525252]'>
-            This tile is ready for download metrics once package reporting is
-            confirmed.
+            This tile is ready once package reporting is confirmed.
           </p>
         </Stack>
       </div>
 
       <p className='mt-4 text-sm text-[#525252]'>
         Some figures remain provisional where source systems are incomplete, and
-        analytics notes exclude the core team where stated.
+        analytics exclude the core team.
       </p>
     </section>
   );
