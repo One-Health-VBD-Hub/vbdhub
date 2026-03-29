@@ -190,7 +190,7 @@ function SummaryTile({ section, value, label, detail }: HeadlineStat) {
           {section}
         </Tag>
       </div>
-      <div className='border-t border-[var(--cds-border-subtle-01)] pt-3'>
+      <div className='border-t border-[var(--cds-gray-30,#c6c6c6)] pt-3'>
         <p className='text-sm font-medium text-[var(--cds-text-secondary)]'>
           {label}
         </p>
@@ -214,12 +214,12 @@ function MetricList({
 }) {
   return (
     <dl
-      className={`border-t border-[var(--cds-border-subtle-01)] ${className}`.trim()}
+      className={`border-t border-[var(--cds-gray-30,#c6c6c6)] ${className}`.trim()}
     >
       {rows.map((row) => (
         <div
           key={`${row.label}-${row.value}-${row.detail ?? ''}`}
-          className='grid gap-1 border-b border-[var(--cds-border-subtle-01)] py-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] sm:gap-6'
+          className='grid gap-1 border-b border-[var(--cds-gray-30,#c6c6c6)] py-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] sm:gap-6'
         >
           <dt className='text-sm font-medium text-[var(--cds-text-primary)]'>
             {row.label}
