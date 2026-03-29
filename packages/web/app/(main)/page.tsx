@@ -87,9 +87,7 @@ export default function Page() {
       </Heading>
       <ProductRoadmap />
 
-      <div className='mb-10'>
-        <ImpactStats />
-      </div>
+      <ImpactStats />
 
       <div>
         <p className='text-xl'>
