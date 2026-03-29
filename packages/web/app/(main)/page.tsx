@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'next/navigation';
 import ProductRoadmap from '@/components/ProductRoadmap';
 import Stack from '@/components/Stack';
+import ImpactStats from '@/components/ImpactStats';
 
 export default function Page() {
   const router = useRouter();
@@ -85,6 +86,10 @@ export default function Page() {
         Roadmap
       </Heading>
       <ProductRoadmap />
+
+      <div className='mb-10'>
+        <ImpactStats />
+      </div>
 
       <div>
         <p className='text-xl'>
