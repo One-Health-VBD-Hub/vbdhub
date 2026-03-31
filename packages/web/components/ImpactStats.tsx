@@ -239,11 +239,21 @@ function MetricList({
 }
 
 export default function ImpactStats() {
+  return <ImpactStatsSection />;
+}
+
+export function ImpactStatsSection({
+  headingAs = 'h2',
+  headingLabel = 'Impact'
+}: {
+  headingAs?: 'h1' | 'h2';
+  headingLabel?: string;
+}) {
   return (
     <section aria-labelledby='impact'>
       <Stack gap={3}>
-        <Heading as='h2' id='impact'>
-          Impact
+        <Heading as={headingAs} id='impact'>
+          {headingLabel}
         </Heading>
         <p className='max-w-3xl text-base text-[var(--cds-text-secondary)]'>
           Current Hub activity across curation, community, training, and website

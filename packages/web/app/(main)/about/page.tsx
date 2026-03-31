@@ -5,7 +5,6 @@ import { Metadata } from 'next';
 import Stack from '@/components/Stack';
 import Anchor from '@/components/Anchor';
 import Snippet from '@/components/Snippet';
-import ImpactStats from '@/components/ImpactStats';
 
 export const metadata: Metadata = {
   title: 'About - Vector-Borne Diseases Hub',
@@ -104,7 +103,19 @@ export default function About() {
         </p>
       </Stack>
 
-      <ImpactStats />
+      <Stack as='section' gap={2}>
+        <Heading as='h2' id='impact-tracker'>
+          Impact tracker
+        </Heading>
+        <p>
+          Current Hub activity across curation, community, training, and
+          website use is available on the{' '}
+          <Anchor target='_self' href='/community/impact'>
+            Community impact tracker
+          </Anchor>{' '}
+          page.
+        </p>
+      </Stack>
 
       <Stack gap={3}>
         <Heading as='h2' id='team'>
