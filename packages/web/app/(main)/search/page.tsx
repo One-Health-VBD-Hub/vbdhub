@@ -25,7 +25,6 @@ import {
   useTaxonomy,
   useWithoutPublished
 } from '@/app/(main)/search/useSearchFilters';
-import { useMediaQuery } from 'react-responsive';
 import { useLocalStorage } from 'usehooks-ts';
 import TableView from '@/app/(main)/search/TableView';
 import MapLibreMap from '@/components/maps/MapLibreMap';
@@ -44,7 +43,6 @@ function SearchPage() {
 
   // for filter modal on mobile view
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const isDesktopFilters = useMediaQuery({ minWidth: 1280 });
 
   const [searchQuery] = useSearchQuery();
   const [currentPage, setCurrentPage] = useCurrentPage();
@@ -94,7 +92,6 @@ function SearchPage() {
 
   const totalPages = data?.meta.totalPages ?? 0;
   const effectiveTotalPages = Math.min(totalPages, MAX_SEARCH_PAGES);
-  const shouldRenderMobileFilters = !isDesktopFilters && filterModalOpen;
   const showAggregateDatasetGBIF =
     currentPage === 1 &&
     taxonomy.length > 0 &&
@@ -127,11 +124,9 @@ function SearchPage() {
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
       <h1 className='sr-only'>Search data</h1>
       <div className='gap-4 lg:flex'>
-        {isDesktopFilters && (
-          <div className='hidden xl:block'>
-            <FilterPanel />
-          </div>
-        )}
+        <div className='hidden xl:block'>
+          <FilterPanel />
+        </div>
 
         <div className='min-w-0 flex-1'>
           {/*<SearchBar className='mb-4' />*/}
@@ -157,16 +152,14 @@ function SearchPage() {
           </ContentSwitcher>
           <>
             <div className='mb-2 flex items-end justify-between align-middle 2xl:justify-end'>
-              {!isDesktopFilters && (
-                <Button
-                  className='xl:hidden'
-                  kind='tertiary'
-                  renderIcon={Filter}
-                  onClick={() => setFilterModalOpen(true)}
-                >
-                  Filter
-                </Button>
-              )}
+              <Button
+                className='xl:hidden'
+                kind='tertiary'
+                renderIcon={Filter}
+                onClick={() => setFilterModalOpen(true)}
+              >
+                Filter
+              </Button>
               {currentResults && (
                 <div className='text-xs'>
                   Found{' '}
@@ -179,14 +172,14 @@ function SearchPage() {
             </div>
             <div className='filter-modal-mobile'>
               <Modal
-                open={shouldRenderMobileFilters}
+                open={filterModalOpen}
                 onRequestClose={() => setFilterModalOpen(false)}
                 primaryButtonText='See results'
                 onRequestSubmit={() => setFilterModalOpen(false)} // TODO: actually implement
                 modalLabel='Filter'
                 secondaryButtonText='Close'
               >
-                {shouldRenderMobileFilters && <FilterPanel />}
+                {filterModalOpen && <FilterPanel />}
               </Modal>
             </div>
           </>
