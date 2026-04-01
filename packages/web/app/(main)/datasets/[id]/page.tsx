@@ -8,7 +8,7 @@ import { SEARCH_SOURCE_DBS, SearchSourceDb } from '@/types/search';
 import Heading from '@/components/Heading';
 import React from 'react';
 import { Metadata } from 'next';
-import { Button, Tag } from '@carbon/react';
+import { Button, InlineNotification, Tag } from '@carbon/react';
 import { Download, IbmCloudDatabases } from '@carbon/react/icons';
 import { dbToFullName } from '@/app/(main)/search/ResultCard';
 import Link from 'next/link';
@@ -93,6 +93,17 @@ export default async function DatasetPage(props: PageProps<'/datasets/[id]'>) {
 
   return (
     <Stack gap={4} as='main' className='mx-auto mt-24 sm:mt-32'>
+      {datasetData.db === 'hub' && (
+        <InlineNotification
+          className='mb-6'
+          style={{ maxInlineSize: 'fit-content' }}
+          lowContrast={true}
+          hideCloseButton
+          kind='warning'
+          title='Warning'
+          subtitle='This dataset is currently not downloadable via the website. Please contact the curator.'
+        />
+      )}
       <header>
         <DatasetBar id={id} db={datasetData.db} />
         <Heading link={false} id='heading' className='lg:pr-60'>
