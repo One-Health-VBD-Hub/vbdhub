@@ -633,7 +633,11 @@ export function TaxonomyMultiSelect({
     focusInput();
   };
 
-  const handleClearSelection = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClearSelection = (
+    event:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.KeyboardEvent<HTMLButtonElement>
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     onChange?.([]);
