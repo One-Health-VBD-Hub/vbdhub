@@ -158,6 +158,13 @@ export default function Layout({
               >
                 Blog
               </HeaderMenuItem>
+              <HeaderMenuItem
+                href='/community/impact'
+                as={Link}
+                isActive={path === '/community/impact'}
+              >
+                Impact tracker
+              </HeaderMenuItem>
             </HeaderMenu>
           </HeaderNavigation>
           <HeaderGlobalBar>
@@ -263,6 +270,13 @@ export default function Layout({
                     isActive={path === '/blog'}
                   >
                     Blog
+                  </HeaderMenuItem>
+                  <HeaderMenuItem
+                    href='/community/impact'
+                    as={Link}
+                    isActive={path === '/community/impact'}
+                  >
+                    Impact tracker
                   </HeaderMenuItem>
                 </HeaderMenu>
               </HeaderSideNavItems>
