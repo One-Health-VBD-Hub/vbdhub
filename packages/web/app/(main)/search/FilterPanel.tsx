@@ -11,8 +11,10 @@ import {
   Toggle,
   Tooltip
 } from '@carbon/react';
+import ListBoxSelection from '@carbon/react/es/components/ListBox/next/ListBoxSelection';
+import ListBoxTrigger from '@carbon/react/es/components/ListBox/next/ListBoxTrigger';
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { ChevronDown, Close, Reset } from '@carbon/icons-react';
+import { Close, Reset } from '@carbon/icons-react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useGbifTaxonomyItems } from '@/lib/hooks/useGbifTaxonomyItems';
@@ -726,26 +728,10 @@ export function TaxonomyMultiSelect({
       >
         <div className={`${carbonPrefix}--list-box__field`}>
           {selectedItemsLength > 0 ? (
-            <div
-              className={`${carbonPrefix}--tag ${carbonPrefix}--tag--filter ${carbonPrefix}--tag--high-contrast`}
-            >
-              <span
-                className={`${carbonPrefix}--tag__label`}
-                title={selectedItemsLength.toString()}
-              >
-                {selectedItemsLength}
-              </span>
-              <button
-                aria-label='Clear all selected items'
-                className={`${carbonPrefix}--tag__close-icon`}
-                onClick={handleClearSelection}
-                tabIndex={-1}
-                title='Clear all selected items'
-                type='button'
-              >
-                <Close />
-              </button>
-            </div>
+            <ListBoxSelection
+              clearSelection={handleClearSelection}
+              selectionCount={selectedItemsLength}
+            />
           ) : null}
           <input
             aria-activedescendant={activeDescendantId}
@@ -799,21 +785,7 @@ export function TaxonomyMultiSelect({
               <Close />
             </button>
           ) : null}
-          <button
-            aria-label={isOpen ? 'Close' : 'Open'}
-            className={[
-              `${carbonPrefix}--list-box__menu-icon`,
-              isOpen ? `${carbonPrefix}--list-box__menu-icon--open` : ''
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            onClick={handleToggleMenu}
-            tabIndex={-1}
-            title={isOpen ? 'Close' : 'Open'}
-            type='button'
-          >
-            <ChevronDown />
-          </button>
+          <ListBoxTrigger isOpen={isOpen} onClick={handleToggleMenu} />
         </div>
         {isOpen && (showingItems.length > 0 || isFetching) ? (
           <ul
