@@ -7,17 +7,15 @@ import {
   DatePicker,
   DatePickerInput,
   DropdownSkeleton,
-  FilterableMultiSelect,
   Search,
   Toggle,
   Tooltip
 } from '@carbon/react';
-import React, { useId, useState } from 'react';
-import { Reset } from '@carbon/icons-react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDown, Close, Reset } from '@carbon/icons-react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useGbifTaxonomyItems } from '@/lib/hooks/useGbifTaxonomyItems';
-import { UseComboboxInputValueChange } from 'downshift';
 import { Feature as GeoJSONFeature } from 'geojson';
 import {
   SEARCH_CATEGORIES,
@@ -58,6 +56,12 @@ function isSearchCategory(value: string): value is SearchCategory {
 
 function isSearchSourceDb(value: string): value is SearchSourceDb {
   return SEARCH_SOURCE_DBS.includes(value as SearchSourceDb);
+}
+
+const carbonPrefix = 'cds';
+
+function getTaxonomyItemLabel(item: TaxonomyItem) {
+  return item.canonicalName ?? item.scientificName;
 }
 
 export default function FilterPanel() {
@@ -509,11 +513,16 @@ export function TaxonomyMultiSelect({
   selectedTaxItems?: TaxonomyItem[];
 }) {
   const [input, setInput] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   // debounce input to avoid too many requests
   const debouncedInput = useDebounce(input, 150);
 
   // retrieves suggested taxon names for the current text input
-  const { data: suggestedTaxonNames } = useQuery({
+  const { data: suggestedTaxonNames, isFetching } = useQuery({
     queryKey: ['suggestedTaxonNames', debouncedInput],
     placeholderData: keepPreviousData,
     staleTime: 30 * 60 * 1000, // cache results for 30 minutes
@@ -536,38 +545,343 @@ export function TaxonomyMultiSelect({
     (item, index, self) => index === self.findIndex((t) => t.key === item.key)
   );
 
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Node) || wrapperRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsOpen(false);
+      setInputFocused(false);
+      setInput('');
+      setHighlightedIndex(0);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, []);
+
   if (loading) return <DropdownSkeleton />;
 
+  const inputId = `${id + baseId}-input`;
+  const menuId = `${id + baseId}__menu`;
+  const selectedItemsLength = selectedTaxItems.length;
+  const activeHighlightedIndex =
+    showingItems.length === 0
+      ? 0
+      : Math.min(highlightedIndex, Math.max(showingItems.length - 1, 0));
+  const activeDescendantId =
+    isOpen && showingItems[activeHighlightedIndex]
+      ? `${menuId}-item-${activeHighlightedIndex}`
+      : undefined;
+  const clearSelectionContent =
+    selectedItemsLength > 0
+      ? `Total items selected: ${selectedItemsLength}. Use the clear selected items button to remove them.`
+      : 'Total items selected: 0.';
+
+  const className = [
+    `${carbonPrefix}--list-box`,
+    `${carbonPrefix}--multi-select`,
+    `${carbonPrefix}--combo-box`,
+    `${carbonPrefix}--multi-select--filterable`,
+    isOpen ? `${carbonPrefix}--list-box--expanded` : '',
+    isOpen ? `${carbonPrefix}--multi-select--open` : '',
+    inputFocused
+      ? `${carbonPrefix}--multi-select--filterable--input-focused`
+      : '',
+    selectedItemsLength > 0 ? `${carbonPrefix}--multi-select--selected` : ''
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const inputClassName = [
+    `${carbonPrefix}--text-input`,
+    input.length === 0 ? `${carbonPrefix}--text-input--empty` : ''
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const closeMenu = () => {
+    setIsOpen(false);
+    setInputFocused(false);
+    setInput('');
+    setHighlightedIndex(0);
+  };
+
+  const focusInput = () => {
+    inputRef.current?.focus();
+  };
+
+  const handleToggleMenu = () => {
+    setIsOpen((current) => !current);
+    setInputFocused(true);
+    focusInput();
+  };
+
+  const handleClearInput = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setInput('');
+    setIsOpen(true);
+    setHighlightedIndex(0);
+    focusInput();
+  };
+
+  const handleClearSelection = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onChange?.([]);
+    setIsOpen(true);
+    focusInput();
+  };
+
+  const handleItemToggle = (item: TaxonomyItem) => {
+    const isSelected = selectedTaxItems.some(
+      (selected) => selected.key === item.key
+    );
+    const nextItems = isSelected
+      ? selectedTaxItems.filter((selected) => selected.key !== item.key)
+      : [...selectedTaxItems, item];
+
+    onChange?.(nextItems);
+    setInput('');
+    setIsOpen(true);
+    setHighlightedIndex(0);
+    focusInput();
+  };
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setIsOpen(true);
+      setHighlightedIndex((current) =>
+        showingItems.length === 0
+          ? 0
+          : Math.min(current + 1, showingItems.length - 1)
+      );
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setIsOpen(true);
+      setHighlightedIndex((current) =>
+        showingItems.length === 0 ? 0 : Math.max(current - 1, 0)
+      );
+      return;
+    }
+
+    if (
+      event.key === 'Enter' &&
+      isOpen &&
+      showingItems[activeHighlightedIndex]
+    ) {
+      event.preventDefault();
+      handleItemToggle(showingItems[activeHighlightedIndex]);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeMenu();
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      closeMenu();
+    }
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(event.currentTarget.value);
+    setIsOpen(true);
+    setHighlightedIndex(0);
+  };
+
   return (
-    <div spellCheck={false} autoCorrect='off' className='xl:w-[288px]'>
-      <FilterableMultiSelect
-        titleText='Restrict by taxonomy'
+    <div
+      ref={wrapperRef}
+      spellCheck={false}
+      autoCorrect='off'
+      className={`xl:w-[288px] ${carbonPrefix}--multi-select__wrapper ${carbonPrefix}--multi-select--filterable__wrapper ${carbonPrefix}--list-box__wrapper`}
+    >
+      <label className={`${carbonPrefix}--label`} htmlFor={inputId}>
+        Restrict by taxonomy
+        <span className={`${carbonPrefix}--visually-hidden`}>
+          {clearSelectionContent}
+        </span>
+      </label>
+      <div
         id={id + baseId}
-        onMenuChange={(isOpen) => {
-          if (!isOpen) setInput(''); // clear input when the menu is closed
+        className={className}
+        data-invalid={undefined}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
         }}
-        onInputValueChange={(
-          text: UseComboboxInputValueChange<TaxonomyItem>
-        ) => {
-          setInput(text as unknown as string); // TODO: look at types bug
-        }}
-        placeholder='Search for a taxon'
-        itemToString={(item: TaxonomyItem) =>
-          item ? (item.canonicalName ?? item.scientificName) : ''
-        }
-        items={showingItems}
-        // find the selected item in the list of showing items (TODO: this is a bit of a hack)
-        selectedItems={showingItems.filter((t) =>
-          selectedTaxItems.some((st) => st.key === t.key)
-        )}
-        // disable default component filtering
-        filterItems={(items: TaxonomyItem[]) => items}
-        // disable default component sorting
-        sortItems={(items: TaxonomyItem[]) => items}
-        onChange={(item: { selectedItems: TaxonomyItem[] }) => {
-          onChange?.(item.selectedItems);
-        }}
-      />
+      >
+        <div className={`${carbonPrefix}--list-box__field`}>
+          {selectedItemsLength > 0 ? (
+            <div
+              className={`${carbonPrefix}--tag ${carbonPrefix}--tag--filter ${carbonPrefix}--tag--high-contrast`}
+            >
+              <span
+                className={`${carbonPrefix}--tag__label`}
+                title={selectedItemsLength.toString()}
+              >
+                {selectedItemsLength}
+              </span>
+              <button
+                aria-label='Clear all selected items'
+                className={`${carbonPrefix}--tag__close-icon`}
+                onClick={handleClearSelection}
+                tabIndex={-1}
+                title='Clear all selected items'
+                type='button'
+              >
+                <Close />
+              </button>
+            </div>
+          ) : null}
+          <input
+            aria-activedescendant={activeDescendantId}
+            aria-controls={isOpen ? menuId : undefined}
+            aria-autocomplete='list'
+            aria-expanded={isOpen}
+            aria-haspopup='listbox'
+            className={inputClassName}
+            id={inputId}
+            onBlur={(event) => {
+              setInputFocused(false);
+
+              const nextTarget = event.relatedTarget;
+              if (
+                nextTarget instanceof Node &&
+                wrapperRef.current?.contains(nextTarget)
+              ) {
+                return;
+              }
+
+              window.setTimeout(() => {
+                if (!wrapperRef.current?.contains(document.activeElement)) {
+                  closeMenu();
+                }
+              }, 0);
+            }}
+            onChange={handleInputChange}
+            onClick={() => {
+              setIsOpen(true);
+              setInputFocused(true);
+            }}
+            onFocus={() => {
+              setIsOpen(true);
+              setInputFocused(true);
+            }}
+            onKeyDown={handleInputKeyDown}
+            placeholder='Search for a taxon'
+            ref={inputRef}
+            role='combobox'
+            value={input}
+          />
+          {input.length > 0 ? (
+            <button
+              aria-label='Clear input'
+              className={`${carbonPrefix}--list-box__selection`}
+              onClick={handleClearInput}
+              tabIndex={-1}
+              title='Clear input'
+              type='button'
+            >
+              <Close />
+            </button>
+          ) : null}
+          <button
+            aria-label={isOpen ? 'Close' : 'Open'}
+            className={[
+              `${carbonPrefix}--list-box__menu-icon`,
+              isOpen ? `${carbonPrefix}--list-box__menu-icon--open` : ''
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={handleToggleMenu}
+            tabIndex={-1}
+            title={isOpen ? 'Close' : 'Open'}
+            type='button'
+          >
+            <ChevronDown />
+          </button>
+        </div>
+        {isOpen && (showingItems.length > 0 || isFetching) ? (
+          <ul
+            className={`${carbonPrefix}--list-box__menu`}
+            id={menuId}
+            role='listbox'
+          >
+            {showingItems.map((item, index) => {
+              const itemText = getTaxonomyItemLabel(item);
+              const isSelected = selectedTaxItems.some(
+                (selected) => selected.key === item.key
+              );
+
+              return (
+                <li
+                  aria-checked={isSelected}
+                  aria-label={itemText}
+                  aria-selected={isSelected}
+                  className={[
+                    `${carbonPrefix}--list-box__menu-item`,
+                    isSelected
+                      ? `${carbonPrefix}--list-box__menu-item--active`
+                      : '',
+                    activeHighlightedIndex === index
+                      ? `${carbonPrefix}--list-box__menu-item--highlighted`
+                      : ''
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  id={`${menuId}-item-${index}`}
+                  key={item.key}
+                  onClick={() => handleItemToggle(item)}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  role='option'
+                  title={itemText}
+                >
+                  <div
+                    className={`${carbonPrefix}--list-box__menu-item__option`}
+                  >
+                    <div className={`${carbonPrefix}--checkbox-wrapper`}>
+                      <Checkbox
+                        checked={isSelected}
+                        id={`${inputId}-${item.key}`}
+                        labelText={itemText}
+                        tabIndex={-1}
+                      />
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+            {isFetching && showingItems.length === 0 ? (
+              <li
+                aria-selected={false}
+                className={`${carbonPrefix}--list-box__menu-item`}
+                role='option'
+              >
+                <div className={`${carbonPrefix}--list-box__menu-item__option`}>
+                  Loading...
+                </div>
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
+      </div>
     </div>
   );
 }
