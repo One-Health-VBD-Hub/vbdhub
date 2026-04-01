@@ -111,8 +111,8 @@ export default function FilterPanel() {
     );
   };
 
-  const handleTaxonomyChange = (items: TaxonomyItem[]) => {
-    setTaxonomy(items.map((item) => item.key.toString(10)));
+  const handleTaxonomyChange = (taxonomyIds: string[]) => {
+    setTaxonomy(taxonomyIds);
   };
 
   const handleDbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -423,6 +423,7 @@ export default function FilterPanel() {
           <TaxonomyMultiSelect
             baseId={baseId}
             id='taxonomy'
+            selectedTaxonomyIds={taxonomy}
             selectedTaxItems={selectedTaxItems}
             loading={taxItemsPending}
             onChange={handleTaxonomyChange}
@@ -505,13 +506,15 @@ export function TaxonomyMultiSelect({
   id,
   onChange,
   loading,
+  selectedTaxonomyIds,
   selectedTaxItems = []
 }: {
   baseId: string;
   id: string;
   // whether the component should show a loading state
   loading?: boolean;
-  onChange?: (items: TaxonomyItem[]) => void;
+  onChange?: (taxonomyIds: string[]) => void;
+  selectedTaxonomyIds: string[];
   selectedTaxItems?: TaxonomyItem[];
 }) {
   const [input, setInput] = useState('');
@@ -538,10 +541,15 @@ export function TaxonomyMultiSelect({
     enabled: !!debouncedInput
   });
 
+  const selectedTaxonomyIdSet = new Set(selectedTaxonomyIds);
+  const resolvedSelectedTaxItems = selectedTaxItems.filter((item) =>
+    selectedTaxonomyIdSet.has(item.key.toString(10))
+  );
+
   // if there's no input or no suggestions, provide no suggestions
   const suggestions = suggestedTaxonNames && input ? suggestedTaxonNames : [];
   // show all suggestions (if any) and selected items
-  let showingItems = [...suggestions, ...selectedTaxItems];
+  let showingItems = [...suggestions, ...resolvedSelectedTaxItems];
   // remove duplicates from showingItems
   showingItems = showingItems.filter(
     (item, index, self) => index === self.findIndex((t) => t.key === item.key)
@@ -571,7 +579,7 @@ export function TaxonomyMultiSelect({
 
   const inputId = `${id + baseId}-input`;
   const menuId = `${id + baseId}__menu`;
-  const selectedItemsLength = selectedTaxItems.length;
+  const selectedItemsLength = selectedTaxonomyIds.length;
   const activeHighlightedIndex =
     showingItems.length === 0
       ? 0
@@ -651,15 +659,13 @@ export function TaxonomyMultiSelect({
   };
 
   const handleItemToggle = (item: TaxonomyItem) => {
-    const isSelected = selectedTaxItems.some(
-      (selected) => selected.key === item.key
-    );
-    const nextItems = isSelected
-      ? selectedTaxItems.filter((selected) => selected.key !== item.key)
-      : [...selectedTaxItems, item];
+    const taxonomyId = item.key.toString(10);
+    const isSelected = selectedTaxonomyIdSet.has(taxonomyId);
+    const nextTaxonomyIds = isSelected
+      ? selectedTaxonomyIds.filter((selectedId) => selectedId !== taxonomyId)
+      : [...selectedTaxonomyIds, taxonomyId];
 
-    onChange?.(nextItems);
-    setInput('');
+    onChange?.(nextTaxonomyIds);
     setIsOpen(true);
     setHighlightedIndex(0);
     focusInput();
@@ -805,8 +811,8 @@ export function TaxonomyMultiSelect({
           >
             {showingItems.map((item, index) => {
               const itemText = getTaxonomyItemLabel(item);
-              const isSelected = selectedTaxItems.some(
-                (selected) => selected.key === item.key
+              const isSelected = selectedTaxonomyIdSet.has(
+                item.key.toString(10)
               );
 
               return (
