@@ -25,7 +25,7 @@ import {
   useTaxonomy,
   useWithoutPublished
 } from '@/app/(main)/search/useSearchFilters';
-import { useMediaQuery } from 'react-responsive';
+import { useLocalStorage } from 'usehooks-ts';
 import TableView from '@/app/(main)/search/TableView';
 import MapLibreMap from '@/components/maps/MapLibreMap';
 
@@ -43,7 +43,6 @@ function SearchPage() {
 
   // for filter modal on mobile view
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const isDesktopFilters = useMediaQuery({ minWidth: 1280 });
 
   const [searchQuery] = useSearchQuery();
   const [currentPage, setCurrentPage] = useCurrentPage();
@@ -55,8 +54,11 @@ function SearchPage() {
   const [withoutPublished] = useWithoutPublished();
   const [publishedFrom] = usePublishedFrom();
   const [publishedTo] = usePublishedTo();
-
-  const [mapView, setMapView] = useState(false);
+  const [mapView, setMapView] = useLocalStorage<boolean>(
+    'search-map-view',
+    false,
+    { initializeWithValue: false }
+  );
   const { data: selectedTaxItems = [] } = useGbifTaxonomyItems(taxonomy);
 
   const { data, error, isPending } = useSearchResults({
@@ -90,9 +92,16 @@ function SearchPage() {
 
   const totalPages = data?.meta.totalPages ?? 0;
   const effectiveTotalPages = Math.min(totalPages, MAX_SEARCH_PAGES);
-  const shouldRenderMobileFilters = !isDesktopFilters && filterModalOpen;
+  const showAggregateDatasetGBIF =
+    currentPage === 1 &&
+    taxonomy.length > 0 &&
+    ((category.length === 0 && sourceDb.length === 0) ||
+      category.includes('occurrence') ||
+      sourceDb.includes('gbif'));
   const mapTaxa = taxonomy.map((taxonKey) => {
-    const taxon = selectedTaxItems.find((item) => item.key.toString(10) === taxonKey);
+    const taxon = selectedTaxItems.find(
+      (item) => item.key.toString(10) === taxonKey
+    );
 
     return {
       key: taxonKey,
@@ -115,42 +124,42 @@ function SearchPage() {
     <div className='mx-auto mt-24 flex flex-col sm:mt-32'>
       <h1 className='sr-only'>Search data</h1>
       <div className='gap-4 lg:flex'>
-        {isDesktopFilters && (
-          <div className='hidden xl:block'>
-            <FilterPanel />
-          </div>
-        )}
+        <div className='hidden xl:block'>
+          <FilterPanel />
+        </div>
 
         <div className='min-w-0 flex-1'>
           {/*<SearchBar className='mb-4' />*/}
-          <ContentSwitcher className='my-2' onChange={function tTe() {}}>
+          <ContentSwitcher
+            className='my-2'
+            selectedIndex={mapView ? 1 : 0}
+            onChange={({ name }) => {
+              setMapView(name === 'map');
+            }}
+          >
             <Switch
               name='table'
               text='Table view'
               title='Switch to table view'
               className='text-base'
-              onClick={() => setMapView(false)}
             />
             <Switch
               name='map'
               text='Map view'
               title='Switch to map view'
               className='text-base'
-              onClick={() => setMapView(true)}
             />
           </ContentSwitcher>
           <>
             <div className='mb-2 flex items-end justify-between align-middle 2xl:justify-end'>
-              {!isDesktopFilters && (
-                <Button
-                  className='xl:hidden'
-                  kind='tertiary'
-                  renderIcon={Filter}
-                  onClick={() => setFilterModalOpen(true)}
-                >
-                  Filter
-                </Button>
-              )}
+              <Button
+                className='xl:hidden'
+                kind='tertiary'
+                renderIcon={Filter}
+                onClick={() => setFilterModalOpen(true)}
+              >
+                Filter
+              </Button>
               {currentResults && (
                 <div className='text-xs'>
                   Found{' '}
@@ -163,14 +172,14 @@ function SearchPage() {
             </div>
             <div className='filter-modal-mobile'>
               <Modal
-                open={shouldRenderMobileFilters}
+                open={filterModalOpen}
                 onRequestClose={() => setFilterModalOpen(false)}
                 primaryButtonText='See results'
                 onRequestSubmit={() => setFilterModalOpen(false)} // TODO: actually implement
                 modalLabel='Filter'
                 secondaryButtonText='Close'
               >
-                {shouldRenderMobileFilters && <FilterPanel />}
+                {filterModalOpen && <FilterPanel />}
               </Modal>
             </div>
           </>
@@ -191,11 +200,13 @@ function SearchPage() {
           {mapView ? (
             <MapLibreMap
               gbifTaxa={mapTaxa}
-              dbs={sourceDb}
+              categories={category}
+              sourceDbs={sourceDb}
             />
           ) : (
             <TableView
               currentResults={currentResults}
+              showAggregateDatasetGBIF={showAggregateDatasetGBIF}
               currentPage={currentPage}
               effectiveTotalPages={effectiveTotalPages}
               setCurrentPage={setCurrentPage}

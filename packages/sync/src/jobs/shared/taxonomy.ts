@@ -70,14 +70,14 @@ export function buildGlobalNamesRequestBody(nameStrings: string[]): {
   nameStrings: string[];
   withRelaxedFuzzyMatch: true;
   withCapitalization: true;
-  withUninomialFuzzyMatch: false;
+  withUninomialFuzzyMatch: true;
   dataSources: [11];
 } {
   return {
     nameStrings,
     withRelaxedFuzzyMatch: true,
     withCapitalization: true,
-    withUninomialFuzzyMatch: false,
+    withUninomialFuzzyMatch: true,
     dataSources: [11]
   };
 }
@@ -226,7 +226,9 @@ export function parseGlobalNamesGbifMatch(
 
   const focalNodeIndex = pathIds.findIndex((id) => parseGbifId(id) === focalId);
   const focalRank =
-    focalNodeIndex >= 0 ? toSupportedTaxonRank(pathRanks[focalNodeIndex]) : null;
+    focalNodeIndex >= 0
+      ? toSupportedTaxonRank(pathRanks[focalNodeIndex])
+      : null;
   const focalParentId =
     focalNodeIndex > 0 ? parseGbifId(pathIds[focalNodeIndex - 1]) : null;
 

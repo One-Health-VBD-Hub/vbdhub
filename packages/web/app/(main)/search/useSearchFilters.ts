@@ -14,7 +14,12 @@ import { SEARCH_CATEGORIES, SEARCH_SOURCE_DBS } from '@/types/search';
 
 const GeoJSONFeatureZod = z.custom<GeoJSONFeature>((val) => {
   // runtime check – keep it simple, Zod is mainly here as a guard
-  return !!val && typeof val === 'object' && (val as any).type === 'Feature';
+  return (
+    !!val &&
+    typeof val === 'object' &&
+    'type' in val &&
+    val.type === 'Feature'
+  );
 });
 
 export const FeatureRecordSchema = z.record(z.string(), GeoJSONFeatureZod);

@@ -2,7 +2,10 @@ import { PrismaClient } from '@vbdhub/db';
 import type { DatasetCategory, Prisma, SourceDb } from '@prisma/client';
 import type Keyv from 'keyv';
 import { normalizeWktForGbif } from './geometry';
-import { sanitizeHtmlText } from '../../common/html';
+import {
+  getCachedGbifDatasetDetail,
+  type DatasetDetail
+} from '../datasets/datasets.service';
 
 const MAX_TEXT_MATCH_CANDIDATES = 50_000;
 const GBIF_API_BASE_URL = 'https://api.gbif.org/v1/';
@@ -10,7 +13,6 @@ const GBIF_REQUEST_TIMEOUT_MS = 10_000;
 const GBIF_OCCURRENCE_FACET_LIMIT = 1_200_000;
 const GBIF_DETAIL_CONCURRENCY = 8;
 const GBIF_OCCURRENCE_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
-const GBIF_DATASET_DETAIL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const TAXON_DESCENDANT_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 export const SEARCH_QUERY_MODES = ['fulltext', 'contains', 'exact'] as const;
@@ -85,15 +87,6 @@ interface GbifOccurrenceSearchResponse {
   }>;
 }
 
-interface GbifDatasetDetailResponse {
-  key: string;
-  title?: string;
-  description?: string;
-  doi?: string;
-  publishingOrganizationTitle?: string;
-  pubDate?: string;
-}
-
 const normalizeInclusiveDateUpperBound = (date: Date): Date => {
   // Build an exclusive upper bound at next-day midnight to keep date filtering inclusive.
   const upperBound = new Date(date);
@@ -136,17 +129,17 @@ const mapGbifDatasetToResult = ({
   detail
 }: {
   key: string;
-  detail?: GbifDatasetDetailResponse | null;
+  detail?: DatasetDetail | null;
 }): SearchDatasetResultItem => ({
   id: `gbif:${key}`,
   sourceKey: key,
   sourceDb: 'gbif',
   category: 'occurrence',
-  title: detail?.title?.trim() || 'Untitled dataset',
+  title: detail?.title || 'Untitled dataset',
   description: detail?.description ?? undefined,
   doi: detail?.doi ?? undefined,
-  publisher: detail?.publishingOrganizationTitle ?? undefined,
-  publishedAt: toIsoDateStringOrUndefined(detail?.pubDate)
+  publisher: detail?.publisher ?? undefined,
+  publishedAt: toIsoDateStringOrUndefined(detail?.publishedAt)
 });
 
 const formatGbifModifiedRange = ({
@@ -504,28 +497,8 @@ export const buildSearchService = ({
     return result;
   };
 
-  const fetchGbifDatasetDetail = async (
-    key: string
-  ): Promise<GbifDatasetDetailResponse | null> => {
-    const cacheKey = `search:gbif:dataset-detail:${key}`;
-    const cached = await cache.get<GbifDatasetDetailResponse | null>(cacheKey);
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    const url = new URL(`dataset/${key}`, GBIF_API_BASE_URL);
-    const rawDetail = await fetchGbifJson<GbifDatasetDetailResponse>(url, {
-        allow404: true
-    });
-    const detail = rawDetail
-      ? {
-          ...rawDetail,
-          description: sanitizeHtmlText(rawDetail.description)
-        }
-      : null;
-    await cache.set(cacheKey, detail, GBIF_DATASET_DETAIL_CACHE_TTL_MS);
-    return detail;
-  };
+  const fetchGbifDatasetDetail = (key: string): Promise<DatasetDetail | null> =>
+    getCachedGbifDatasetDetail({ cache, sourceKey: key });
 
   const searchGbifProvider = async ({
     input,

@@ -29,8 +29,11 @@ export default function Page() {
           Introduction
         </Heading>
 
+        <p>This workshop took place on 19<span className='align-super text-xs'>th</span> March 2026.</p>
+
         <p>
-          Please follow the instructions on{' '}
+          Whilst we are finalising the content for self-paced version, please
+          follow the instructions on the dedicated{' '}
           <Anchor href='https://one-health-vbd-hub.github.io/vbd-hub-training-workshops/'>
             workshop site
           </Anchor>
