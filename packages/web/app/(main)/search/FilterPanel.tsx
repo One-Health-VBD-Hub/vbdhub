@@ -619,7 +619,12 @@ export function TaxonomyMultiSelect({
   };
 
   const handleToggleMenu = () => {
-    setIsOpen((current) => !current);
+    if (isOpen) {
+      closeMenu();
+      return;
+    }
+
+    setIsOpen(true);
     setInputFocused(true);
     focusInput();
   };
@@ -793,6 +798,7 @@ export function TaxonomyMultiSelect({
         </div>
         {isOpen && (showingItems.length > 0 || isFetching) ? (
           <ul
+            aria-multiselectable='true'
             className={`${carbonPrefix}--list-box__menu`}
             id={menuId}
             role='listbox'
