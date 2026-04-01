@@ -471,13 +471,19 @@ export default function FilterPanel() {
               onChange={(e) => setSearchBoxText(e.target.value)}
               type='search'
             />
-            <Checkbox
-              id='exact-only'
-              labelText='Exact match only'
-              disabled={!searchBoxText}
-              checked={exactOnly}
-              onChange={() => setExactOnly(!exactOnly)}
-            />
+            <div className='cds--form-item'>
+              <Tooltip align='right' label='Coming soon.'>
+                <div>
+                  <Checkbox
+                    id='exact-only'
+                    labelText='Enable fuzzy search'
+                    disabled={!searchBoxText}
+                    checked={exactOnly}
+                    onChange={() => setExactOnly(!exactOnly)}
+                  />
+                </div>
+              </Tooltip>
+            </div>
             <Button type='submit' size='md' title='Search for datasets'>
               Search
             </Button>
