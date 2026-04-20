@@ -61,7 +61,7 @@
     "babel-plugin-react-compiler": "^1.0",
     "eslint": "^9",
     "eslint-config-next": "^16",
-    "knip": "^5",
+    "knip": "latest",
     "next-sitemap": "^4",
     "postcss": "^8",
     "prettier": "^3",
