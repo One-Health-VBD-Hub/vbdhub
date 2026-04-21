@@ -64,24 +64,24 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang='en' className='h-full'>
-      <Suspense fallback={null}>
-        <FormbricksProvider />
-      </Suspense>
-      <StytchProviderWrapper>
-        <QueryClientProviderWrapper>
-          <NuqsAdapter>
-            <body
-              className={`${IBMPlexSans.className} flex h-full min-h-screen flex-col`}
-            >
-              <Scripts />
+      <body
+        className={`${IBMPlexSans.className} flex h-full min-h-screen flex-col`}
+      >
+        <Scripts />
+        <StytchProviderWrapper>
+          <QueryClientProviderWrapper>
+            <NuqsAdapter>
+              <Suspense fallback={null}>
+                <FormbricksProvider />
+              </Suspense>
               <div className='mx-auto w-[80%] max-w-(--breakpoint-xl) grow pb-10'>
                 {children}
               </div>
               <Footer />
-            </body>
-          </NuqsAdapter>
-        </QueryClientProviderWrapper>
-      </StytchProviderWrapper>
+            </NuqsAdapter>
+          </QueryClientProviderWrapper>
+        </StytchProviderWrapper>
+      </body>
     </html>
   );
 }
