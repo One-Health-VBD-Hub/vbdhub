@@ -1,7 +1,12 @@
+'use client';
+
 import { Fragment } from 'react';
+import { InlineNotification } from '@carbon/react';
+import mapboxgl from 'mapbox-gl';
 import Map, { Layer, Source } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { FilterSpecification } from 'mapbox-gl';
+import { useIsClient } from 'usehooks-ts';
 import type { SearchCategory, SearchSourceDb } from '@/types/search';
 
 interface Props {
@@ -42,6 +47,7 @@ export default function MapLibreMap({
   categories = [],
   sourceDbs = []
 }: Props) {
+  const isClient = useIsClient();
   const taxa = gbifTaxa.filter(
     (taxon, index, self) =>
       Boolean(taxon.key) &&
@@ -68,6 +74,22 @@ export default function MapLibreMap({
     sourceDbFilter && categoryFilter
       ? (['all', sourceDbFilter, categoryFilter] satisfies FilterSpecification)
       : sourceDbFilter ?? categoryFilter;
+
+  if (!isClient) {
+    return <div className='h-125 border border-black/10' />;
+  }
+
+  if (!mapboxgl.supported()) {
+    return (
+      <InlineNotification
+        lowContrast
+        hideCloseButton
+        kind='warning'
+        title='Map unavailable'
+        subtitle='This browser does not support WebGL.'
+      />
+    );
+  }
 
   return (
     <div className='relative'>
