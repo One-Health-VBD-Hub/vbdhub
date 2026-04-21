@@ -10,7 +10,7 @@ const MAX_LIMIT = 50;
 const MAX_WINDOW = 10_000;
 const DEFAULT_LIMIT = 20;
 const DEFAULT_PAGE = 1;
-const SEARCH_CACHE_TTL_MS = 60_000;
+const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 const DATASET_CATEGORIES = [
   'occurrence',

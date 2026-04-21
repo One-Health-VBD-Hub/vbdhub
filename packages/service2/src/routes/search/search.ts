@@ -5,7 +5,7 @@ import { buildCacheKey } from '../../common/cache-key';
 
 const MAX_LIMIT = 50;
 const MAX_WINDOW = 10_000;
-const LEGACY_SEARCH_CACHE_TTL_MS = 60_000;
+const LEGACY_SEARCH_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 const LEGACY_CATEGORIES = [
   'trait',

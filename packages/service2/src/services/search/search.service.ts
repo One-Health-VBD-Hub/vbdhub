@@ -12,8 +12,8 @@ const GBIF_API_BASE_URL = 'https://api.gbif.org/v1/';
 const GBIF_REQUEST_TIMEOUT_MS = 10_000;
 const GBIF_OCCURRENCE_FACET_LIMIT = 1_200_000;
 const GBIF_DETAIL_CONCURRENCY = 8;
-const GBIF_OCCURRENCE_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
-const TAXON_DESCENDANT_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const GBIF_OCCURRENCE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const TAXON_DESCENDANT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 export const SEARCH_QUERY_MODES = ['fulltext', 'contains', 'exact'] as const;
 export type SearchQueryMode = (typeof SEARCH_QUERY_MODES)[number];
