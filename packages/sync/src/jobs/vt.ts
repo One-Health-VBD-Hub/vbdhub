@@ -92,10 +92,7 @@ export const vtSyncJob: JobDefinition = {
         if (signal.aborted) throw new Error('Job aborted');
 
         try {
-          const { rows, pagesFetched } = await fetchVecTraitsDatasetRows(
-            id,
-            signal
-          );
+          const rows = await fetchVecTraitsDatasetRows(id, signal);
           const coordinates = parseCoordinates(rows);
           const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNames(rows);
@@ -155,7 +152,6 @@ export const vtSyncJob: JobDefinition = {
             {
               datasetId: dataset.id,
               sourceKey,
-              pagesFetched,
               rows: rows.length,
               points: coordinates.length,
               taxaLinked: linkedTaxa,
@@ -192,123 +188,26 @@ async function fetchVecTraitsDatasetIds(signal: AbortSignal): Promise<number[]> 
 async function fetchVecTraitsDatasetRows(
   datasetId: number,
   signal: AbortSignal
-): Promise<{ rows: VecTraitsDatasetRow[]; pagesFetched: number }> {
-  let page = 1;
-  let pagesFetched = 0;
+): Promise<VecTraitsDatasetRow[]> {
+  if (signal.aborted) throw new Error('Job aborted');
 
-  const maxPages = 10_000;
+  const url = `${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`;
+  const payload = await ky(url, { signal }).json(vecTraitsDatasetResponseSchema);
   const uniqueRows = new Map<string, VecTraitsDatasetRow>();
   const rowsWithoutId: VecTraitsDatasetRow[] = [];
-  const seenPageFingerprints = new Set<string>();
 
-  while (true) {
-    if (signal.aborted) throw new Error('Job aborted');
-    pagesFetched += 1;
-    if (pagesFetched > maxPages) {
-      throw new Error(
-        `Exceeded maximum VecTraits page limit (${maxPages}) for dataset ${datasetId}`
-      );
+  for (const row of payload.results ?? []) {
+    const idValue = row.Id;
+    const rowId =
+      typeof idValue === 'number' ? String(idValue) : normalizeNullableString(idValue);
+    if (rowId) {
+      if (!uniqueRows.has(rowId)) uniqueRows.set(rowId, row);
+    } else {
+      rowsWithoutId.push(row);
     }
-
-    const url = `${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/?${new URLSearchParams(
-      { page: String(page) }
-    ).toString()}`;
-    const payload = await ky(url, { signal }).json(vecTraitsDatasetResponseSchema);
-    const pageRows = payload.results ?? [];
-
-    const pageFingerprint = buildPageFingerprint(pageRows);
-    if (seenPageFingerprints.has(pageFingerprint)) {
-      break;
-    }
-    seenPageFingerprints.add(pageFingerprint);
-
-    for (const row of pageRows) {
-      const idValue = row.Id;
-      const rowId =
-        typeof idValue === 'number'
-          ? String(idValue)
-          : normalizeNullableString(idValue);
-      if (rowId) {
-        if (!uniqueRows.has(rowId)) uniqueRows.set(rowId, row);
-      } else {
-        rowsWithoutId.push(row);
-      }
-    }
-
-    const nextPage = getNextPageNumber(payload, page);
-    if (nextPage !== null) {
-      page = nextPage;
-      continue;
-    }
-
-    if (pageRows.length === 0) break;
-
-    page += 1;
   }
 
-  return {
-    rows: [...uniqueRows.values(), ...rowsWithoutId],
-    pagesFetched
-  };
-}
-
-function buildPageFingerprint(rows: VecTraitsDatasetRow[]): string {
-  if (rows.length === 0) return '0:empty';
-
-  const first = rows[0];
-  const last = rows[rows.length - 1];
-  return `${rows.length}:${String(first?.Id ?? '')}:${String(last?.Id ?? '')}`;
-}
-
-function getNextPageNumber(
-  payload: VecTraitsDatasetResponse,
-  currentPage: number
-): number | null {
-  if (typeof payload.next_page === 'number') {
-    if (Number.isInteger(payload.next_page) && payload.next_page > currentPage) {
-      return payload.next_page;
-    }
-    return null;
-  }
-
-  if (payload.has_next === true) return currentPage + 1;
-  if (payload.has_next === false) return null;
-
-  const nextFromUrl = extractPageNumberFromNextUrl(payload.next);
-  if (nextFromUrl !== null && nextFromUrl > currentPage) return nextFromUrl;
-
-  const totalPages = firstFiniteInt(payload.total_pages, payload.num_pages);
-  if (totalPages !== null) {
-    return currentPage < totalPages ? currentPage + 1 : null;
-  }
-
-  const total = firstFiniteInt(payload.count, payload.total);
-  const perPage = firstFiniteInt(payload.page_size, payload.per_page);
-  if (total !== null && perPage !== null && perPage > 0) {
-    const computedTotalPages = Math.ceil(total / perPage);
-    return currentPage < computedTotalPages ? currentPage + 1 : null;
-  }
-
-  return null;
-}
-
-function extractPageNumberFromNextUrl(nextUrl: string | null | undefined): number | null {
-  if (!nextUrl) return null;
-
-  try {
-    const url = new URL(nextUrl, VECTRAITS_BASE_URL);
-    const page = Number(url.searchParams.get('page'));
-    return Number.isInteger(page) && page > 0 ? page : null;
-  } catch {
-    return null;
-  }
-}
-
-function firstFiniteInt(...values: Array<number | undefined>): number | null {
-  for (const value of values) {
-    if (typeof value === 'number' && Number.isInteger(value)) return value;
-  }
-  return null;
+  return [...uniqueRows.values(), ...rowsWithoutId];
 }
 
 function getFirstNonEmpty(
