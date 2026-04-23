@@ -1,14 +1,14 @@
 import { createPrismaClient } from '@vbdhub/db';
 import type { DatasetCategory, Prisma } from '@prisma/client';
 import { parse } from 'csv-parse';
+import ky from 'ky';
 import {
   buildGlobalNamesRequestBody,
-  linkDatasetTaxa as linkDatasetTaxaShared,
+  linkDatasetTaxa,
   resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
   type ResolvedGbifTaxon
 } from './shared/taxonomy.js';
 import { globalNamesVerificationResponseSchema } from './shared/schemas.js';
-import { fetchJsonWithInit } from './shared/http.js';
 import {
   getBoundingBox,
   upsertSpatialGeometry,
@@ -174,7 +174,7 @@ export const hubSyncJob: JobDefinition = {
             snapshot.coordinates
           );
 
-          const taxaLinked = await linkDatasetTaxaShared(
+          const taxaLinked = await linkDatasetTaxa(
             prisma,
             datasetRecord.id,
             snapshot.speciesNames,
@@ -414,6 +414,21 @@ async function upsertDataset(
   snapshot: DatasetSnapshot
 ) {
   const bbox = getBoundingBox(snapshot.coordinates);
+  const datasetData = {
+    category: snapshot.category,
+    title: snapshot.title,
+    description: snapshot.description,
+    homepageUrl: snapshot.homepageUrl,
+    doi: snapshot.doi,
+    publisher: snapshot.publisher,
+    license: snapshot.license,
+    publishedAt: snapshot.publishedAt,
+    raw: snapshot.raw,
+    bboxMinLon: bbox?.minLon ?? null,
+    bboxMinLat: bbox?.minLat ?? null,
+    bboxMaxLon: bbox?.maxLon ?? null,
+    bboxMaxLat: bbox?.maxLat ?? null
+  };
 
   return prisma.dataset.upsert({
     where: {
@@ -425,35 +440,9 @@ async function upsertDataset(
     create: {
       sourceDb: HUB_SOURCE_DB,
       sourceKey: snapshot.sourceKey,
-      category: snapshot.category,
-      title: snapshot.title,
-      description: snapshot.description,
-      homepageUrl: snapshot.homepageUrl,
-      doi: snapshot.doi,
-      publisher: snapshot.publisher,
-      license: snapshot.license,
-      publishedAt: snapshot.publishedAt,
-      raw: snapshot.raw,
-      bboxMinLon: bbox?.minLon ?? null,
-      bboxMinLat: bbox?.minLat ?? null,
-      bboxMaxLon: bbox?.maxLon ?? null,
-      bboxMaxLat: bbox?.maxLat ?? null
+      ...datasetData
     },
-    update: {
-      category: snapshot.category,
-      title: snapshot.title,
-      description: snapshot.description,
-      homepageUrl: snapshot.homepageUrl,
-      doi: snapshot.doi,
-      publisher: snapshot.publisher,
-      license: snapshot.license,
-      publishedAt: snapshot.publishedAt,
-      raw: snapshot.raw,
-      bboxMinLon: bbox?.minLon ?? null,
-      bboxMinLat: bbox?.minLat ?? null,
-      bboxMaxLon: bbox?.maxLon ?? null,
-      bboxMaxLat: bbox?.maxLat ?? null
-    }
+    update: datasetData
   });
 }
 
@@ -585,17 +574,11 @@ async function resolveGbifTaxaFromNames(
     names,
     signal,
     (batchNames, batchSignal) =>
-      fetchJsonWithInit(
-        'https://verifier.globalnames.org/api/v1/verifications',
-        batchSignal,
-        globalNamesVerificationResponseSchema,
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify(buildGlobalNamesRequestBody(batchNames))
-        }
-      )
+      ky
+        .post('https://verifier.globalnames.org/api/v1/verifications', {
+          signal: batchSignal,
+          json: buildGlobalNamesRequestBody(batchNames)
+        })
+        .json(globalNamesVerificationResponseSchema)
   );
 }

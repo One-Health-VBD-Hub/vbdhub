@@ -1,9 +1,10 @@
 import { createPrismaClient } from '@vbdhub/db';
-import type { Prisma } from '@prisma/client';
+import type { DatasetCategory, Prisma } from '@prisma/client';
+import ky from 'ky';
 import { z } from 'zod';
 import {
   buildGlobalNamesRequestBody,
-  linkDatasetTaxa as linkDatasetTaxaShared,
+  linkDatasetTaxa,
   resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
   type ResolvedGbifTaxon
 } from './shared/taxonomy.js';
@@ -11,22 +12,21 @@ import {
   globalNamesVerificationResponseSchema,
   nullableStringSchema
 } from './shared/schemas.js';
-import { fetchJson as fetchJsonShared, fetchJsonWithInit as fetchJsonWithInitShared } from './shared/http.js';
 import {
-  getBoundingBox as getBoundingBoxShared,
-  upsertSpatialGeometry as upsertSpatialGeometryShared,
+  getBoundingBox,
+  upsertSpatialGeometry,
   type BoundingBox,
   type Coordinate
 } from './shared/spatial.js';
 import {
-  normalizeNullableString as normalizeNullableStringShared,
-  parseDateOnly as parseDateOnlyShared
+  normalizeNullableString,
+  parseDateOnly
 } from './shared/values.js';
 import type { JobDefinition } from '../types.js';
 
 const VECDYN_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
 const VECDYN_SOURCE_DB = 'vecdyn';
-const VECDYN_CATEGORY = 'abundance';
+const VECDYN_CATEGORY: DatasetCategory = 'abundance';
 
 const vecDynIdsResponseSchema = z.looseObject({
   ids: z.array(z.coerce.number().int()).default([])
@@ -121,29 +121,25 @@ export const vdSyncJob: JobDefinition = {
         if (signal.aborted) throw new Error('Job aborted');
 
         try {
-          const detail = await fetchJson(
+          const detail = await ky(
             `${VECDYN_BASE_URL}/vecdyn-detail/${id}`,
-            signal,
-            vecDynDetailResponseSchema
-          );
-          const csv = await fetchJson(
+            { signal }
+          ).json(vecDynDetailResponseSchema);
+          const csv = await ky(
             `${VECDYN_BASE_URL}/vecdyncsv/?${new URLSearchParams({
               page: '1',
               piids: String(id)
             }).toString()}`,
-            signal,
-            vecDynCsvResponseSchema
-          );
-          const speciesByDate = await fetchJson(
+            { signal }
+          ).json(vecDynCsvResponseSchema);
+          const speciesByDate = await ky(
             `${VECDYN_BASE_URL}/vecdyn-detail-species-by-date/${id}`,
-            signal,
-            vecDynSpeciesByDateResponseSchema
-          );
-          const mapData = await fetchJson(
+            { signal }
+          ).json(vecDynSpeciesByDateResponseSchema);
+          const mapData = await ky(
             `${VECDYN_BASE_URL}/vecdyn-get-map-data/${id}`,
-            signal,
-            vecDynMapResponseSchema
-          );
+            { signal }
+          ).json(vecDynMapResponseSchema);
 
           const coordinates = parseCoordinates(mapData);
           const bbox = getBoundingBox(coordinates);
@@ -182,6 +178,20 @@ export const vdSyncJob: JobDefinition = {
             },
             mapPointCount: coordinates.length
           };
+          const datasetData = {
+            category: VECDYN_CATEGORY,
+            title,
+            description,
+            homepageUrl,
+            publisher,
+            doi,
+            publishedAt,
+            raw: rawPayload,
+            bboxMinLon: bbox?.minLon ?? null,
+            bboxMinLat: bbox?.minLat ?? null,
+            bboxMaxLon: bbox?.maxLon ?? null,
+            bboxMaxLat: bbox?.maxLat ?? null
+          };
 
           const dataset = await prisma.dataset.upsert({
             where: {
@@ -193,33 +203,9 @@ export const vdSyncJob: JobDefinition = {
             create: {
               sourceDb: VECDYN_SOURCE_DB,
               sourceKey,
-              category: VECDYN_CATEGORY,
-              title,
-              description,
-              homepageUrl,
-              publisher,
-              doi,
-              publishedAt,
-              raw: rawPayload,
-              bboxMinLon: bbox?.minLon ?? null,
-              bboxMinLat: bbox?.minLat ?? null,
-              bboxMaxLon: bbox?.maxLon ?? null,
-              bboxMaxLat: bbox?.maxLat ?? null
+              ...datasetData
             },
-            update: {
-              category: VECDYN_CATEGORY,
-              title,
-              description,
-              homepageUrl,
-              publisher,
-              doi,
-              publishedAt,
-              raw: rawPayload,
-              bboxMinLon: bbox?.minLon ?? null,
-              bboxMinLat: bbox?.minLat ?? null,
-              bboxMaxLon: bbox?.maxLon ?? null,
-              bboxMaxLat: bbox?.maxLat ?? null
-            }
+            update: datasetData
           });
 
           await upsertSpatialGeometry(prisma, dataset.id, coordinates);
@@ -228,7 +214,8 @@ export const vdSyncJob: JobDefinition = {
             dataset.id,
             speciesNames,
             signal,
-            taxonomyResolutionCache
+            taxonomyResolutionCache,
+            resolveGbifTaxaFromNames
           );
 
           logger.info(
@@ -264,25 +251,7 @@ async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
       sort_column: 'Id',
       sort_dir: 'asc'
     }).toString();
-  const res = await fetchJson(url, signal, vecDynIdsResponseSchema);
-  return res.ids ?? [];
-}
-
-async function fetchJson<T>(
-  url: string,
-  signal: AbortSignal,
-  schema: z.ZodType<T>
-): Promise<T> {
-  return fetchJsonShared<T>(url, signal, schema);
-}
-
-async function fetchJsonWithInit<T>(
-  url: string,
-  signal: AbortSignal,
-  schema: z.ZodType<T>,
-  init?: RequestInit
-): Promise<T> {
-  return fetchJsonWithInitShared<T>(url, signal, schema, init);
+  return (await ky(url, { signal }).json(vecDynIdsResponseSchema)).ids;
 }
 
 function parseCoordinates(raw: VecDynMapResponse): Coordinate[] {
@@ -305,19 +274,11 @@ function parseCoordinateNumber(value: string | number): number {
   return Number(trimmed);
 }
 
-function getBoundingBox(coords: Coordinate[]): BoundingBox | null {
-  return getBoundingBoxShared(coords);
-}
-
 function parsePublishedAtFromYears(years: string[] | undefined): Date | null {
   if (!years || years.length === 0) return null;
   const year = Number(years[0]);
   if (!Number.isInteger(year) || year < 0) return null;
   return new Date(Date.UTC(year, 0, 1, 0, 0, 0));
-}
-
-function parseDateOnly(value: string | undefined): Date | null {
-  return parseDateOnlyShared(value);
 }
 
 function extractSpeciesNamesFromDetail(detail: VecDynDetailResponse): string[] {
@@ -376,10 +337,6 @@ function buildDescription(
 
   if (parts.length === 0) return null;
   return parts.join(' | ');
-}
-
-function normalizeNullableString(value: unknown): string | null {
-  return normalizeNullableStringShared(value);
 }
 
 function buildVecDynDetailRaw(detail: VecDynDetailResponse): Prisma.InputJsonObject {
@@ -461,23 +418,6 @@ function parseBoolish(value: string | null): boolean | null {
   return null;
 }
 
-async function linkDatasetTaxa(
-  prisma: ReturnType<typeof createPrismaClient>,
-  datasetId: string,
-  speciesNames: string[],
-  signal: AbortSignal,
-  taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>
-): Promise<number> {
-  return linkDatasetTaxaShared(
-    prisma,
-    datasetId,
-    speciesNames,
-    signal,
-    taxonomyResolutionCache,
-    resolveGbifTaxaFromNames
-  );
-}
-
 async function resolveGbifTaxaFromNames(
   names: string[],
   signal: AbortSignal
@@ -486,25 +426,11 @@ async function resolveGbifTaxaFromNames(
     names,
     signal,
     (batchNames, batchSignal) =>
-      fetchJsonWithInit(
-        'https://verifier.globalnames.org/api/v1/verifications',
-        batchSignal,
-        globalNamesVerificationResponseSchema,
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify(buildGlobalNamesRequestBody(batchNames))
-        }
-      )
+      ky
+        .post('https://verifier.globalnames.org/api/v1/verifications', {
+          signal: batchSignal,
+          json: buildGlobalNamesRequestBody(batchNames)
+        })
+        .json(globalNamesVerificationResponseSchema)
   );
-}
-
-async function upsertSpatialGeometry(
-  prisma: ReturnType<typeof createPrismaClient>,
-  datasetId: string,
-  coordinates: Coordinate[]
-): Promise<void> {
-  return upsertSpatialGeometryShared(prisma, datasetId, coordinates);
 }

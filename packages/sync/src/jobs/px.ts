@@ -1,10 +1,10 @@
 import { createPrismaClient } from '@vbdhub/db';
-import type { Prisma } from '@prisma/client';
-import { setTimeout as sleep } from 'node:timers/promises';
+import type { DatasetCategory, Prisma } from '@prisma/client';
+import ky, { HTTPError } from 'ky';
 import { z } from 'zod';
 import {
   buildGlobalNamesRequestBody,
-  linkDatasetTaxa as linkDatasetTaxaShared,
+  linkDatasetTaxa,
   resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
   type ResolvedGbifTaxon
 } from './shared/taxonomy.js';
@@ -13,19 +13,17 @@ import {
   nullableStringSchema
 } from './shared/schemas.js';
 import {
-  normalizeNullableString as normalizeNullableStringShared,
-  parseDateOnly as parseDateOnlyShared
+  normalizeNullableString,
+  parseDateOnly
 } from './shared/values.js';
 import type { JobDefinition } from '../types.js';
 
 const PX_BASE_URL = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1';
 const PX_SOURCE_DB = 'proteomexchange';
-const PX_CATEGORY = 'proteomics';
+const PX_CATEGORY: DatasetCategory = 'proteomics';
 const PX_DEFAULT_PAGE_SIZE = 500;
 const PX_DEFAULT_DETAIL_CONCURRENCY = 2;
 const GLOBALNAMES_RETRY_ATTEMPTS = 4;
-const GLOBALNAMES_RETRY_BASE_MS = 500;
-const GLOBALNAMES_RETRY_MAX_MS = 5000;
 const GLOBALNAMES_BATCH_SIZE = 1000;
 const RETRYABLE_HTTP_STATUSES = new Set([429, 500, 502, 503, 504]);
 
@@ -113,25 +111,6 @@ interface PxSyncOptions {
   maxPages: number | null;
   datasetLimit: number | null;
   detailConcurrency: number;
-}
-
-class PxApiError extends Error {
-  readonly status: number;
-  readonly errorCode: string | null;
-  readonly details: PxStatusErrorPayload | null;
-
-  constructor(
-    message: string,
-    status: number,
-    errorCode: string | null,
-    details: PxStatusErrorPayload | null
-  ) {
-    super(message);
-    this.name = 'PxApiError';
-    this.status = status;
-    this.errorCode = errorCode;
-    this.details = details;
-  }
 }
 
 export const pxSyncJob: JobDefinition = {
@@ -236,7 +215,8 @@ export const pxSyncJob: JobDefinition = {
                 dataset.id,
                 speciesNames,
                 signal,
-                taxonomyResolutionCache
+                taxonomyResolutionCache,
+                resolveGbifTaxaFromNames
               );
 
               counters.synced += 1;
@@ -379,22 +359,19 @@ async function fetchCompactDatasetPage(
     pageNumber: String(pageNumber)
   });
 
-  return fetchJson(
+  return ky(
     `${PX_BASE_URL}/datasets?${params.toString()}`,
-    signal,
-    pxCompactResponseSchema
-  );
+    { signal }
+  ).json(pxCompactResponseSchema);
 }
 
 function extractCompactDatasets(
   rows: PxCompactDatasetRow[]
 ): PxCompactDataset[] {
-  const datasets: PxCompactDataset[] = [];
-  for (const row of rows) {
-    const parsed = parseCompactDatasetRow(row);
-    if (parsed) datasets.push(parsed);
-  }
-  return datasets;
+  return rows.flatMap((row) => {
+    const dataset = parseCompactDatasetRow(row);
+    return dataset ? [dataset] : [];
+  });
 }
 
 function parseCompactDatasetRow(row: unknown): PxCompactDataset | null {
@@ -424,11 +401,36 @@ async function fetchPxDatasetDetail(
   accession: string,
   signal: AbortSignal
 ): Promise<PxDetailResponse> {
-  return fetchJson(
-    `${PX_BASE_URL}/datasets/${encodeURIComponent(accession)}`,
-    signal,
-    pxDetailResponseSchema
-  );
+  try {
+    return await ky(
+      `${PX_BASE_URL}/datasets/${encodeURIComponent(accession)}`,
+      { signal }
+    ).json(pxDetailResponseSchema);
+  } catch (error) {
+    if (!(error instanceof HTTPError)) throw error;
+
+    let payload: PxStatusErrorPayload | null = null;
+    try {
+      const parsed = pxStatusErrorPayloadSchema.safeParse(
+        await error.response.json()
+      );
+      payload = parsed.success ? parsed.data : null;
+    } catch {
+      payload = null;
+    }
+
+    throw Object.assign(
+      new Error(
+        payload?.description ??
+          `Request failed with status ${error.response.status} ${error.response.statusText}`
+      ),
+      {
+        name: 'PxHttpError',
+        status: error.response.status,
+        errorCode: payload?.error_code ?? null
+      }
+    );
+  }
 }
 
 async function upsertDataset(
@@ -458,6 +460,20 @@ async function upsertDataset(
       keywords
     }
   };
+  const datasetData = {
+    category: PX_CATEGORY,
+    title,
+    description,
+    homepageUrl,
+    doi,
+    publisher,
+    publishedAt,
+    raw: rawPayload,
+    bboxMinLon: null,
+    bboxMinLat: null,
+    bboxMaxLon: null,
+    bboxMaxLat: null
+  };
 
   return prisma.dataset.upsert({
     where: {
@@ -469,51 +485,10 @@ async function upsertDataset(
     create: {
       sourceDb: PX_SOURCE_DB,
       sourceKey,
-      category: PX_CATEGORY,
-      title,
-      description,
-      homepageUrl,
-      doi,
-      publisher,
-      publishedAt,
-      raw: rawPayload,
-      bboxMinLon: null,
-      bboxMinLat: null,
-      bboxMaxLon: null,
-      bboxMaxLat: null
+      ...datasetData
     },
-    update: {
-      category: PX_CATEGORY,
-      title,
-      description,
-      homepageUrl,
-      doi,
-      publisher,
-      publishedAt,
-      raw: rawPayload,
-      bboxMinLon: null,
-      bboxMinLat: null,
-      bboxMaxLon: null,
-      bboxMaxLat: null
-    }
+    update: datasetData
   });
-}
-
-async function linkDatasetTaxa(
-  prisma: ReturnType<typeof createPrismaClient>,
-  datasetId: string,
-  speciesNames: string[],
-  signal: AbortSignal,
-  taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>
-): Promise<number> {
-  return linkDatasetTaxaShared(
-    prisma,
-    datasetId,
-    speciesNames,
-    signal,
-    taxonomyResolutionCache,
-    resolveGbifTaxaFromNames
-  );
 }
 
 async function resolveGbifTaxaFromNames(
@@ -524,25 +499,17 @@ async function resolveGbifTaxaFromNames(
     names,
     signal,
     (batchNames, batchSignal) =>
-      withRetry(
-        () =>
-          fetchJsonWithInit(
-            'https://verifier.globalnames.org/api/v1/verifications',
-            batchSignal,
-            globalNamesVerificationResponseSchema,
-            {
-              method: 'POST',
-              headers: {
-                'content-type': 'application/json'
-              },
-              body: JSON.stringify(buildGlobalNamesRequestBody(batchNames))
-            }
-          ),
-        batchSignal,
-        GLOBALNAMES_RETRY_ATTEMPTS,
-        GLOBALNAMES_RETRY_BASE_MS,
-        GLOBALNAMES_RETRY_MAX_MS
-      ),
+      ky
+        .post('https://verifier.globalnames.org/api/v1/verifications', {
+          signal: batchSignal,
+          json: buildGlobalNamesRequestBody(batchNames),
+          retry: {
+            limit: GLOBALNAMES_RETRY_ATTEMPTS - 1,
+            methods: ['post'],
+            statusCodes: [...RETRYABLE_HTTP_STATUSES]
+          }
+        })
+        .json(globalNamesVerificationResponseSchema),
     {
       batchSize: GLOBALNAMES_BATCH_SIZE
     }
@@ -744,81 +711,25 @@ function toRawTerm(term: PxTerm): Prisma.InputJsonObject {
 }
 
 function flattenTermGroups(groups: PxTermGroup[] | undefined): PxTerm[] {
-  const result: PxTerm[] = [];
-  for (const group of groups ?? []) {
-    for (const term of group.terms ?? []) {
-      result.push(term);
-    }
-  }
-  return result;
+  return (groups ?? []).flatMap((group) => group.terms ?? []);
 }
 
 function getTermValue(term: PxTerm): string | null {
   return normalizeNullableString(term.value ?? term.value_accession);
 }
 
-function normalizeNullableString(value: unknown): string | null {
-  return normalizeNullableStringShared(value);
+function getErrorCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const { errorCode } = error as { errorCode?: unknown };
+  return typeof errorCode === 'string' ? errorCode : null;
 }
 
-function parseDateOnly(value: string | null): Date | null {
-  return parseDateOnlyShared(value);
-}
-
-function isIgnorablePxError(error: unknown): error is PxApiError {
-  if (!(error instanceof PxApiError)) return false;
+function isIgnorablePxError(error: unknown): boolean {
+  const errorCode = getErrorCode(error);
   return (
-    error.errorCode === 'DatasetNotYetReleased' ||
-    error.errorCode === 'NoSuchIdentifier'
+    errorCode === 'DatasetNotYetReleased' ||
+    errorCode === 'NoSuchIdentifier'
   );
-}
-
-async function fetchJson<T>(
-  url: string,
-  signal: AbortSignal,
-  schema: z.ZodType<T>
-): Promise<T> {
-  return fetchJsonWithInit(url, signal, schema, undefined);
-}
-
-async function fetchJsonWithInit<T>(
-  url: string,
-  signal: AbortSignal,
-  schema: z.ZodType<T>,
-  init: RequestInit | undefined
-): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    signal,
-    headers: {
-      accept: 'application/json',
-      ...(init?.headers ?? {})
-    }
-  });
-
-  if (!response.ok) {
-    let payload: PxStatusErrorPayload | null = null;
-    try {
-      const parsedError = pxStatusErrorPayloadSchema.safeParse(
-        await response.json()
-      );
-      payload = parsedError.success ? parsedError.data : null;
-    } catch {
-      payload = null;
-    }
-
-    const message =
-      payload?.description ??
-      `Request failed with status ${response.status} ${response.statusText}`;
-    throw new PxApiError(
-      message,
-      response.status,
-      payload?.error_code ?? null,
-      payload
-    );
-  }
-
-  return schema.parse(await response.json());
 }
 
 async function runWithConcurrency<T>(
@@ -843,64 +754,4 @@ async function runWithConcurrency<T>(
   });
 
   await Promise.all(runners);
-}
-
-async function withRetry<T>(
-  run: () => Promise<T>,
-  signal: AbortSignal,
-  attempts: number,
-  baseDelayMs: number,
-  maxDelayMs: number
-): Promise<T> {
-  let lastError: unknown = null;
-
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (signal.aborted) throw new Error('Job aborted');
-
-    try {
-      return await run();
-    } catch (error) {
-      lastError = error;
-      if (!isRetryableGlobalNamesError(error) || attempt >= attempts - 1) {
-        throw error;
-      }
-
-      const delayMs = computeBackoffWithJitter(
-        attempt,
-        baseDelayMs,
-        maxDelayMs
-      );
-      await sleep(delayMs, undefined, { signal });
-    }
-  }
-
-  throw lastError;
-}
-
-function computeBackoffWithJitter(
-  attempt: number,
-  baseDelayMs: number,
-  maxDelayMs: number
-): number {
-  const exponential = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt);
-  const jittered = exponential * (0.5 + Math.random());
-  return Math.round(jittered);
-}
-
-function isRetryableGlobalNamesError(error: unknown): boolean {
-  if (error instanceof z.ZodError) return false;
-
-  if (error instanceof PxApiError) {
-    return RETRYABLE_HTTP_STATUSES.has(error.status);
-  }
-
-  if (error instanceof Error) {
-    if (error.name === 'AbortError') return false;
-    if (error instanceof TypeError) return true;
-    return /ECONNRESET|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|fetch failed/i.test(
-      error.message
-    );
-  }
-
-  return false;
 }
