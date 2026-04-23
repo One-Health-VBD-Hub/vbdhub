@@ -21,7 +21,7 @@ import {
 import {
   normalizeNullableString,
   parseDateOnly
-} from './shared/values.js';
+} from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
 const VECDYN_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';

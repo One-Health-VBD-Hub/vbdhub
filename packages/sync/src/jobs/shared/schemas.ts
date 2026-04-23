@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { GlobalNamesVerificationResponse } from './taxonomy.js';
-import { normalizeNullableString } from './values.js';
+import { normalizeNullableString } from './normalization.js';
 
 export const nullableStringSchema = z.preprocess(
   (value) => normalizeNullableString(value),

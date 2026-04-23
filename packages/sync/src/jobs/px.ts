@@ -15,7 +15,7 @@ import {
 import {
   normalizeNullableString,
   parseDateOnly
-} from './shared/values.js';
+} from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
 const PX_BASE_URL = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1';

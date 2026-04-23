@@ -17,7 +17,7 @@ import {
   upsertSpatialGeometry,
   type Coordinate
 } from './shared/spatial.js';
-import { normalizeNullableString, parseDateOnly } from './shared/values.js';
+import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
 const VECTRAITS_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';

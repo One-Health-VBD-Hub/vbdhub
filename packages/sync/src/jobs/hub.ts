@@ -14,7 +14,7 @@ import {
   upsertSpatialGeometry,
   type Coordinate
 } from './shared/spatial.js';
-import { normalizeNullableString, parseDateOnly } from './shared/values.js';
+import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import {
   createHubStorageClient,
   type HubBucketObject
