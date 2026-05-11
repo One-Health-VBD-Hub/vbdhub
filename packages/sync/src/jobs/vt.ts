@@ -51,7 +51,7 @@ const vecTraitsDatasetRowSchema = z.looseObject({
   Longitude: z.union([z.number(), z.string(), z.null()]).optional()
 });
 
-const vecTraitsDatasetResponseSchema = z.looseObject({
+const vecTraitsDatasetResponseSchema = z.object({
   count: z.coerce.number().int().optional(),
   total: z.coerce.number().int().optional(),
   page: z.coerce.number().int().optional(),
@@ -67,7 +67,6 @@ const vecTraitsDatasetResponseSchema = z.looseObject({
 });
 
 type VecTraitsDatasetRow = z.infer<typeof vecTraitsDatasetRowSchema>;
-type VecTraitsDatasetResponse = z.infer<typeof vecTraitsDatasetResponseSchema>;
 type TemporalCoverage = {
   startDate: Date | null;
   endDate: Date | null;
@@ -85,7 +84,7 @@ export const vtSyncJob: JobDefinition = {
 
     try {
       logger.info('Fetching VecTraits dataset IDs');
-      const ids = await fetchVecTraitsDatasetIds(signal);
+      const ids = await fetchVecTraitsDatasetIds();
       logger.info({ count: ids.length }, 'VecTraits IDs fetched');
 
       for (const id of ids) {
@@ -173,16 +172,14 @@ export const vtSyncJob: JobDefinition = {
   }
 };
 
-async function fetchVecTraitsDatasetIds(signal: AbortSignal): Promise<number[]> {
-  const url =
-    `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
+async function fetchVecTraitsDatasetIds(): Promise<number[]> {
+  const url = `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
     new URLSearchParams({
       page: '1',
-      keywords: '',
       sort_column: 'DatasetID',
       sort_dir: 'asc'
     }).toString();
-  return (await ky(url, { signal }).json(vecTraitsIdsResponseSchema)).ids;
+  return (await ky(url).json(vecTraitsIdsResponseSchema)).ids;
 }
 
 async function fetchVecTraitsDatasetRows(
