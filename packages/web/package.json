@@ -26,6 +26,7 @@
     ]
   },
   "dependencies": {
+    "@carbon/icons-react": "^11.80.0",
     "@carbon/react": "^1.105",
     "@formbricks/js": "^4",
     "@iframe-resizer/react": "^5",
@@ -44,6 +45,7 @@
     "react-medium-image-zoom": "^5",
     "react-responsive": "^10",
     "stytch": "^13",
+    "tailwind-merge": "^2.5.4",
     "tailwind-variants": "^0.3",
     "usehooks-ts": "^3",
     "wellknown": "^0.5",
