@@ -5,9 +5,9 @@ Shared Prisma package for the monorepo.
 ## Commands
 
 ```bash
-npm run prisma:generate --workspace=@vbdhub/db
-npm run prisma:migrate:dev --workspace=@vbdhub/db
-npm run prisma:migrate:deploy --workspace=@vbdhub/db
+pnpm --filter @vbdhub/db run prisma:generate
+pnpm --filter @vbdhub/db run prisma:migrate:dev
+pnpm --filter @vbdhub/db run prisma:migrate:deploy
 ```
 
 ## Usage

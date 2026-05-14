@@ -39,6 +39,7 @@
     "nuqs": "^2",
     "react": "^19",
     "react-dom": "^19",
+    "react-is": "^19.2.6",
     "react-map-gl": "^8",
     "react-medium-image-zoom": "^5",
     "react-responsive": "^10",

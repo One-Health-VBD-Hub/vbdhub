@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "build": "npm run prisma:generate && tsc",
+    "build": "pnpm run prisma:generate && tsc",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy"
