@@ -97,6 +97,12 @@ importers:
       '@fastify/type-provider-json-schema-to-ts':
         specifier: ^5
         version: 5.0.0
+      '@prisma/client':
+        specifier: ^7.5
+        version: 7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(typescript@5.9.3)
+      '@types/geojson':
+        specifier: ^7946
+        version: 7946.0.16
       '@types/node':
         specifier: ^22
         version: 22.19.19
@@ -137,6 +143,9 @@ importers:
         specifier: ^4.3
         version: 4.4.3
     devDependencies:
+      '@prisma/client':
+        specifier: ^7.5
+        version: 7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(typescript@5.9.3)
       '@tsconfig/node22':
         specifier: ^22
         version: 22.0.5
@@ -149,6 +158,9 @@ importers:
 
   packages/web:
     dependencies:
+      '@carbon/icons-react':
+        specifier: ^11.80.0
+        version: 11.80.0(react@19.2.6)
       '@carbon/react':
         specifier: ^1.105
         version: 1.107.1(react-dom@19.2.6(react@19.2.6))(react-is@19.2.6)(react@19.2.6)(sass@1.99.0)
@@ -203,6 +215,9 @@ importers:
       stytch:
         specifier: ^13
         version: 13.2.5
+      tailwind-merge:
+        specifier: ^2.5.4
+        version: 2.5.4
       tailwind-variants:
         specifier: ^0.3
         version: 0.3.1(tailwindcss@4.3.0)

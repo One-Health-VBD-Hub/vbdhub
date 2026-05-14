@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "packageManager": "pnpm@11.1.1",
   "scripts": {
-    "dev:web": "pnpm --filter @vbdhub/web run dev",
-    "dev:service2": "pnpm --filter @vbdhub/service2 run dev",
-    "db:prisma:generate": "pnpm --filter @vbdhub/db run prisma:generate",
-    "db:prisma:migrate:dev": "pnpm --filter @vbdhub/db run prisma:migrate:dev",
-    "db:prisma:migrate:deploy": "pnpm --filter @vbdhub/db run prisma:migrate:deploy"
+    "dev:web": "pnpm -F @vbdhub/web run dev",
+    "dev:service2": "pnpm -F @vbdhub/service2 run dev",
+    "db:prisma:generate": "pnpm -F @vbdhub/db run prisma:generate",
+    "db:prisma:migrate:dev": "pnpm -F @vbdhub/db run prisma:migrate:dev",
+    "db:prisma:migrate:deploy": "pnpm -F @vbdhub/db run prisma:migrate:deploy"
   },
   "prettier": {
     "singleQuote": true,
