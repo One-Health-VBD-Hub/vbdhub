@@ -7,18 +7,18 @@ Simple TypeScript package for synchronisation jobs.
 CLI:
 
 ```bash
-npm run build --workspace=@vbdhub/sync
-npm run sync --workspace=@vbdhub/sync -- --list
-npm run sync --workspace=@vbdhub/sync -- --job hub
-npm run sync:hub --workspace=@vbdhub/sync
+pnpm --filter @vbdhub/sync run build
+pnpm --filter @vbdhub/sync run sync -- --list
+pnpm --filter @vbdhub/sync run sync -- --job hub
+pnpm --filter @vbdhub/sync run sync:hub
 ```
 
 Railway cron style:
 
 ```bash
-npm run sync --workspace=@vbdhub/sync -- --job hub
+pnpm --filter @vbdhub/sync run sync -- --job hub
 # or with env
-SYNC_JOB=hub npm run sync --workspace=@vbdhub/sync
+SYNC_JOB=hub pnpm --filter @vbdhub/sync run sync
 ```
 
 Programmatic:

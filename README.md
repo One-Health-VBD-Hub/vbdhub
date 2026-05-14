@@ -4,28 +4,28 @@
 
 # VBD Hub Monorepo
 
-This repository houses the VBD Hub applications managed with npm workspaces:
+This repository houses the VBD Hub applications managed with pnpm workspaces:
 - `packages/web`: Next.js frontend.
-- `packages/service`: NestJS backend API.
+- `packages/service2`: Fastify backend API.
 
 ## Funding and affiliation
 - Developed at [Imperial College London](https://www.imperial.ac.uk/), funded by Imperial College London, [DEFRA](https://www.gov.uk/government/organisations/department-for-environment-food-rural-affairs), and [UKRI (BBSRC)](https://www.ukri.org/councils/bbsrc/).
 
 ## Prerequisites
-- Node.js 18+ and npm.
+- Node.js 18+ and pnpm.
 - Local environment files for each package (copy from each package’s `.env.example`).
 
 ## Getting Started
 ```bash
-npm install
+pnpm install
 # run from the repo root
-npm run dev:web       # starts the Next.js app
-npm run dev:service   # starts the NestJS service
+pnpm run dev:web        # starts the Next.js app
+pnpm run dev:service2   # starts the Fastify service
 ```
 
 ## Structure
 - `packages/web/` – Frontend app (see `packages/web/README.md` for details).
-- `packages/service/` – Backend service (see `packages/service/README.md` for details).
+- `packages/service2/` – Backend service (see `packages/service2/README.md` for details).
 - `.github/workflows/` – CI (includes Gitleaks secret scanning).
 
 ## Development Notes

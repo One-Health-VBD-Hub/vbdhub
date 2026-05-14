@@ -12,17 +12,17 @@
     }
   },
   "scripts": {
-    "build": "npm run build -w @vbdhub/db && tsc",
+    "build": "pnpm --filter @vbdhub/db run build && tsc",
     "sync": "node dist/cli.js",
-    "sync:gbif": "npm run sync -- --job gbif",
-    "sync:hub": "npm run sync -- --job hub",
-    "sync:px": "npm run sync -- --job px",
-    "sync:vd": "npm run sync -- --job vd",
-    "sync:vt": "npm run sync -- --job vt"
+    "sync:gbif": "pnpm run sync -- --job gbif",
+    "sync:hub": "pnpm run sync -- --job hub",
+    "sync:px": "pnpm run sync -- --job px",
+    "sync:vd": "pnpm run sync -- --job vd",
+    "sync:vt": "pnpm run sync -- --job vt"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@vbdhub/db": "^0.1.0",
+    "@vbdhub/db": "workspace:^",
     "csv-parse": "^6",
     "dotenv": "^17",
     "ky": "^2.0",

@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "app.ts",
   "scripts": {
-    "start": "npm run build:ts && fastify start -l info dist/app.js",
-    "build:ts": "npm run build -w @vbdhub/db && tsc",
+    "start": "pnpm run build:ts && fastify start -l info dist/app.js",
+    "build:ts": "pnpm --filter @vbdhub/db run build && tsc",
     "watch:ts": "tsc -w",
-    "dev": "npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"npm:watch:ts\" \"npm:dev:start\"",
+    "dev": "pnpm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"pnpm:watch:ts\" \"pnpm:dev:start\"",
     "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
     "knip": "knip"
   },
@@ -24,7 +24,7 @@
     "@sentry/node": "^10.49",
     "@terraformer/wkt": "^2.2",
     "@turf/rewind": "^7.3",
-    "@vbdhub/db": "^0.1",
+    "@vbdhub/db": "workspace:^",
     "dotenv": "^17",
     "fastify": "^5",
     "fastify-cli": "^8",
