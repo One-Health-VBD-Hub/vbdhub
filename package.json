@@ -2,22 +2,20 @@
   "name": "vbdhub",
   "private": true,
   "version": "0.0.0",
-  "workspaces": [
-    "packages/*"
-  ],
+  "packageManager": "pnpm@11.1.1",
   "scripts": {
-    "dev:web": "npm run dev -w @vbdhub/web",
-    "dev:service2": "npm run dev -w @vbdhub/service2",
-    "db:prisma:generate": "npm run prisma:generate -w @vbdhub/db",
-    "db:prisma:migrate:dev": "npm run prisma:migrate:dev -w @vbdhub/db",
-    "db:prisma:migrate:deploy": "npm run prisma:migrate:deploy -w @vbdhub/db"
+    "dev:web": "pnpm -F @vbdhub/web run dev",
+    "dev:service2": "pnpm -F @vbdhub/service2 run dev",
+    "db:prisma:generate": "pnpm -F @vbdhub/db run prisma:generate",
+    "db:prisma:migrate:dev": "pnpm -F @vbdhub/db run prisma:migrate:dev",
+    "db:prisma:migrate:deploy": "pnpm -F @vbdhub/db run prisma:migrate:deploy"
   },
   "prettier": {
     "singleQuote": true,
-    "jsxSingleQuote": true,
+    "jsxSingleQuote ": true,
     "trailingComma": "none"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

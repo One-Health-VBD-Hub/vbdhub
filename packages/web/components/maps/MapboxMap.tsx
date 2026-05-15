@@ -1,3 +1,7 @@
+'use client';
+
+import { InlineNotification } from '@carbon/react';
+import mapboxgl from 'mapbox-gl';
 import Map, {
   FullscreenControl,
   GeolocateControl,
@@ -7,6 +11,7 @@ import Map, {
 import 'mapbox-gl/dist/mapbox-gl.css';
 import DrawControl from '@/components/maps/DrawControl';
 import { Feature, Feature as GeoJSONFeature } from 'geojson';
+import { useIsClient } from 'usehooks-ts';
 
 type FeatureMap = Record<string, Feature>;
 type SetFeaturesAction = FeatureMap | null | ((prevFeatures: FeatureMap) => FeatureMap);
@@ -33,6 +38,7 @@ export default function MapboxMap({
   navigationControl = false,
   className
 }: Props) {
+  const isClient = useIsClient();
   const onUpdate = (e: { features: GeoJSONFeature[] }) => {
     if (!setFeatures) return;
 
@@ -58,6 +64,28 @@ export default function MapboxMap({
       return newFeatures;
     });
   };
+
+  if (!isClient) {
+    return (
+      <div className={className}>
+        <div className='h-full border border-black/10' />
+      </div>
+    );
+  }
+
+  if (!mapboxgl.supported()) {
+    return (
+      <div className={className}>
+        <InlineNotification
+          lowContrast
+          hideCloseButton
+          kind='warning'
+          title='Map unavailable'
+          subtitle='This browser does not support WebGL.'
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
