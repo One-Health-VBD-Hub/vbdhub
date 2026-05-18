@@ -16,6 +16,7 @@
     "trailingComma": "none"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "prettier":"^3.8.3"
   }
 }
