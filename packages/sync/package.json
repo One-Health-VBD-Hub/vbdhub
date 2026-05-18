@@ -14,26 +14,26 @@
   "scripts": {
     "build": "pnpm -F @vbdhub/db run build && tsc",
     "sync": "node dist/cli.js",
-    "sync:gbif": "pnpm run sync -- --job gbif",
-    "sync:hub": "pnpm run sync -- --job hub",
-    "sync:px": "pnpm run sync -- --job px",
-    "sync:vd": "pnpm run sync -- --job vd",
-    "sync:vt": "pnpm run sync -- --job vt"
+    "sync:gbif": "pnpm run sync --job gbif",
+    "sync:hub": "pnpm run sync --job hub",
+    "sync:px": "pnpm run sync --job px",
+    "sync:vd": "pnpm run sync --job vd",
+    "sync:vt": "pnpm run sync --job vt"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@vbdhub/db": "workspace:^",
-    "csv-parse": "^6",
-    "dotenv": "^17",
-    "ky": "^2.0",
-    "minio": "^8",
-    "pino": "^10",
-    "zod": "^4.3"
+    "csv-parse": "^6.2.1",
+    "dotenv": "^17.4.2",
+    "ky": "^2.0.2",
+    "minio": "^8.0.7",
+    "pino": "^10.3.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22",
-    "@prisma/client": "^7.5",
-    "@types/node": "^22",
-    "typescript": "^5"
+    "@prisma/client": "^7.8.0",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^22.19.19",
+    "typescript": "^5.9.3"
   }
 }
