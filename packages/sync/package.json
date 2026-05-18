@@ -14,11 +14,11 @@
   "scripts": {
     "build": "pnpm -F @vbdhub/db run build && tsc",
     "sync": "node dist/cli.js",
-    "sync:gbif": "pnpm run sync -- --job gbif",
-    "sync:hub": "pnpm run sync -- --job hub",
-    "sync:px": "pnpm run sync -- --job px",
-    "sync:vd": "pnpm run sync -- --job vd",
-    "sync:vt": "pnpm run sync -- --job vt"
+    "sync:gbif": "pnpm run sync --job gbif",
+    "sync:hub": "pnpm run sync --job hub",
+    "sync:px": "pnpm run sync --job px",
+    "sync:vd": "pnpm run sync --job vd",
+    "sync:vt": "pnpm run sync --job vt"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {
