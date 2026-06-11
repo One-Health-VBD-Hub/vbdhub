@@ -2,7 +2,7 @@
   "name": "vbdhub",
   "private": true,
   "version": "0.0.0",
-  "packageManager": "pnpm@11.1.1",
+  "packageManager": "pnpm@11.5.3",
   "scripts": {
     "dev:web": "pnpm -F @vbdhub/web run dev",
     "dev:service2": "pnpm -F @vbdhub/service2 run dev",
@@ -16,7 +16,7 @@
     "trailingComma": "none"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "prettier":"^3.8.3"
+    "prettier": "^3.8.3",
+    "typescript": "^5.9.3"
   }
 }
