@@ -5,10 +5,8 @@ export interface JobContext {
   logger: Logger;
 }
 
-export type JobHandler = (ctx: JobContext) => Promise<void>;
-
 export interface JobDefinition {
   name: string;
   description: string;
-  run: JobHandler;
+  run: (ctx: JobContext) => Promise<void>;
 }

@@ -1,3 +1,2 @@
-export { getJob, jobs, listJobs } from './job-registry.js';
-export { runAllJobs, runJob } from './runner.js';
-export type { JobContext, JobDefinition, JobHandler } from './types.js';
+export { jobs, runJob } from './job-registry.js';
+export type { JobContext, JobDefinition } from './types.js';

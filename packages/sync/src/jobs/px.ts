@@ -3,15 +3,10 @@ import type { DatasetCategory, Prisma } from '@prisma/client';
 import ky, { HTTPError } from 'ky';
 import { z } from 'zod';
 import {
-  buildGlobalNamesRequestBody,
   linkDatasetTaxa,
-  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
   type ResolvedGbifTaxon
 } from './shared/taxonomy.js';
-import {
-  globalNamesVerificationResponseSchema,
-  nullableStringSchema
-} from './shared/schemas.js';
+import { nullableStringSchema } from './shared/schemas.js';
 import {
   normalizeNullableString,
   parseDateOnly
@@ -21,11 +16,11 @@ import type { JobDefinition } from '../types.js';
 const PX_BASE_URL = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1';
 const PX_SOURCE_DB = 'proteomexchange';
 const PX_CATEGORY: DatasetCategory = 'proteomics';
-const PX_DEFAULT_PAGE_SIZE = 500;
-const PX_DEFAULT_DETAIL_CONCURRENCY = 2;
+const PX_FIRST_PAGE = 1;
+const PX_PAGE_SIZE = 500;
+const PX_DETAIL_CONCURRENCY = 2;
 const GLOBALNAMES_RETRY_ATTEMPTS = 4;
 const GLOBALNAMES_BATCH_SIZE = 1000;
-const RETRYABLE_HTTP_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 const pxCompactDatasetRowSchema = z.array(z.unknown()).min(1);
 
@@ -105,14 +100,6 @@ type PxTermGroup = z.infer<typeof pxTermGroupSchema>;
 type PxDetailResponse = z.infer<typeof pxDetailResponseSchema>;
 type PxStatusErrorPayload = z.infer<typeof pxStatusErrorPayloadSchema>;
 
-interface PxSyncOptions {
-  pageSize: number;
-  startPage: number;
-  maxPages: number | null;
-  datasetLimit: number | null;
-  detailConcurrency: number;
-}
-
 export const pxSyncJob: JobDefinition = {
   name: 'px',
   description: 'Synchronise ProteomeXchange records',
@@ -121,7 +108,6 @@ export const pxSyncJob: JobDefinition = {
 
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
-    const options = loadOptionsFromEnv();
     const counters = {
       scanned: 0,
       synced: 0,
@@ -132,53 +118,27 @@ export const pxSyncJob: JobDefinition = {
     try {
       logger.info(
         {
-          pageSize: options.pageSize,
-          startPage: options.startPage,
-          maxPages: options.maxPages,
-          datasetLimit: options.datasetLimit,
-          detailConcurrency: options.detailConcurrency
+          pageSize: PX_PAGE_SIZE,
+          detailConcurrency: PX_DETAIL_CONCURRENCY
         },
         'Starting ProteomeXchange synchronisation'
       );
 
       const firstPage = await fetchCompactDatasetPage(
-        options.startPage,
-        options.pageSize,
+        PX_FIRST_PAGE,
+        PX_PAGE_SIZE,
         signal
       );
-      const availablePages = getAvailablePageCount(firstPage, options.pageSize);
-      const lastPageExclusive = getLastPageExclusive(
-        options.startPage,
-        availablePages,
-        options.maxPages
-      );
+      const availablePages = getAvailablePageCount(firstPage, PX_PAGE_SIZE);
 
-      if (options.startPage >= availablePages) {
-        logger.warn(
-          {
-            startPage: options.startPage,
-            availablePages
-          },
-          'Start page is beyond available pages; nothing to sync'
-        );
-        return;
-      }
-
-      for (let page = options.startPage; page < lastPageExclusive; page += 1) {
+      for (let page = PX_FIRST_PAGE; page <= availablePages; page += 1) {
         if (signal.aborted) throw new Error('Job aborted');
 
         const response =
-          page === options.startPage
+          page === PX_FIRST_PAGE
             ? firstPage
-            : await fetchCompactDatasetPage(page, options.pageSize, signal);
-        const compactDatasets = extractCompactDatasets(response.datasets ?? []);
-
-        let datasetsToProcess = compactDatasets;
-        if (options.datasetLimit !== null) {
-          const remaining = options.datasetLimit - counters.scanned;
-          if (remaining <= 0) break;
-          datasetsToProcess = compactDatasets.slice(0, remaining);
-        }
+            : await fetchCompactDatasetPage(page, PX_PAGE_SIZE, signal);
+        const datasetsToProcess = extractCompactDatasets(response.datasets ?? []);
 
         if (datasetsToProcess.length === 0) {
           logger.info({ page }, 'No datasets returned on page');
@@ -188,7 +148,7 @@ export const pxSyncJob: JobDefinition = {
         counters.scanned += datasetsToProcess.length;
         await runWithConcurrency(
           datasetsToProcess,
-          options.detailConcurrency,
+          PX_DETAIL_CONCURRENCY,
           async (compactDataset) => {
             if (signal.aborted) throw new Error('Job aborted');
 
@@ -216,7 +176,10 @@ export const pxSyncJob: JobDefinition = {
                 speciesNames,
                 signal,
                 taxonomyResolutionCache,
-                resolveGbifTaxaFromNames
+                {
+                  batchSize: GLOBALNAMES_BATCH_SIZE,
+                  retryAttempts: GLOBALNAMES_RETRY_ATTEMPTS
+                }
               );
 
               counters.synced += 1;
@@ -229,6 +192,8 @@ export const pxSyncJob: JobDefinition = {
                 'ProteomeXchange dataset synchronised'
               );
             } catch (error) {
+              if (signal.aborted) throw error;
+
               if (isIgnorablePxError(error)) {
                 counters.skipped += 1;
                 logger.warn(
@@ -256,7 +221,7 @@ export const pxSyncJob: JobDefinition = {
         logger.info(
           {
             page,
-            pageSize: options.pageSize,
+            pageSize: PX_PAGE_SIZE,
             rowsReturned: datasetsToProcess.length,
             scanned: counters.scanned,
             synced: counters.synced,
@@ -266,13 +231,6 @@ export const pxSyncJob: JobDefinition = {
           },
           'ProteomeXchange sync progress'
         );
-
-        if (
-          options.datasetLimit !== null &&
-          counters.scanned >= options.datasetLimit
-        ) {
-          break;
-        }
       }
 
       logger.info(
@@ -290,40 +248,6 @@ export const pxSyncJob: JobDefinition = {
   }
 };
 
-function loadOptionsFromEnv(): PxSyncOptions {
-  return {
-    pageSize: parsePositiveIntEnv('PX_PAGE_SIZE', PX_DEFAULT_PAGE_SIZE),
-    startPage: parseNonNegativeIntEnv('PX_START_PAGE', 0),
-    maxPages: parseOptionalPositiveIntEnv('PX_MAX_PAGES'),
-    datasetLimit: parseOptionalPositiveIntEnv('PX_DATASET_LIMIT'),
-    detailConcurrency: parsePositiveIntEnv(
-      'PX_DETAIL_CONCURRENCY',
-      PX_DEFAULT_DETAIL_CONCURRENCY
-    )
-  };
-}
-
-function parsePositiveIntEnv(name: string, fallback: number): number {
-  const value = process.env[name];
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function parseNonNegativeIntEnv(name: string, fallback: number): number {
-  const value = process.env[name];
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
-}
-
-function parseOptionalPositiveIntEnv(name: string): number | null {
-  const value = process.env[name];
-  if (!value) return null;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
 function getAvailablePageCount(
   response: PxCompactResponse,
   pageSize: number
@@ -337,15 +261,6 @@ function getAvailablePageCount(
   }
 
   return 1;
-}
-
-function getLastPageExclusive(
-  startPage: number,
-  availablePages: number,
-  maxPages: number | null
-): number {
-  if (maxPages === null) return availablePages;
-  return Math.min(availablePages, startPage + maxPages);
 }
 
 async function fetchCompactDatasetPage(
@@ -451,15 +366,15 @@ async function upsertDataset(
   const instruments = extractInstrumentNames(detail, compact.instrumentSummary);
   const keywords = extractKeywords(detail, compact.keywordSummary);
 
-  const rawPayload: Prisma.InputJsonObject = {
-    compact: toRawCompact(compact),
-    detail: toRawDetail(detail),
+  const rawPayload = {
+    compact,
+    detail,
     normalized: {
       species: speciesNames,
       instruments,
       keywords
     }
-  };
+  } as unknown as Prisma.InputJsonObject;
   const datasetData = {
     category: PX_CATEGORY,
     title,
@@ -489,31 +404,6 @@ async function upsertDataset(
     },
     update: datasetData
   });
-}
-
-async function resolveGbifTaxaFromNames(
-  names: string[],
-  signal: AbortSignal
-): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  return resolveGbifTaxaFromNamesShared(
-    names,
-    signal,
-    (batchNames, batchSignal) =>
-      ky
-        .post('https://verifier.globalnames.org/api/v1/verifications', {
-          signal: batchSignal,
-          json: buildGlobalNamesRequestBody(batchNames),
-          retry: {
-            limit: GLOBALNAMES_RETRY_ATTEMPTS - 1,
-            methods: ['post'],
-            statusCodes: [...RETRYABLE_HTTP_STATUSES]
-          }
-        })
-        .json(globalNamesVerificationResponseSchema),
-    {
-      batchSize: GLOBALNAMES_BATCH_SIZE
-    }
-  );
 }
 
 function extractSpeciesNames(detail: PxDetailResponse): string[] {
@@ -660,54 +550,6 @@ function splitCommaSeparated(input: string): string[] {
     .split(',')
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
-}
-
-function toRawCompact(compact: PxCompactDataset): Prisma.InputJsonObject {
-  return {
-    accession: compact.accession,
-    title: compact.title,
-    repository: compact.repository,
-    speciesSummary: compact.speciesSummary,
-    sdrf: compact.sdrf,
-    fileSummary: compact.fileSummary,
-    instrumentSummary: compact.instrumentSummary,
-    publicationSummary: compact.publicationSummary,
-    labHead: compact.labHead,
-    announceDate: compact.announceDate,
-    keywordSummary: compact.keywordSummary
-  };
-}
-
-function toRawDetail(detail: PxDetailResponse): Prisma.InputJsonObject {
-  return {
-    contacts: detail.contacts.map(toRawTermGroup),
-    datasetFiles: detail.datasetFiles.map(toRawTerm),
-    description: detail.description,
-    fullDatasetLinks: detail.fullDatasetLinks.map(toRawTerm),
-    identifiers: detail.identifiers.map(toRawTerm),
-    instruments: detail.instruments.map(toRawTerm),
-    keywords: detail.keywords.map(toRawTerm),
-    modifications: detail.modifications.map(toRawTerm),
-    publications: detail.publications.map(toRawTermGroup),
-    species: detail.species.map(toRawTermGroup),
-    title: detail.title
-  };
-}
-
-function toRawTermGroup(group: PxTermGroup): Prisma.InputJsonObject {
-  return {
-    terms: group.terms.map(toRawTerm)
-  };
-}
-
-function toRawTerm(term: PxTerm): Prisma.InputJsonObject {
-  return {
-    accession: term.accession,
-    cv_param_group: term.cv_param_group,
-    name: term.name,
-    value: term.value,
-    value_accession: term.value_accession
-  };
 }
 
 function flattenTermGroups(groups: PxTermGroup[] | undefined): PxTerm[] {

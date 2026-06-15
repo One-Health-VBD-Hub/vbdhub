@@ -3,15 +3,10 @@ import type { DatasetCategory, Prisma } from '@prisma/client';
 import ky from 'ky';
 import { z } from 'zod';
 import {
-  buildGlobalNamesRequestBody,
   linkDatasetTaxa,
-  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
   type ResolvedGbifTaxon
 } from './shared/taxonomy.js';
-import {
-  globalNamesVerificationResponseSchema,
-  nullableStringSchema
-} from './shared/schemas.js';
+import { nullableStringSchema } from './shared/schemas.js';
 import {
   getBoundingBox,
   upsertSpatialGeometry,
@@ -52,17 +47,6 @@ const vecTraitsDatasetRowSchema = z.looseObject({
 });
 
 const vecTraitsDatasetResponseSchema = z.object({
-  count: z.coerce.number().int().optional(),
-  total: z.coerce.number().int().optional(),
-  page: z.coerce.number().int().optional(),
-  page_size: z.coerce.number().int().optional(),
-  per_page: z.coerce.number().int().optional(),
-  total_pages: z.coerce.number().int().optional(),
-  num_pages: z.coerce.number().int().optional(),
-  has_next: z.boolean().optional(),
-  next_page: z.coerce.number().int().nullable().optional(),
-  next: nullableStringSchema.optional(),
-  previous: nullableStringSchema.optional(),
   results: z.array(vecTraitsDatasetRowSchema).default([])
 });
 
@@ -84,7 +68,7 @@ export const vtSyncJob: JobDefinition = {
 
     try {
       logger.info('Fetching VecTraits dataset IDs');
-      const ids = await fetchVecTraitsDatasetIds();
+      const ids = await fetchVecTraitsDatasetIds(signal);
       logger.info({ count: ids.length }, 'VecTraits IDs fetched');
 
       for (const id of ids) {
@@ -143,8 +127,7 @@ export const vtSyncJob: JobDefinition = {
             dataset.id,
             speciesNames,
             signal,
-            taxonomyResolutionCache,
-            resolveGbifTaxaFromNames
+            taxonomyResolutionCache
           );
 
           logger.info(
@@ -160,6 +143,8 @@ export const vtSyncJob: JobDefinition = {
             'VecTraits dataset synchronised'
           );
         } catch (error) {
+          if (signal.aborted) throw error;
+
           logger.error(
             { err: error, sourceKey: id },
             'Failed to sync VecTraits dataset'
@@ -172,39 +157,28 @@ export const vtSyncJob: JobDefinition = {
   }
 };
 
-async function fetchVecTraitsDatasetIds(): Promise<number[]> {
+async function fetchVecTraitsDatasetIds(signal: AbortSignal): Promise<number[]> {
+  // The explorer data.results is paged, but ids contains the full inventory.
   const url = `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
     new URLSearchParams({
       page: '1',
       sort_column: 'DatasetID',
       sort_dir: 'asc'
     }).toString();
-  return (await ky(url).json(vecTraitsIdsResponseSchema)).ids;
+  return (await ky(url, { signal }).json(vecTraitsIdsResponseSchema)).ids;
 }
 
 async function fetchVecTraitsDatasetRows(
   datasetId: number,
   signal: AbortSignal
 ): Promise<VecTraitsDatasetRow[]> {
-  if (signal.aborted) throw new Error('Job aborted');
-
-  const url = `${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`;
-  const payload = await ky(url, { signal }).json(vecTraitsDatasetResponseSchema);
-  const uniqueRows = new Map<string, VecTraitsDatasetRow>();
-  const rowsWithoutId: VecTraitsDatasetRow[] = [];
-
-  for (const row of payload.results ?? []) {
-    const idValue = row.Id;
-    const rowId =
-      typeof idValue === 'number' ? String(idValue) : normalizeNullableString(idValue);
-    if (rowId) {
-      if (!uniqueRows.has(rowId)) uniqueRows.set(rowId, row);
-    } else {
-      rowsWithoutId.push(row);
-    }
-  }
-
-  return [...uniqueRows.values(), ...rowsWithoutId];
+  // This endpoint returns all rows in one response; page parameters are ignored.
+  return (
+    await ky(
+      `${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`,
+      { signal }
+    ).json(vecTraitsDatasetResponseSchema)
+  ).results;
 }
 
 function getFirstNonEmpty(
@@ -313,12 +287,8 @@ function buildDescription(rows: VecTraitsDatasetRow[]): string | null {
 function buildRawPayload(
   rows: VecTraitsDatasetRow[],
   temporalCoverage: TemporalCoverage
-): Prisma.InputJsonValue {
+): Prisma.InputJsonObject {
   const traits = collectUniqueValues(rows, (row) => row.OriginalTraitName);
-  const standardizedTraits = collectUniqueValues(
-    rows,
-    (row) => row.StandardisedTraitName
-  );
   const habitats = collectUniqueValues(rows, (row) => row.Habitat);
   const labFieldValues = collectUniqueValues(rows, (row) => row.LabField);
   const locations = collectUniqueValues(rows, (row) => row.Location);
@@ -328,15 +298,9 @@ function buildRawPayload(
   const contributorEmail = getFirstNonEmpty(rows, (row) => row.ContributorEmail);
   const doi = getFirstNonEmpty(rows, (row) => row.DOI);
 
-  const fieldNames = Array.from(
-    new Set(rows.flatMap((row) => Object.keys(row)))
-  ).sort();
-
   return {
     rowCount: rows.length,
-    availableFields: fieldNames,
     traits,
-    standardisedTraits: standardizedTraits,
     habitats,
     labFieldValues,
     locationSample: locations.slice(0, 50),
@@ -466,21 +430,4 @@ function normalizeSpeciesName(value: unknown): string | null {
   }
 
   return normalized;
-}
-
-async function resolveGbifTaxaFromNames(
-  names: string[],
-  signal: AbortSignal
-): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  return resolveGbifTaxaFromNamesShared(
-    names,
-    signal,
-    (batchNames, batchSignal) =>
-      ky
-        .post('https://verifier.globalnames.org/api/v1/verifications', {
-          signal: batchSignal,
-          json: buildGlobalNamesRequestBody(batchNames)
-        })
-        .json(globalNamesVerificationResponseSchema)
-  );
 }

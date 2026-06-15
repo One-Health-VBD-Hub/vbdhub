@@ -1,14 +1,10 @@
 import { createPrismaClient } from '@vbdhub/db';
 import type { DatasetCategory, Prisma } from '@prisma/client';
 import { parse } from 'csv-parse';
-import ky from 'ky';
 import {
-  buildGlobalNamesRequestBody,
   linkDatasetTaxa,
-  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
   type ResolvedGbifTaxon
 } from './shared/taxonomy.js';
-import { globalNamesVerificationResponseSchema } from './shared/schemas.js';
 import {
   getBoundingBox,
   upsertSpatialGeometry,
@@ -127,35 +123,28 @@ export const hubSyncJob: JobDefinition = {
 
     const prisma = createPrismaClient();
 
-    if (
-      !process.env.S3_BUCKET_NAME ||
-      !process.env.S3_ACCESS_KEY_ID ||
-      !process.env.S3_SECRET_ACCESS_KEY
-    ) {
+    const {
+      S3_BUCKET_NAME: bucket,
+      S3_ACCESS_KEY_ID: accessKey,
+      S3_SECRET_ACCESS_KEY: secretKey
+    } = process.env;
+
+    if (!bucket || !accessKey || !secretKey) {
       throw new Error('Hub storage client not configured');
     }
 
     const storage = createHubStorageClient({
-      accessKey: process.env.S3_ACCESS_KEY_ID,
-      secretKey: process.env.S3_SECRET_ACCESS_KEY,
-      bucket: process.env.S3_BUCKET_NAME
+      accessKey,
+      secretKey,
+      bucket
     });
-    const prefix = process.env.HUB_SYNC_PREFIX?.trim() ?? '';
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
 
     try {
-      logger.info(
-        {
-          prefix
-        },
-        'Starting hub synchronisation'
-      );
+      logger.info('Starting hub synchronisation');
 
-      const objects = await storage.listObjects({
-        prefix,
-        recursive: true
-      });
-      const datasets = collectDatasetFiles(objects, prefix);
+      const objects = await storage.listObjects();
+      const datasets = collectDatasetFiles(objects);
 
       logger.info(
         { objects: objects.length, datasets: datasets.length },
@@ -179,8 +168,7 @@ export const hubSyncJob: JobDefinition = {
             datasetRecord.id,
             snapshot.speciesNames,
             signal,
-            taxonomyResolutionCache,
-            resolveGbifTaxaFromNames
+            taxonomyResolutionCache
           );
 
           logger.info(
@@ -196,6 +184,8 @@ export const hubSyncJob: JobDefinition = {
             'Hub dataset synchronised'
           );
         } catch (error) {
+          if (signal.aborted) throw error;
+
           logger.error(
             { err: error, key: dataset.object.key },
             'Failed to sync hub dataset'
@@ -208,25 +198,21 @@ export const hubSyncJob: JobDefinition = {
   }
 };
 
-function collectDatasetFiles(
-  objects: HubBucketObject[],
-  prefix: string
-): HubDatasetFile[] {
+function collectDatasetFiles(objects: HubBucketObject[]): HubDatasetFile[] {
   return objects
     .filter((object) => object.key.toLowerCase().endsWith('.csv'))
     .map((object) => {
-      const { category, sourceKey } = parseDatasetPath(object.key, prefix);
+      const { category, sourceKey } = parseDatasetPath(object.key);
       return { object, category, sourceKey };
     })
     .sort((a, b) => a.object.key.localeCompare(b.object.key));
 }
 
-function parseDatasetPath(
-  objectKey: string,
-  prefix: string
-): { category: DatasetCategory; sourceKey: string } {
-  const relativeKey = stripPrefix(objectKey, prefix);
-  const [rawCategory, ...rest] = relativeKey.split('/').filter(Boolean);
+function parseDatasetPath(objectKey: string): {
+  category: DatasetCategory;
+  sourceKey: string;
+} {
+  const [rawCategory, ...rest] = objectKey.split('/').filter(Boolean);
 
   if (!rawCategory || rest.length !== 1) {
     throw new Error(
@@ -253,9 +239,7 @@ async function processDataset(
   storage: ReturnType<typeof createHubStorageClient>,
   dataset: HubDatasetFile
 ): Promise<DatasetSnapshot> {
-  const stream = await storage.getObjectStream({
-    objectKey: dataset.object.key
-  });
+  const stream = await storage.getObjectStream(dataset.object.key);
 
   const accumulator: DatasetAccumulator = {
     title: null,
@@ -532,18 +516,6 @@ function normalizeFieldName(field: string): string {
   return field.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
-function stripPrefix(objectKey: string, prefix: string): string {
-  const normalizedPrefix = prefix
-    ? prefix.endsWith('/')
-      ? prefix
-      : `${prefix}/`
-    : '';
-
-  return normalizedPrefix && objectKey.startsWith(normalizedPrefix)
-    ? objectKey.slice(normalizedPrefix.length)
-    : objectKey;
-}
-
 function humanizeSourceKey(sourceKey: string): string {
   const lastSegment = sourceKey.split(':').pop() ?? sourceKey;
   return lastSegment
@@ -564,21 +536,4 @@ function dedupeCoordinates(coordinates: Coordinate[]): Coordinate[] {
   }
 
   return unique;
-}
-
-async function resolveGbifTaxaFromNames(
-  names: string[],
-  signal: AbortSignal
-): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  return resolveGbifTaxaFromNamesShared(
-    names,
-    signal,
-    (batchNames, batchSignal) =>
-      ky
-        .post('https://verifier.globalnames.org/api/v1/verifications', {
-          signal: batchSignal,
-          json: buildGlobalNamesRequestBody(batchNames)
-        })
-        .json(globalNamesVerificationResponseSchema)
-  );
 }

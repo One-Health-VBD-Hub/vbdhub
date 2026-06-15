@@ -3,15 +3,10 @@ import type { DatasetCategory, Prisma } from '@prisma/client';
 import ky from 'ky';
 import { z } from 'zod';
 import {
-  buildGlobalNamesRequestBody,
   linkDatasetTaxa,
-  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
   type ResolvedGbifTaxon
 } from './shared/taxonomy.js';
-import {
-  globalNamesVerificationResponseSchema,
-  nullableStringSchema
-} from './shared/schemas.js';
+import { nullableStringSchema } from './shared/schemas.js';
 import {
   getBoundingBox,
   upsertSpatialGeometry,
@@ -74,22 +69,10 @@ const vecDynCsvConsistentDataSchema = z.looseObject({
   citation: nullableStringSchema.optional()
 });
 
-const vecDynCsvResultSchema = z.looseObject({
-  species: nullableStringSchema.optional(),
-  sample_start_date: nullableStringSchema.optional(),
-  sample_end_date: nullableStringSchema.optional(),
-  sample_value: nullableStringSchema.optional(),
-  sample_sex: nullableStringSchema.optional(),
-  sample_lat_dd: nullableStringSchema.optional(),
-  sample_long_dd: nullableStringSchema.optional(),
-  sampling_method: nullableStringSchema.optional()
-});
-
 const vecDynCsvResponseSchema = z.looseObject({
-  count: z.coerce.number().int().optional(),
+  count: z.coerce.number().int(),
   digitized_from_graph: z.union([z.boolean(), z.string()]).optional(),
-  consistent_data: vecDynCsvConsistentDataSchema.optional(),
-  results: z.array(vecDynCsvResultSchema).default([])
+  consistent_data: vecDynCsvConsistentDataSchema.optional()
 });
 
 const vecDynSpeciesByDateResponseSchema = z.record(
@@ -125,6 +108,7 @@ export const vdSyncJob: JobDefinition = {
             `${VECDYN_BASE_URL}/vecdyn-detail/${id}`,
             { signal }
           ).json(vecDynDetailResponseSchema);
+          // The CSV rows are paged, but this job only needs page-level metadata.
           const csv = await ky(
             `${VECDYN_BASE_URL}/vecdyncsv/?${new URLSearchParams({
               page: '1',
@@ -163,9 +147,14 @@ export const vdSyncJob: JobDefinition = {
           const homepageUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
           const sourceKey = String(id);
 
-          const rawPayload: Prisma.InputJsonObject = {
-            detail: buildVecDynDetailRaw(detail),
-            csvMeta: buildCsvRawMeta(csv),
+          const rawPayload = {
+            detail: detail.results ?? null,
+            csv: {
+              count: csv.count ?? null,
+              rowCount: csv.count,
+              digitizedFromGraph: csv.digitized_from_graph ?? null,
+              consistentData: csv.consistent_data ?? null
+            },
             temporalCoverage: {
               startDate: temporalCoverage.startDate
                 ? temporalCoverage.startDate.toISOString().slice(0, 10)
@@ -177,7 +166,7 @@ export const vdSyncJob: JobDefinition = {
               speciesCount: temporalCoverage.speciesCount
             },
             mapPointCount: coordinates.length
-          };
+          } as unknown as Prisma.InputJsonObject;
           const datasetData = {
             category: VECDYN_CATEGORY,
             title,
@@ -214,8 +203,7 @@ export const vdSyncJob: JobDefinition = {
             dataset.id,
             speciesNames,
             signal,
-            taxonomyResolutionCache,
-            resolveGbifTaxaFromNames
+            taxonomyResolutionCache
           );
 
           logger.info(
@@ -230,6 +218,8 @@ export const vdSyncJob: JobDefinition = {
             'VecDyn dataset synchronised'
           );
         } catch (error) {
+          if (signal.aborted) throw error;
+
           logger.error(
             { err: error, sourceKey: id },
             'Failed to sync VecDyn dataset'
@@ -243,6 +233,7 @@ export const vdSyncJob: JobDefinition = {
 };
 
 async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
+  // The paged data.results changes by page, but ids contains the full inventory.
   const url =
     `${VECDYN_BASE_URL}/vecdynbyprovider/?` +
     new URLSearchParams({
@@ -337,100 +328,4 @@ function buildDescription(
 
   if (parts.length === 0) return null;
   return parts.join(' | ');
-}
-
-function buildVecDynDetailRaw(detail: VecDynDetailResponse): Prisma.InputJsonObject {
-  const results = detail.results;
-
-  return {
-    id: results?.Id ?? null,
-    species: results?.Species ?? [],
-    years: results?.Years ?? [],
-    collectionMethods: results?.CollectionMethods ?? [],
-    tags: results?.Tags ?? []
-  };
-}
-
-function buildCsvRawMeta(csv: VecDynCsvResponse): Prisma.InputJsonObject {
-  const rowCount = csv.results?.length ?? 0;
-  const consistentData = csv.consistent_data;
-
-  return {
-    count: csv.count ?? null,
-    rowCount,
-    digitized_from_graph: csv.digitized_from_graph ?? null,
-    consistent_data: buildConsistentDataRaw(consistentData),
-    extracted: {
-      citation: normalizeNullableString(consistentData?.citation),
-      contributorEmail: normalizeNullableString(consistentData?.contributoremail),
-      contactName: normalizeNullableString(consistentData?.contact_name),
-      sampleStage: normalizeNullableString(consistentData?.sample_stage),
-      sampleUnit: normalizeNullableString(consistentData?.sample_unit),
-      speciesIdMethod: normalizeNullableString(consistentData?.species_id_method),
-      gpsObfuscationInfo: normalizeNullableString(
-        consistentData?.gps_obfuscation_info
-      ),
-      dateUncertaintyDueToGraph: parseBoolish(
-        normalizeNullableString(consistentData?.date_uncertainty_due_to_graph)
-      ),
-      curatedByCitation: normalizeNullableString(consistentData?.curatedbycitation),
-      curatedByDoi: normalizeNullableString(consistentData?.curatedbydoi)
-    } satisfies Prisma.InputJsonObject
-  };
-}
-
-function buildConsistentDataRaw(
-  consistentData: VecDynCsvConsistentData | undefined
-): Prisma.InputJsonObject | null {
-  if (!consistentData) return null;
-
-  return {
-    email: normalizeNullableString(consistentData.email),
-    title: normalizeNullableString(consistentData.title),
-    description: normalizeNullableString(consistentData.description),
-    datasetid: consistentData.datasetid ?? null,
-    sample_unit: normalizeNullableString(consistentData.sample_unit),
-    submittedby: normalizeNullableString(consistentData.submittedby),
-    contact_name: normalizeNullableString(consistentData.contact_name),
-    sample_stage: normalizeNullableString(consistentData.sample_stage),
-    sample_location: normalizeNullableString(consistentData.sample_location),
-    contributoremail: normalizeNullableString(consistentData.contributoremail),
-    species_id_method: normalizeNullableString(consistentData.species_id_method),
-    contact_affiliation: normalizeNullableString(consistentData.contact_affiliation),
-    digitized_from_graph: normalizeNullableString(consistentData.digitized_from_graph),
-    gps_obfuscation_info: normalizeNullableString(consistentData.gps_obfuscation_info),
-    date_uncertainty_due_to_graph: normalizeNullableString(
-      consistentData.date_uncertainty_due_to_graph
-    ),
-    curatedbycitation: normalizeNullableString(consistentData.curatedbycitation),
-    curatedbydoi: normalizeNullableString(consistentData.curatedbydoi),
-    location_description: normalizeNullableString(consistentData.location_description),
-    doi: normalizeNullableString(consistentData.doi),
-    citation: normalizeNullableString(consistentData.citation)
-  };
-}
-
-function parseBoolish(value: string | null): boolean | null {
-  if (!value) return null;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'true') return true;
-  if (normalized === 'false') return false;
-  return null;
-}
-
-async function resolveGbifTaxaFromNames(
-  names: string[],
-  signal: AbortSignal
-): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  return resolveGbifTaxaFromNamesShared(
-    names,
-    signal,
-    (batchNames, batchSignal) =>
-      ky
-        .post('https://verifier.globalnames.org/api/v1/verifications', {
-          signal: batchSignal,
-          json: buildGlobalNamesRequestBody(batchNames)
-        })
-        .json(globalNamesVerificationResponseSchema)
-  );
 }

@@ -1,11 +1,10 @@
 import { parseArgs } from 'node:util';
 import pino from 'pino';
-import { listJobs } from './job-registry.js';
-import { runJob } from './runner.js';
+import { jobs, runJob } from './job-registry.js';
 import 'dotenv/config';
 
 function printHelp(): void {
-  const availableJobs = listJobs()
+  const availableJobs = jobs
     .map((job) => `  - ${job.name}: ${job.description}`)
     .join('\n');
 
@@ -19,7 +18,6 @@ function printHelp(): void {
       '  --job <name>   Run a named synchronisation job',
       '  --list         List available jobs',
       '  --help         Show help',
-      '  SYNC_JOB=<name> Alternative to --job for scheduler env config',
       '',
       'Jobs:',
       availableJobs
@@ -43,7 +41,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const jobName = values.job ?? process.env.SYNC_JOB;
+  const jobName = values.job;
   if (!jobName) {
     printHelp();
     process.exitCode = 1;

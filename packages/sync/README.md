@@ -17,8 +17,6 @@ Railway cron style:
 
 ```bash
 pnpm --filter @vbdhub/sync run sync --job hub
-# or with env
-SYNC_JOB=hub pnpm --filter @vbdhub/sync run sync
 ```
 
 Programmatic:

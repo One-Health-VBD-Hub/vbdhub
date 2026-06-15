@@ -9,42 +9,20 @@ export interface HubBucketObject {
   lastModified: Date | null;
 }
 
-interface ListObjectsParams {
-  prefix: string;
-  recursive: boolean;
-  bucket?: string | undefined;
-}
-
-interface GetObjectStreamParams {
-  objectKey: string;
-  bucket?: string | undefined;
-}
-
 export function createHubStorageClient(env: {
-  endPoint?: string;
   accessKey: string;
   secretKey: string;
   bucket: string;
 }) {
   const client = new Minio.Client({
-    endPoint: env.endPoint ?? 't3.storageapi.dev',
+    endPoint: 't3.storageapi.dev',
     useSSL: true,
     accessKey: env.accessKey,
     secretKey: env.secretKey
   });
 
-  async function listObjects({
-    prefix,
-    recursive,
-    bucket
-  }: ListObjectsParams): Promise<HubBucketObject[]> {
-    const bucketName = bucket ?? env.bucket;
-    const normalizedPrefix = prefix.trim();
-    const stream = client.listObjectsV2(
-      bucketName,
-      normalizedPrefix,
-      recursive
-    );
+  async function listObjects(): Promise<HubBucketObject[]> {
+    const stream = client.listObjectsV2(env.bucket, '', true);
     const objects: HubBucketObject[] = [];
 
     for await (const object of stream as AsyncIterable<BucketItem>) {
@@ -55,11 +33,8 @@ export function createHubStorageClient(env: {
     return objects;
   }
 
-  async function getObjectStream({
-    objectKey,
-    bucket
-  }: GetObjectStreamParams): Promise<Readable> {
-    return client.getObject(bucket ?? env.bucket, objectKey);
+  async function getObjectStream(objectKey: string): Promise<Readable> {
+    return client.getObject(env.bucket, objectKey);
   }
 
   return {
