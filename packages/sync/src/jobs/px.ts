@@ -1,5 +1,4 @@
-import { createPrismaClient } from '@vbdhub/db';
-import type { DatasetCategory, Prisma } from '@prisma/client';
+import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky, { HTTPError } from 'ky';
 import { z } from 'zod';
 import {
