@@ -13,10 +13,12 @@
   "prettier": {
     "singleQuote": true,
     "jsxSingleQuote ": true,
-    "trailingComma": "none"
+    "trailingComma": "none",
+    "printWidth": 85
   },
   "devDependencies": {
     "prettier": "^3.8.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "prettier-plugin-tailwindcss": "^0.7.4"
   }
 }
