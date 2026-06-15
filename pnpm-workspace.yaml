@@ -25,6 +25,7 @@ allowBuilds:
   '@parcel/watcher': true
   '@prisma/engines': true
   '@sentry/cli': true
+  esbuild: true
   prisma: true
   sharp: true
   unrs-resolver: true
