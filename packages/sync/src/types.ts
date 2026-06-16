@@ -1,7 +1,6 @@
 import type { Logger } from 'pino';
 
 export interface JobContext {
-  signal: AbortSignal;
   logger: Logger;
 }
 

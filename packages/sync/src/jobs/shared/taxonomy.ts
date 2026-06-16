@@ -103,7 +103,6 @@ function buildGlobalNamesRequestBody(nameStrings: string[]) {
 
 async function resolveGbifTaxaFromNames(
   names: string[],
-  signal: AbortSignal,
   options?: ResolveGbifTaxaOptions
 ): Promise<Map<string, ResolvedGbifTaxon | null>> {
   const resultMap = new Map<string, ResolvedGbifTaxon | null>();
@@ -113,7 +112,7 @@ async function resolveGbifTaxaFromNames(
     const batch = names.slice(i, i + batchSize);
     if (batch.length === 0) continue;
 
-    const response = await fetchGlobalNamesBatch(batch, signal, options);
+    const response = await fetchGlobalNamesBatch(batch, options);
     for (const item of response.names ?? []) {
       const name = normalizeTaxonQueryName(item.name ?? '');
       if (!name) continue;
@@ -137,14 +136,12 @@ async function resolveGbifTaxaFromNames(
 
 async function fetchGlobalNamesBatch(
   nameStrings: string[],
-  signal: AbortSignal,
   options?: ResolveGbifTaxaOptions
 ): Promise<GlobalNamesVerificationResponse> {
   const retryAttempts = options?.retryAttempts ?? 1;
 
   return ky
     .post(GLOBAL_NAMES_VERIFICATION_URL, {
-      signal,
       json: buildGlobalNamesRequestBody(nameStrings),
       retry:
         retryAttempts > 1
@@ -162,7 +159,6 @@ export async function linkDatasetTaxa(
   prisma: ReturnType<typeof createPrismaClient>,
   datasetId: string,
   speciesNames: string[],
-  signal: AbortSignal,
   taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>,
   options?: ResolveGbifTaxaOptions
 ): Promise<number> {
@@ -180,7 +176,7 @@ export async function linkDatasetTaxa(
   const unresolvedNames = queryNames.filter((name) => !taxonomyResolutionCache.has(name));
 
   if (unresolvedNames.length > 0) {
-    const resolvedFromApi = await resolveGbifTaxaFromNames(unresolvedNames, signal, options);
+    const resolvedFromApi = await resolveGbifTaxaFromNames(unresolvedNames, options);
     for (const name of unresolvedNames) {
       taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
     }

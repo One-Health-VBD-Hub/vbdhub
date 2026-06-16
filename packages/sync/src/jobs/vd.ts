@@ -1,10 +1,7 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import {
-  linkDatasetTaxa,
-  type ResolvedGbifTaxon
-} from './shared/taxonomy.js';
+import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
 import {
   getBoundingBox,
@@ -12,10 +9,7 @@ import {
   type BoundingBox,
   type Coordinate
 } from './shared/spatial.js';
-import {
-  normalizeNullableString,
-  parseDateOnly
-} from './shared/normalization.js';
+import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
 const VECDYN_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
@@ -28,10 +22,22 @@ const vecDynIdsResponseSchema = z.looseObject({
 
 const vecDynDetailResultsSchema = z.looseObject({
   Id: z.coerce.number().int().optional(),
-  Species: z.array(z.string()).nullish().transform((value) => value ?? []),
-  Years: z.array(z.string()).nullish().transform((value) => value ?? []),
-  CollectionMethods: z.array(z.string()).nullish().transform((value) => value ?? []),
-  Tags: z.array(z.string()).nullish().transform((value) => value ?? [])
+  Species: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? []),
+  Years: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? []),
+  CollectionMethods: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? []),
+  Tags: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? [])
 });
 
 const vecDynDetailResponseSchema = z.looseObject({
@@ -39,10 +45,7 @@ const vecDynDetailResponseSchema = z.looseObject({
 });
 
 const vecDynMapResponseSchema = z.array(
-  z.tuple([
-    z.union([z.string(), z.number()]),
-    z.union([z.string(), z.number()])
-  ])
+  z.tuple([z.union([z.string(), z.number()]), z.union([z.string(), z.number()])])
 );
 
 const vecDynCsvConsistentDataSchema = z.looseObject({
@@ -88,60 +91,46 @@ type VecDynSpeciesByDateResponse = z.infer<typeof vecDynSpeciesByDateResponseSch
 export const vdSyncJob: JobDefinition = {
   name: 'vd',
   description: 'Synchronise VecDyn records',
-  async run({ logger, signal }) {
-    if (signal.aborted) throw new Error('Job aborted before start');
-
+  async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
 
     try {
       logger.info('Fetching VecDyn dataset IDs');
-      const ids = await fetchVecDynDatasetIds(signal);
+      const ids = await fetchVecDynDatasetIds();
       logger.info({ count: ids.length }, 'VecDyn IDs fetched');
 
       for (const id of ids) {
-        if (signal.aborted) throw new Error('Job aborted');
-
         try {
-          const detail = await ky(
-            `${VECDYN_BASE_URL}/vecdyn-detail/${id}`,
-            { signal }
-          ).json(vecDynDetailResponseSchema);
+          const detail = await ky(`${VECDYN_BASE_URL}/vecdyn-detail/${id}`).json(
+            vecDynDetailResponseSchema
+          );
           // The CSV rows are paged, but this job only needs page-level metadata.
           const csv = await ky(
             `${VECDYN_BASE_URL}/vecdyncsv/?${new URLSearchParams({
               page: '1',
               piids: String(id)
-            }).toString()}`,
-            { signal }
+            }).toString()}`
           ).json(vecDynCsvResponseSchema);
           const speciesByDate = await ky(
-            `${VECDYN_BASE_URL}/vecdyn-detail-species-by-date/${id}`,
-            { signal }
+            `${VECDYN_BASE_URL}/vecdyn-detail-species-by-date/${id}`
           ).json(vecDynSpeciesByDateResponseSchema);
-          const mapData = await ky(
-            `${VECDYN_BASE_URL}/vecdyn-get-map-data/${id}`,
-            { signal }
-          ).json(vecDynMapResponseSchema);
+          const mapData = await ky(`${VECDYN_BASE_URL}/vecdyn-get-map-data/${id}`).json(
+            vecDynMapResponseSchema
+          );
 
           const coordinates = parseCoordinates(mapData);
           const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNamesFromDetail(detail);
-          const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(
-            speciesByDate
-          );
+          const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(speciesByDate);
 
           const publishedAt =
-            temporalCoverage.startDate ??
-            parsePublishedAtFromYears(detail.results?.Years);
-          const title =
-            csv.consistent_data?.title?.trim() || `VecDyn dataset ${id}`;
+            temporalCoverage.startDate ?? parsePublishedAtFromYears(detail.results?.Years);
+          const title = csv.consistent_data?.title?.trim() || `VecDyn dataset ${id}`;
           const description =
             normalizeNullableString(csv.consistent_data?.description) ??
             buildDescription(csv.consistent_data);
-          const publisher =
-            csv.consistent_data?.contact_affiliation?.trim() ||
-            'VectorByte VecDyn';
+          const publisher = csv.consistent_data?.contact_affiliation?.trim() || 'VectorByte VecDyn';
           const doi = normalizeNullableString(csv.consistent_data?.doi);
           const homepageUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
           const sourceKey = String(id);
@@ -201,7 +190,6 @@ export const vdSyncJob: JobDefinition = {
             prisma,
             dataset.id,
             speciesNames,
-            signal,
             taxonomyResolutionCache
           );
 
@@ -217,12 +205,7 @@ export const vdSyncJob: JobDefinition = {
             'VecDyn dataset synchronised'
           );
         } catch (error) {
-          if (signal.aborted) throw error;
-
-          logger.error(
-            { err: error, sourceKey: id },
-            'Failed to sync VecDyn dataset'
-          );
+          logger.error({ err: error, sourceKey: id }, 'Failed to sync VecDyn dataset');
         }
       }
     } finally {
@@ -231,7 +214,7 @@ export const vdSyncJob: JobDefinition = {
   }
 };
 
-async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
+async function fetchVecDynDatasetIds(): Promise<number[]> {
   // The paged data.results changes by page, but ids contains the full inventory.
   const url =
     `${VECDYN_BASE_URL}/vecdynbyprovider/?` +
@@ -241,7 +224,7 @@ async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
       sort_column: 'Id',
       sort_dir: 'asc'
     }).toString();
-  return (await ky(url, { signal }).json(vecDynIdsResponseSchema)).ids;
+  return (await ky(url).json(vecDynIdsResponseSchema)).ids;
 }
 
 function parseCoordinates(raw: VecDynMapResponse): Coordinate[] {
@@ -279,9 +262,7 @@ function extractSpeciesNamesFromDetail(detail: VecDynDetailResponse): string[] {
   });
 }
 
-function parseTemporalCoverageFromSpeciesByDate(
-  speciesByDate: VecDynSpeciesByDateResponse
-): {
+function parseTemporalCoverageFromSpeciesByDate(speciesByDate: VecDynSpeciesByDateResponse): {
   startDate: Date | null;
   endDate: Date | null;
   dateCount: number;
@@ -312,9 +293,7 @@ function parseTemporalCoverageFromSpeciesByDate(
   };
 }
 
-function buildDescription(
-  consistentData: VecDynCsvConsistentData | undefined
-): string | null {
+function buildDescription(consistentData: VecDynCsvConsistentData | undefined): string | null {
   if (!consistentData) return null;
 
   const parts = [

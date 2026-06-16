@@ -52,22 +52,18 @@ type TemporalCoverage = {
 export const vtSyncJob: JobDefinition = {
   name: 'vt',
   description: 'Synchronise VecTraits records',
-  async run({ logger, signal }) {
-    if (signal.aborted) throw new Error('Job aborted before start');
-
+  async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
 
     try {
       logger.info('Fetching VecTraits dataset IDs');
-      const ids = await fetchVecTraitsDatasetIds(signal);
+      const ids = await fetchVecTraitsDatasetIds();
       logger.info({ count: ids.length }, 'VecTraits IDs fetched');
 
       for (const id of ids) {
-        if (signal.aborted) throw new Error('Job aborted');
-
         try {
-          const rows = await fetchVecTraitsDatasetRows(id, signal);
+          const rows = await fetchVecTraitsDatasetRows(id);
           const coordinates = parseCoordinates(rows);
           const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNames(rows);
@@ -117,7 +113,6 @@ export const vtSyncJob: JobDefinition = {
             prisma,
             dataset.id,
             speciesNames,
-            signal,
             taxonomyResolutionCache
           );
 
@@ -134,8 +129,6 @@ export const vtSyncJob: JobDefinition = {
             'VecTraits dataset synchronised'
           );
         } catch (error) {
-          if (signal.aborted) throw error;
-
           logger.error({ err: error, sourceKey: id }, 'Failed to sync VecTraits dataset');
         }
       }
@@ -145,7 +138,7 @@ export const vtSyncJob: JobDefinition = {
   }
 };
 
-async function fetchVecTraitsDatasetIds(signal: AbortSignal): Promise<number[]> {
+async function fetchVecTraitsDatasetIds(): Promise<number[]> {
   // The explorer data.results is paged, but ids contains the full inventory.
   const url =
     `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
@@ -154,18 +147,15 @@ async function fetchVecTraitsDatasetIds(signal: AbortSignal): Promise<number[]> 
       sort_column: 'DatasetID',
       sort_dir: 'asc'
     }).toString();
-  return (await ky(url, { signal }).json(vecTraitsIdsResponseSchema)).ids;
+  return (await ky(url).json(vecTraitsIdsResponseSchema)).ids;
 }
 
-async function fetchVecTraitsDatasetRows(
-  datasetId: number,
-  signal: AbortSignal
-): Promise<VecTraitsDatasetRow[]> {
+async function fetchVecTraitsDatasetRows(datasetId: number): Promise<VecTraitsDatasetRow[]> {
   // This endpoint returns all rows in one response; page parameters are ignored.
   return (
-    await ky(`${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`, {
-      signal
-    }).json(vecTraitsDatasetResponseSchema)
+    await ky(`${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`).json(
+      vecTraitsDatasetResponseSchema
+    )
   ).results;
 }
 

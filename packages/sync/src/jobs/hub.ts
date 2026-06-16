@@ -1,19 +1,9 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import { parse } from 'csv-parse';
-import {
-  linkDatasetTaxa,
-  type ResolvedGbifTaxon
-} from './shared/taxonomy.js';
-import {
-  getBoundingBox,
-  upsertSpatialGeometry,
-  type Coordinate
-} from './shared/spatial.js';
+import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { getBoundingBox, upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
-import {
-  createHubStorageClient,
-  type HubBucketObject
-} from './shared/storage.js';
+import { createHubStorageClient, type HubBucketObject } from './shared/storage.js';
 import type { JobDefinition } from '../types.js';
 
 const HUB_SOURCE_DB = 'hub';
@@ -33,12 +23,7 @@ const metadataFieldAliases = {
   homepageUrl: ['homepageurl', 'homepage', 'url'],
   license: ['license', 'licence'],
   publisher: ['contactaffiliation', 'publisher', 'submittedby'],
-  publishedAt: [
-    'publishedat',
-    'publicationdate',
-    'dateusedforstatistics',
-    'year'
-  ]
+  publishedAt: ['publishedat', 'publicationdate', 'dateusedforstatistics', 'year']
 } as const;
 
 const personFieldAliases = {
@@ -56,26 +41,10 @@ const taxonIdFieldAliases = {
 
 const speciesFieldAliases = ['scientificname', 'species'];
 const genusFieldAliases = ['genus'];
-const latitudeFieldAliases = [
-  'latitude',
-  'lat',
-  'decimallatitude',
-  'samplelatdd'
-];
-const longitudeFieldAliases = [
-  'longitude',
-  'lon',
-  'lng',
-  'decimallongitude',
-  'samplelongdd'
-];
+const latitudeFieldAliases = ['latitude', 'lat', 'decimallatitude', 'samplelatdd'];
+const longitudeFieldAliases = ['longitude', 'lon', 'lng', 'decimallongitude', 'samplelongdd'];
 const yearFieldAliases = ['year'];
-const dateFieldAliases = [
-  'dateusedforstatistics',
-  'dateofonset',
-  'publishedat',
-  'publicationdate'
-];
+const dateFieldAliases = ['dateusedforstatistics', 'dateofonset', 'publishedat', 'publicationdate'];
 
 interface HubDatasetFile {
   object: HubBucketObject;
@@ -117,9 +86,7 @@ interface DatasetAccumulator {
 export const hubSyncJob: JobDefinition = {
   name: 'hub',
   description: 'Synchronise VBD Hub CSV datasets from internal object storage',
-  async run({ logger, signal }) {
-    if (signal.aborted) throw new Error('Job aborted before start');
-
+  async run({ logger }) {
     const prisma = createPrismaClient();
 
     const {
@@ -145,28 +112,18 @@ export const hubSyncJob: JobDefinition = {
       const objects = await storage.listObjects();
       const datasets = collectDatasetFiles(objects);
 
-      logger.info(
-        { objects: objects.length, datasets: datasets.length },
-        'Hub inventory complete'
-      );
+      logger.info({ objects: objects.length, datasets: datasets.length }, 'Hub inventory complete');
 
       for (const dataset of datasets) {
-        if (signal.aborted) throw new Error('Job aborted');
-
         try {
           const snapshot = await processDataset(storage, dataset);
           const datasetRecord = await upsertDataset(prisma, snapshot);
-          await upsertSpatialGeometry(
-            prisma,
-            datasetRecord.id,
-            snapshot.coordinates
-          );
+          await upsertSpatialGeometry(prisma, datasetRecord.id, snapshot.coordinates);
 
           const taxaLinked = await linkDatasetTaxa(
             prisma,
             datasetRecord.id,
             snapshot.speciesNames,
-            signal,
             taxonomyResolutionCache
           );
 
@@ -183,12 +140,7 @@ export const hubSyncJob: JobDefinition = {
             'Hub dataset synchronised'
           );
         } catch (error) {
-          if (signal.aborted) throw error;
-
-          logger.error(
-            { err: error, key: dataset.object.key },
-            'Failed to sync hub dataset'
-          );
+          logger.error({ err: error, key: dataset.object.key }, 'Failed to sync hub dataset');
         }
       }
     } finally {
@@ -214,16 +166,12 @@ function parseDatasetPath(objectKey: string): {
   const [rawCategory, ...rest] = objectKey.split('/').filter(Boolean);
 
   if (!rawCategory || rest.length !== 1) {
-    throw new Error(
-      `Expected dataset path like "<category>/<file>.csv", received "${objectKey}"`
-    );
+    throw new Error(`Expected dataset path like "<category>/<file>.csv", received "${objectKey}"`);
   }
 
   const category = categoryMap[rawCategory.toLowerCase()];
   if (!category) {
-    throw new Error(
-      `Unsupported hub category "${rawCategory}" in "${objectKey}"`
-    );
+    throw new Error(`Unsupported hub category "${rawCategory}" in "${objectKey}"`);
   }
 
   const sourceKey = rest[0]!.replace(/\.csv$/i, '');
@@ -290,19 +238,13 @@ async function processDataset(
           ? getFirstString(accumulator.firstRow, personFieldAliases.contactName)
           : null,
         contactAffiliation: accumulator.firstRow
-          ? getFirstString(
-              accumulator.firstRow,
-              personFieldAliases.contactAffiliation
-            )
+          ? getFirstString(accumulator.firstRow, personFieldAliases.contactAffiliation)
           : null,
         email: accumulator.firstRow
           ? getFirstString(accumulator.firstRow, personFieldAliases.email)
           : null,
         contributorEmail: accumulator.firstRow
-          ? getFirstString(
-              accumulator.firstRow,
-              personFieldAliases.contributorEmail
-            )
+          ? getFirstString(accumulator.firstRow, personFieldAliases.contributorEmail)
           : null,
         submittedBy: accumulator.firstRow
           ? getFirstString(accumulator.firstRow, personFieldAliases.submittedBy)
@@ -334,38 +276,23 @@ async function parseCsv(
   stream.pipe(parser);
 
   for await (const record of parser) {
-    absorbRecord(
-      accumulator,
-      normalizeRecord(record as Record<string, unknown>)
-    );
+    absorbRecord(accumulator, normalizeRecord(record as Record<string, unknown>));
   }
 }
 
-function absorbRecord(
-  accumulator: DatasetAccumulator,
-  record: Record<string, string>
-): void {
+function absorbRecord(accumulator: DatasetAccumulator, record: Record<string, string>): void {
   accumulator.recordCount += 1;
   accumulator.firstRow ??= record;
 
   accumulator.title ??= getFirstString(record, metadataFieldAliases.title);
-  accumulator.description ??= getFirstString(
-    record,
-    metadataFieldAliases.description
-  );
+  accumulator.description ??= getFirstString(record, metadataFieldAliases.description);
   accumulator.publisher ??=
     getFirstString(record, metadataFieldAliases.publisher) ??
     getFirstString(record, personFieldAliases.contactAffiliation);
-  accumulator.homepageUrl ??= getFirstString(
-    record,
-    metadataFieldAliases.homepageUrl
-  );
+  accumulator.homepageUrl ??= getFirstString(record, metadataFieldAliases.homepageUrl);
   accumulator.doi ??= getFirstString(record, metadataFieldAliases.doi);
   accumulator.license ??= getFirstString(record, metadataFieldAliases.license);
-  accumulator.publishedAt ??= extractDate(
-    record,
-    metadataFieldAliases.publishedAt
-  );
+  accumulator.publishedAt ??= extractDate(record, metadataFieldAliases.publishedAt);
 
   const speciesName = extractSpeciesName(record);
   if (speciesName) accumulator.speciesNames.add(speciesName);
@@ -377,14 +304,9 @@ function absorbRecord(
   if (year !== null) accumulator.years.add(year);
 }
 
-function normalizeRecord(
-  record: Record<string, unknown>
-): Record<string, string> {
+function normalizeRecord(record: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(
-    Object.entries(record).map(([key, value]) => [
-      normalizeFieldName(key),
-      stringifyCell(value)
-    ])
+    Object.entries(record).map(([key, value]) => [normalizeFieldName(key), stringifyCell(value)])
   );
 }
 
@@ -447,24 +369,19 @@ function extractCoordinate(record: Record<string, string>): Coordinate | null {
   const latitude = getFirstNumber(record, latitudeFieldAliases);
   const longitude = getFirstNumber(record, longitudeFieldAliases);
   if (latitude === null || longitude === null) return null;
-  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
-    return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
   return { lat: latitude, lon: longitude };
 }
 
 function extractYear(record: Record<string, string>): number | null {
   const directYear = getFirstNumber(record, yearFieldAliases);
-  if (directYear !== null && directYear >= 1000 && directYear <= 3000)
-    return directYear;
+  if (directYear !== null && directYear >= 1000 && directYear <= 3000) return directYear;
 
   const dated = extractDate(record, dateFieldAliases);
   return dated ? dated.getUTCFullYear() : null;
 }
 
-function extractDate(
-  record: Record<string, string>,
-  aliases: readonly string[]
-): Date | null {
+function extractDate(record: Record<string, string>, aliases: readonly string[]): Date | null {
   for (const alias of aliases) {
     const value = normalizeNullableString(record[alias]);
     if (!value) continue;
@@ -489,10 +406,7 @@ function derivePublishedAtFromYears(years: Set<number>): Date | null {
   return new Date(Date.UTC(latestYear, 0, 1));
 }
 
-function getFirstString(
-  record: Record<string, string>,
-  aliases: readonly string[]
-): string | null {
+function getFirstString(record: Record<string, string>, aliases: readonly string[]): string | null {
   for (const alias of aliases) {
     const value = normalizeNullableString(record[alias]);
     if (value) return value;
@@ -501,10 +415,7 @@ function getFirstString(
   return null;
 }
 
-function getFirstNumber(
-  record: Record<string, string>,
-  aliases: readonly string[]
-): number | null {
+function getFirstNumber(record: Record<string, string>, aliases: readonly string[]): number | null {
   const value = getFirstString(record, aliases);
   if (value === null) return null;
   const parsed = Number(value);

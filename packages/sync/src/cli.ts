@@ -54,26 +54,13 @@ async function main(): Promise<void> {
     return;
   }
 
-  const abortController = new AbortController();
-  const onSignal = () => {
-    logger.warn('Shutdown signal received, aborting job');
-    abortController.abort();
-  };
-
-  process.once('SIGINT', onSignal);
-  process.once('SIGTERM', onSignal);
-
   try {
     await runJob(jobName, {
-      signal: abortController.signal,
       logger
     });
   } catch (error) {
     logger.error({ err: error }, 'Job failed');
     process.exitCode = 1;
-  } finally {
-    process.off('SIGINT', onSignal);
-    process.off('SIGTERM', onSignal);
   }
 }
 

@@ -1,15 +1,9 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky, { HTTPError } from 'ky';
 import { z } from 'zod';
-import {
-  linkDatasetTaxa,
-  type ResolvedGbifTaxon
-} from './shared/taxonomy.js';
+import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
-import {
-  normalizeNullableString,
-  parseDateOnly
-} from './shared/normalization.js';
+import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
 const PX_BASE_URL = 'https://proteomecentral.proteomexchange.org/api/proxi/v0.1';
@@ -102,9 +96,7 @@ type PxStatusErrorPayload = z.infer<typeof pxStatusErrorPayloadSchema>;
 export const pxSyncJob: JobDefinition = {
   name: 'px',
   description: 'Synchronise ProteomeXchange records',
-  async run({ logger, signal }) {
-    if (signal.aborted) throw new Error('Job aborted before start');
-
+  async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
     const counters = {
@@ -123,20 +115,12 @@ export const pxSyncJob: JobDefinition = {
         'Starting ProteomeXchange synchronisation'
       );
 
-      const firstPage = await fetchCompactDatasetPage(
-        PX_FIRST_PAGE,
-        PX_PAGE_SIZE,
-        signal
-      );
+      const firstPage = await fetchCompactDatasetPage(PX_FIRST_PAGE, PX_PAGE_SIZE);
       const availablePages = getAvailablePageCount(firstPage, PX_PAGE_SIZE);
 
       for (let page = PX_FIRST_PAGE; page <= availablePages; page += 1) {
-        if (signal.aborted) throw new Error('Job aborted');
-
         const response =
-          page === PX_FIRST_PAGE
-            ? firstPage
-            : await fetchCompactDatasetPage(page, PX_PAGE_SIZE, signal);
+          page === PX_FIRST_PAGE ? firstPage : await fetchCompactDatasetPage(page, PX_PAGE_SIZE);
         const datasetsToProcess = extractCompactDatasets(response.datasets ?? []);
 
         if (datasetsToProcess.length === 0) {
@@ -149,13 +133,8 @@ export const pxSyncJob: JobDefinition = {
           datasetsToProcess,
           PX_DETAIL_CONCURRENCY,
           async (compactDataset) => {
-            if (signal.aborted) throw new Error('Job aborted');
-
             try {
-              const detail = await fetchPxDatasetDetail(
-                compactDataset.accession,
-                signal
-              );
+              const detail = await fetchPxDatasetDetail(compactDataset.accession);
               const speciesNames = extractSpeciesNames(detail);
               if (isHumanOnlyDataset(speciesNames)) {
                 counters.skipped += 1;
@@ -173,7 +152,6 @@ export const pxSyncJob: JobDefinition = {
                 prisma,
                 dataset.id,
                 speciesNames,
-                signal,
                 taxonomyResolutionCache,
                 {
                   batchSize: GLOBALNAMES_BATCH_SIZE,
@@ -191,8 +169,6 @@ export const pxSyncJob: JobDefinition = {
                 'ProteomeXchange dataset synchronised'
               );
             } catch (error) {
-              if (signal.aborted) throw error;
-
               if (isIgnorablePxError(error)) {
                 counters.skipped += 1;
                 logger.warn(
@@ -247,10 +223,7 @@ export const pxSyncJob: JobDefinition = {
   }
 };
 
-function getAvailablePageCount(
-  response: PxCompactResponse,
-  pageSize: number
-): number {
+function getAvailablePageCount(response: PxCompactResponse, pageSize: number): number {
   const fromPages = response.result_set?.n_available_pages;
   if (Number.isFinite(fromPages) && fromPages && fromPages > 0) return fromPages;
 
@@ -264,8 +237,7 @@ function getAvailablePageCount(
 
 async function fetchCompactDatasetPage(
   pageNumber: number,
-  pageSize: number,
-  signal: AbortSignal
+  pageSize: number
 ): Promise<PxCompactResponse> {
   const params = new URLSearchParams({
     resultType: 'compact',
@@ -273,15 +245,10 @@ async function fetchCompactDatasetPage(
     pageNumber: String(pageNumber)
   });
 
-  return ky(
-    `${PX_BASE_URL}/datasets?${params.toString()}`,
-    { signal }
-  ).json(pxCompactResponseSchema);
+  return ky(`${PX_BASE_URL}/datasets?${params.toString()}`).json(pxCompactResponseSchema);
 }
 
-function extractCompactDatasets(
-  rows: PxCompactDatasetRow[]
-): PxCompactDataset[] {
+function extractCompactDatasets(rows: PxCompactDatasetRow[]): PxCompactDataset[] {
   return rows.flatMap((row) => {
     const dataset = parseCompactDatasetRow(row);
     return dataset ? [dataset] : [];
@@ -311,23 +278,17 @@ function parseCompactDatasetRow(row: unknown): PxCompactDataset | null {
   };
 }
 
-async function fetchPxDatasetDetail(
-  accession: string,
-  signal: AbortSignal
-): Promise<PxDetailResponse> {
+async function fetchPxDatasetDetail(accession: string): Promise<PxDetailResponse> {
   try {
-    return await ky(
-      `${PX_BASE_URL}/datasets/${encodeURIComponent(accession)}`,
-      { signal }
-    ).json(pxDetailResponseSchema);
+    return await ky(`${PX_BASE_URL}/datasets/${encodeURIComponent(accession)}`).json(
+      pxDetailResponseSchema
+    );
   } catch (error) {
     if (!(error instanceof HTTPError)) throw error;
 
     let payload: PxStatusErrorPayload | null = null;
     try {
-      const parsed = pxStatusErrorPayloadSchema.safeParse(
-        await error.response.json()
-      );
+      const parsed = pxStatusErrorPayloadSchema.safeParse(await error.response.json());
       payload = parsed.success ? parsed.data : null;
     } catch {
       payload = null;
@@ -354,8 +315,7 @@ async function upsertDataset(
 ) {
   const sourceKey = compact.accession;
   const title = normalizeNullableString(detail.title) ?? compact.title ?? sourceKey;
-  const description =
-    normalizeNullableString(detail.description) ?? compact.publicationSummary;
+  const description = normalizeNullableString(detail.description) ?? compact.publicationSummary;
   const doi = extractDoi(detail);
   const homepageUrl = extractHomepageUrl(detail, sourceKey);
   const publishedAt = parseDateOnly(compact.announceDate);
@@ -411,10 +371,7 @@ function extractSpeciesNames(detail: PxDetailResponse): string[] {
   for (const group of detail.species ?? []) {
     for (const term of group.terms ?? []) {
       const name = (term.name ?? '').toLowerCase();
-      if (
-        term.accession !== 'MS:1001469' &&
-        !name.includes('scientific name')
-      ) {
+      if (term.accession !== 'MS:1001469' && !name.includes('scientific name')) {
         continue;
       }
 
@@ -475,10 +432,7 @@ function extractTermUrls(terms: PxTerm[] | undefined): string[] {
 }
 
 function extractDoi(detail: PxDetailResponse): string | null {
-  const candidateTerms = [
-    ...(detail.identifiers ?? []),
-    ...flattenTermGroups(detail.publications)
-  ];
+  const candidateTerms = [...(detail.identifiers ?? []), ...flattenTermGroups(detail.publications)];
 
   for (const term of candidateTerms) {
     const value = getTermValue(term);
@@ -507,23 +461,18 @@ function extractContactAffiliation(contacts: PxTermGroup[] | undefined): string 
   return null;
 }
 
-function extractInstrumentNames(
-  detail: PxDetailResponse,
-  compactSummary: string | null
-): string[] {
-  const values = detail.instruments
-    ?.map((term) => normalizeNullableString(term.name ?? getTermValue(term)))
-    .filter((value): value is string => value !== null) ?? [];
+function extractInstrumentNames(detail: PxDetailResponse, compactSummary: string | null): string[] {
+  const values =
+    detail.instruments
+      ?.map((term) => normalizeNullableString(term.name ?? getTermValue(term)))
+      .filter((value): value is string => value !== null) ?? [];
 
   if (values.length > 0) return Array.from(new Set(values));
   if (!compactSummary) return [];
   return [compactSummary];
 }
 
-function extractKeywords(
-  detail: PxDetailResponse,
-  compactSummary: string | null
-): string[] {
+function extractKeywords(detail: PxDetailResponse, compactSummary: string | null): string[] {
   const values = new Set<string>();
 
   for (const term of detail.keywords ?? []) {
@@ -567,10 +516,7 @@ function getErrorCode(error: unknown): string | null {
 
 function isIgnorablePxError(error: unknown): boolean {
   const errorCode = getErrorCode(error);
-  return (
-    errorCode === 'DatasetNotYetReleased' ||
-    errorCode === 'NoSuchIdentifier'
-  );
+  return errorCode === 'DatasetNotYetReleased' || errorCode === 'NoSuchIdentifier';
 }
 
 async function runWithConcurrency<T>(
