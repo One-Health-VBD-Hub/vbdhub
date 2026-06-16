@@ -3,11 +3,7 @@ import ky from 'ky';
 import { z } from 'zod';
 import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
-import {
-  getBoundingBox,
-  upsertSpatialGeometry,
-  type Coordinate
-} from './shared/spatial.js';
+import { getBoundingBox, upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
@@ -80,8 +76,7 @@ export const vtSyncJob: JobDefinition = {
           const title = buildDatasetTitle(citation, id);
           const description = buildDescription(rows);
           const publisher =
-            getFirstNonEmpty(rows, (row) => row.SubmittedBy) ??
-            'VectorByte VecTraits';
+            getFirstNonEmpty(rows, (row) => row.SubmittedBy) ?? 'VectorByte VecTraits';
           const doi = getFirstNonEmpty(rows, (row) => row.DOI);
           const temporalCoverage = parseLocationDateCoverage(rows);
           const publishedAt = parsePublishedAt(citation, temporalCoverage.startDate);
@@ -141,10 +136,7 @@ export const vtSyncJob: JobDefinition = {
         } catch (error) {
           if (signal.aborted) throw error;
 
-          logger.error(
-            { err: error, sourceKey: id },
-            'Failed to sync VecTraits dataset'
-          );
+          logger.error({ err: error, sourceKey: id }, 'Failed to sync VecTraits dataset');
         }
       }
     } finally {
@@ -272,9 +264,7 @@ function buildDescription(rows: VecTraitsDatasetRow[]): string | null {
     [
       traits.length ? `Traits: ${traits.slice(0, 6).join(', ')}` : null,
       habitats.length ? `Habitats: ${habitats.slice(0, 4).join(', ')}` : null,
-      environments.length
-        ? `Environment: ${environments.slice(0, 3).join(', ')}`
-        : null,
+      environments.length ? `Environment: ${environments.slice(0, 3).join(', ')}` : null,
       locations.length ? `Locations: ${locations.slice(0, 3).join(', ')}` : null
     ]
       .filter((part): part is string => Boolean(part))
@@ -332,10 +322,7 @@ function collectUniqueValues(
   );
 }
 
-function parsePublishedAt(
-  citation: string | null,
-  fallbackDate: Date | null
-): Date | null {
+function parsePublishedAt(citation: string | null, fallbackDate: Date | null): Date | null {
   return parseCitationYear(citation) ?? fallbackDate;
 }
 
@@ -418,12 +405,7 @@ function normalizeSpeciesName(value: unknown): string | null {
   if (!normalized) return null;
 
   const upper = normalized.toUpperCase();
-  if (
-    upper === 'NONE NONE' ||
-    upper === 'NONE' ||
-    upper === 'BLANK' ||
-    upper === 'NA'
-  ) {
+  if (upper === 'NONE NONE' || upper === 'NONE' || upper === 'BLANK' || upper === 'NA') {
     return null;
   }
 
