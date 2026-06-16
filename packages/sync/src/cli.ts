@@ -4,9 +4,7 @@ import { jobs, runJob } from './job-registry.js';
 import 'dotenv/config';
 
 function printHelp(): void {
-  const availableJobs = jobs
-    .map((job) => `  - ${job.name}: ${job.description}`)
-    .join('\n');
+  const availableJobs = jobs.map((job) => `  - ${job.name}: ${job.description}`).join('\n');
 
   console.info(
     [
@@ -26,7 +24,15 @@ function printHelp(): void {
 }
 
 async function main(): Promise<void> {
-  const logger = pino({ name: '@vbdhub/sync' });
+  const logger = pino({
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        singleLine: true
+      }
+    }
+  });
 
   const { values } = parseArgs({
     options: {
@@ -60,7 +66,7 @@ async function main(): Promise<void> {
   try {
     await runJob(jobName, {
       signal: abortController.signal,
-      logger: logger.child({ job: jobName })
+      logger
     });
   } catch (error) {
     logger.error({ err: error }, 'Job failed');

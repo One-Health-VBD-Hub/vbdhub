@@ -1,10 +1,7 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import {
-  linkDatasetTaxa,
-  type ResolvedGbifTaxon
-} from './shared/taxonomy.js';
+import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
 import {
   getBoundingBox,
@@ -158,7 +155,8 @@ export const vtSyncJob: JobDefinition = {
 
 async function fetchVecTraitsDatasetIds(signal: AbortSignal): Promise<number[]> {
   // The explorer data.results is paged, but ids contains the full inventory.
-  const url = `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
+  const url =
+    `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
     new URLSearchParams({
       page: '1',
       sort_column: 'DatasetID',
@@ -173,10 +171,9 @@ async function fetchVecTraitsDatasetRows(
 ): Promise<VecTraitsDatasetRow[]> {
   // This endpoint returns all rows in one response; page parameters are ignored.
   return (
-    await ky(
-      `${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`,
-      { signal }
-    ).json(vecTraitsDatasetResponseSchema)
+    await ky(`${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`, {
+      signal
+    }).json(vecTraitsDatasetResponseSchema)
   ).results;
 }
 
@@ -271,16 +268,18 @@ function buildDescription(rows: VecTraitsDatasetRow[]): string | null {
   const environments = collectUniqueValues(rows, (row) => row.LabField);
   const locations = collectUniqueValues(rows, (row) => row.Location);
 
-  return [
-    traits.length ? `Traits: ${traits.slice(0, 6).join(', ')}` : null,
-    habitats.length ? `Habitats: ${habitats.slice(0, 4).join(', ')}` : null,
-    environments.length
-      ? `Environment: ${environments.slice(0, 3).join(', ')}`
-      : null,
-    locations.length ? `Locations: ${locations.slice(0, 3).join(', ')}` : null
-  ]
-    .filter((part): part is string => Boolean(part))
-    .join(' | ') || null;
+  return (
+    [
+      traits.length ? `Traits: ${traits.slice(0, 6).join(', ')}` : null,
+      habitats.length ? `Habitats: ${habitats.slice(0, 4).join(', ')}` : null,
+      environments.length
+        ? `Environment: ${environments.slice(0, 3).join(', ')}`
+        : null,
+      locations.length ? `Locations: ${locations.slice(0, 3).join(', ')}` : null
+    ]
+      .filter((part): part is string => Boolean(part))
+      .join(' | ') || null
+  );
 }
 
 function buildRawPayload(

@@ -19,18 +19,6 @@ Railway cron style:
 pnpm --filter @vbdhub/sync run sync --job hub
 ```
 
-Programmatic:
-
-```ts
-import pino from 'pino';
-import { runJob } from '@vbdhub/sync';
-
-const abortController = new AbortController();
-const logger = pino({ name: 'sync-worker' });
-
-await runJob('gbif', { signal: abortController.signal, logger });
-```
-
 Available jobs:
 - `gbif`
 - `hub`

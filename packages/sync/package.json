@@ -3,22 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
   "scripts": {
-    "build": "pnpm -F @vbdhub/db run build && tsc",
+    "build": "pnpm -F @vbdhub/db build && tsc",
     "sync": "node dist/cli.js",
-    "sync:gbif": "pnpm run sync --job gbif",
-    "sync:hub": "pnpm run sync --job hub",
-    "sync:px": "pnpm run sync --job px",
-    "sync:vd": "pnpm run sync --job vd",
-    "sync:vt": "pnpm run sync --job vt"
+    "sync:gbif": "pnpm sync --job gbif",
+    "sync:hub": "pnpm sync --job hub",
+    "sync:px": "pnpm sync --job px",
+    "sync:vd": "pnpm sync --job vd",
+    "sync:vt": "pnpm sync --job vt"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {
@@ -28,6 +20,7 @@
     "ky": "^2.0.2",
     "minio": "^8.0.7",
     "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
