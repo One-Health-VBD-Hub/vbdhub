@@ -94,6 +94,8 @@ type GlobalNamesVerificationResponse = z.infer<typeof globalNamesVerificationRes
 function buildGlobalNamesRequestBody(nameStrings: string[]) {
   return {
     nameStrings,
+    // These relaxed options help source metadata names resolve despite common
+    // qualifiers like "complex", casing drift, or incomplete uninomial names.
     withRelaxedFuzzyMatch: true,
     withCapitalization: true,
     withUninomialFuzzyMatch: true,
@@ -176,6 +178,8 @@ export async function linkDatasetTaxa(
   const unresolvedNames = queryNames.filter((name) => !taxonomyResolutionCache.has(name));
 
   if (unresolvedNames.length > 0) {
+    // Cache both hits and misses for the lifetime of a job so repeated species
+    // across datasets do not repeatedly call Global Names.
     const resolvedFromApi = await resolveGbifTaxaFromNames(unresolvedNames, options);
     for (const name of unresolvedNames) {
       taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
@@ -213,12 +217,16 @@ function normalizeTaxonQueryName(name: string): string {
 }
 
 function cleanTaxonName(name: string): string {
-  return name
-    .replace(/\bcomplex\b/gi, '')
-    .replace(/\bmorphological group\b/gi, '')
-    .replace(/\bsp\.\b/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (
+    name
+      // Source systems often include non-taxonomic qualifiers that reduce match
+      // quality against the GBIF backbone.
+      .replace(/\bcomplex\b/gi, '')
+      .replace(/\bmorphological group\b/gi, '')
+      .replace(/\bsp\.\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): ResolvedGbifTaxon | null {
@@ -247,6 +255,8 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
 function findBestAcceptedGbifMatch(
   matches: GlobalNamesMatchResult[]
 ): GlobalNamesMatchResult | undefined {
+  // The local taxonomy table is GBIF-only, so ignore other Global Names
+  // datasources and synonym records even if they score highly.
   return matches
     .filter(
       (match) =>
@@ -341,6 +351,8 @@ function buildTaxonRowsFromClassification(
         break;
     }
 
+    // Each row gets the lineage accumulated up to that point; those denormalized
+    // IDs power "under family/genus/etc." queries without recursive SQL.
     taxonRows.push({
       gbifTaxonId,
       scientificName,

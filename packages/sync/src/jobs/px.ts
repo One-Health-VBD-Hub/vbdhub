@@ -227,6 +227,8 @@ function getAvailablePageCount(response: PxCompactResponse, pageSize: number): n
   const fromPages = response.result_set?.n_available_pages;
   if (Number.isFinite(fromPages) && fromPages && fromPages > 0) return fromPages;
 
+  // Some PROXI responses expose row counts without a page count; derive pages
+  // from rows so the sync still walks the full inventory.
   const fromRows = response.result_set?.n_available_rows;
   if (Number.isFinite(fromRows) && fromRows && fromRows > 0) {
     return Math.ceil(fromRows / pageSize);
@@ -259,6 +261,8 @@ function parseCompactDatasetRow(row: unknown): PxCompactDataset | null {
   const parsed = pxCompactDatasetRowSchema.safeParse(row);
   if (!parsed.success) return null;
 
+  // Compact PROXI rows are positional arrays rather than objects; keep the
+  // mapping local so callers work with named fields.
   const values = parsed.data;
   const accession = normalizeNullableString(values[0]);
   if (!accession) return null;
@@ -286,6 +290,8 @@ async function fetchPxDatasetDetail(accession: string): Promise<PxDetailResponse
   } catch (error) {
     if (!(error instanceof HTTPError)) throw error;
 
+    // Preserve PROXI's machine-readable error code so the worker can skip
+    // unreleased or missing datasets without counting them as hard failures.
     let payload: PxStatusErrorPayload | null = null;
     try {
       const parsed = pxStatusErrorPayloadSchema.safeParse(await error.response.json());
@@ -371,6 +377,8 @@ function extractSpeciesNames(detail: PxDetailResponse): string[] {
   for (const group of detail.species ?? []) {
     for (const term of group.terms ?? []) {
       const name = (term.name ?? '').toLowerCase();
+      // MS:1001469 is "taxonomy: scientific name"; some repositories only
+      // provide the label text, so accept either signal.
       if (term.accession !== 'MS:1001469' && !name.includes('scientific name')) {
         continue;
       }
@@ -387,6 +395,7 @@ function extractSpeciesNames(detail: PxDetailResponse): string[] {
 }
 
 function cleanupSpeciesName(value: string): string | null {
+  // PROXI often appends taxonomy IDs in parentheses after the scientific name.
   const cleaned = value.replace(/\s+\([^)]*\)\s*$/, '').trim();
   if (!cleaned) return null;
   return cleaned;
@@ -529,6 +538,8 @@ async function runWithConcurrency<T>(
   const workerCount = Math.max(1, Math.min(concurrency, items.length));
   let index = 0;
 
+  // Use a tiny in-process worker pool to avoid hammering the detail API while
+  // still overlapping network latency.
   const runners = Array.from({ length: workerCount }, async () => {
     while (true) {
       const currentIndex = index;

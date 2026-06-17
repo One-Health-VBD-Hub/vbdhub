@@ -124,6 +124,8 @@ export const vdSyncJob: JobDefinition = {
           const speciesNames = extractSpeciesNamesFromDetail(detail);
           const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(speciesByDate);
 
+          // VecDyn has no single canonical published date in these responses;
+          // use observed temporal coverage first, then fall back to declared years.
           const publishedAt =
             temporalCoverage.startDate ?? parsePublishedAtFromYears(detail.results?.Years);
           const title = csv.consistent_data?.title?.trim() || `VecDyn dataset ${id}`;
@@ -268,6 +270,8 @@ function parseTemporalCoverageFromSpeciesByDate(speciesByDate: VecDynSpeciesByDa
   dateCount: number;
   speciesCount: number;
 } {
+  // The endpoint is keyed species -> date -> count, so date coverage needs to be
+  // collected across every species bucket.
   const uniqueDates = new Set<string>();
   const species = Object.keys(speciesByDate);
 

@@ -8,7 +8,6 @@ CLI:
 
 ```bash
 pnpm --filter @vbdhub/sync run build
-pnpm --filter @vbdhub/sync run sync --list
 pnpm --filter @vbdhub/sync run sync --job hub
 pnpm --filter @vbdhub/sync run sync:hub
 ```

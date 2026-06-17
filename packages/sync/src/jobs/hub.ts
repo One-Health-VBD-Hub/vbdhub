@@ -163,6 +163,8 @@ function parseDatasetPath(objectKey: string): {
   category: DatasetCategory;
   sourceKey: string;
 } {
+  // Hub storage is intentionally treated as one CSV per top-level category
+  // folder; nested paths would make sourceKey derivation ambiguous.
   const [rawCategory, ...rest] = objectKey.split('/').filter(Boolean);
 
   if (!rawCategory || rest.length !== 1) {
@@ -206,6 +208,8 @@ async function processDataset(
   await parseCsv(stream, accumulator);
 
   const coordinates = dedupeCoordinates(accumulator.coordinates);
+  // Prefer explicit metadata dates, then row years, then the object timestamp as
+  // a last-resort proxy for legacy CSVs.
   const publishedAt =
     accumulator.publishedAt ??
     derivePublishedAtFromYears(accumulator.years) ??
@@ -266,6 +270,8 @@ async function parseCsv(
   stream: NodeJS.ReadableStream,
   accumulator: DatasetAccumulator
 ): Promise<void> {
+  // Hub CSVs come from varied contributors, so parsing is deliberately tolerant
+  // and field matching happens after header normalization.
   const parser = parse({
     columns: true,
     bom: true,
@@ -423,6 +429,8 @@ function getFirstNumber(record: Record<string, string>, aliases: readonly string
 }
 
 function normalizeFieldName(field: string): string {
+  // Collapse variants like "Sample Lat DD", "sample_lat_dd", and
+  // "sample-lat-dd" to the same alias key.
   return field.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 

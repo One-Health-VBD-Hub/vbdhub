@@ -203,6 +203,8 @@ function extractTitleFromCitation(citation: string): string {
   const remaining = segments.slice(start);
   const titleParts: string[] = [];
 
+  // Citations usually start with authors/year and end with journal metadata.
+  // Keep the middle title-like segments until the text looks like a journal.
   for (let i = 0; i < remaining.length; i += 1) {
     const segment = remaining[i]!.trim();
     if (!segment) continue;
@@ -337,6 +339,8 @@ function parseLocationDateCoverage(rows: VecTraitsDatasetRow[]): TemporalCoverag
     if (!raw) continue;
     uniqueDates.add(raw);
 
+    // Keep the distinct raw date count even when a source date is not strict
+    // YYYY-MM-DD and cannot be used for range bounds.
     const date = parseDateOnly(raw);
     if (!date) continue;
     if (!startDate || date < startDate) startDate = date;

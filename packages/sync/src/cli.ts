@@ -1,27 +1,7 @@
 import { parseArgs } from 'node:util';
 import pino from 'pino';
-import { jobs, runJob } from './job-registry.js';
+import { runJob } from './job-registry.js';
 import 'dotenv/config';
-
-function printHelp(): void {
-  const availableJobs = jobs.map((job) => `  - ${job.name}: ${job.description}`).join('\n');
-
-  console.info(
-    [
-      'Usage:',
-      '  sync-jobs --job <name>',
-      '  sync-jobs --list',
-      '',
-      'Options:',
-      '  --job <name>   Run a named synchronisation job',
-      '  --list         List available jobs',
-      '  --help         Show help',
-      '',
-      'Jobs:',
-      availableJobs
-    ].join('\n')
-  );
-}
 
 async function main(): Promise<void> {
   const logger = pino({
@@ -35,21 +15,15 @@ async function main(): Promise<void> {
   });
 
   const { values } = parseArgs({
+    strict: false,
     options: {
-      job: { type: 'string' },
-      list: { type: 'boolean', default: false },
-      help: { type: 'boolean', default: false }
+      job: { type: 'string' }
     }
   });
 
-  if (values.help || values.list) {
-    printHelp();
-    return;
-  }
-
-  const jobName = values.job;
+  const jobName = typeof values.job === 'string' ? values.job : undefined;
   if (!jobName) {
-    printHelp();
+    logger.error('Missing required --job <name> option');
     process.exitCode = 1;
     return;
   }
