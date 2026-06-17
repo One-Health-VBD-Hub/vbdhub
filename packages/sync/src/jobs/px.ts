@@ -95,7 +95,6 @@ type PxStatusErrorPayload = z.infer<typeof pxStatusErrorPayloadSchema>;
 
 export const pxSyncJob: JobDefinition = {
   name: 'px',
-  description: 'Synchronise ProteomeXchange records',
   async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();

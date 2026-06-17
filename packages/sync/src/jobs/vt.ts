@@ -51,7 +51,6 @@ type TemporalCoverage = {
 
 export const vtSyncJob: JobDefinition = {
   name: 'vt',
-  description: 'Synchronise VecTraits records',
   async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();

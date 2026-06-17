@@ -90,7 +90,6 @@ type VecDynSpeciesByDateResponse = z.infer<typeof vecDynSpeciesByDateResponseSch
 
 export const vdSyncJob: JobDefinition = {
   name: 'vd',
-  description: 'Synchronise VecDyn records',
   async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();

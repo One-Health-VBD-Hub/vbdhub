@@ -85,7 +85,6 @@ interface DatasetAccumulator {
 
 export const hubSyncJob: JobDefinition = {
   name: 'hub',
-  description: 'Synchronise VBD Hub CSV datasets from internal object storage',
   async run({ logger }) {
     const prisma = createPrismaClient();
 
