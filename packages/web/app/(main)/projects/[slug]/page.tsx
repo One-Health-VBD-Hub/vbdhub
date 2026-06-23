@@ -5,7 +5,13 @@ import { Launch } from '@carbon/react/icons';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fundedProjects, getProject } from '../projects';
+import {
+  bbsrcAwardUrl,
+  fundedProjects,
+  getProject,
+  gtrProjectUrl,
+  hubSearchUrl
+} from '../projects';
 
 export function generateStaticParams() {
   return fundedProjects.map((project) => ({ slug: project.slug }));
@@ -128,17 +134,26 @@ export default async function ProjectPage(
           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
             <OutputLink
               label='Official award record'
-              href={project.awardUrl}
+              href={bbsrcAwardUrl(project.grantRef)}
               description='Read the official award record and project abstract.'
             />
-            {project.outputLinks.map((output) => (
+            <OutputLink
+              label='Hub data search'
+              href={hubSearchUrl(project.searchQuery)}
+              description='Find related datasets indexed by VBD Hub.'
+            />
+            <OutputLink
+              label='Gateway to Research'
+              href={gtrProjectUrl(project.grantRef)}
+              description='View publications and reported outcomes for this award.'
+            />
+            {project.website && (
               <OutputLink
-                key={output.href}
-                label={output.label}
-                href={output.href}
-                description={output.description}
+                label='Project website'
+                href={project.website}
+                description='Read more about the project, partners, and activities.'
               />
-            ))}
+            )}
           </div>
         </Stack>
       </section>
@@ -157,29 +172,17 @@ function OutputLink({
 }) {
   const isExternal = href.startsWith('http');
 
-  if (isExternal) {
-    return (
-      <Link
-        href={href}
-        target='_blank'
-        rel='noopener nofollow'
-        className='block border border-gray-200 p-4 text-inherit hover:border-[#0f62fe] hover:no-underline'
-      >
-        <span className='flex items-center gap-2 font-medium text-[#0f62fe]'>
-          {label}
-          <Launch size={16} />
-        </span>
-        <span className='mt-2 block text-gray-700'>{description}</span>
-      </Link>
-    );
-  }
-
   return (
     <Link
       href={href}
+      target={isExternal ? '_blank' : undefined}
+      rel={isExternal ? 'noopener nofollow' : undefined}
       className='block border border-gray-200 p-4 text-inherit hover:border-[#0f62fe] hover:no-underline'
     >
-      <span className='font-medium text-[#0f62fe]'>{label}</span>
+      <span className='flex items-center gap-2 font-medium text-[#0f62fe]'>
+        {label}
+        {isExternal && <Launch size={16} />}
+      </span>
       <span className='mt-2 block text-gray-700'>{description}</span>
     </Link>
   );

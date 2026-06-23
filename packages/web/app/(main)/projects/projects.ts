@@ -1,10 +1,4 @@
-export interface ProjectOutputLink {
-  label: string;
-  href: string;
-  description: string;
-}
-
-export interface FundedProject {
+interface FundedProject {
   slug: string;
   shortName?: string;
   title: string;
@@ -17,16 +11,18 @@ export interface FundedProject {
   focus: string[];
   summary: string;
   hubRelevance: string;
-  awardUrl: string;
-  outputsUrl: string;
-  outputLinks: ProjectOutputLink[];
+  searchQuery: string;
+  website?: string;
 }
 
-const gtrProjectUrl = (grantRef: string) =>
+export const gtrProjectUrl = (grantRef: string) =>
   `https://gtr.ukri.org/projects?ref=${encodeURIComponent(grantRef)}`;
 
-const bbsrcAwardUrl = (grantRef: string) =>
+export const bbsrcAwardUrl = (grantRef: string) =>
   `https://gow.bbsrc.ukri.org/grants/AwardDetails.aspx?FundingReference=${encodeURIComponent(grantRef)}`;
+
+export const hubSearchUrl = (query: string) =>
+  `/search?query=${encodeURIComponent(query)}`;
 
 export const fundedProjects: FundedProject[] = [
   {
@@ -44,20 +40,7 @@ export const fundedProjects: FundedProject[] = [
       'This project investigates the distribution, habitat use, host feeding preferences, and vector competence of native Culex mosquitoes for West Nile and Usutu viruses under current and future UK climate conditions.',
     hubRelevance:
       'The project is expected to produce vector occurrence, habitat, competence, and model output data that can strengthen national preparedness for mosquito-borne arboviruses.',
-    awardUrl: bbsrcAwardUrl('BB/X018172/1'),
-    outputsUrl: gtrProjectUrl('BB/X018172/1'),
-    outputLinks: [
-      {
-        label: 'Hub data search',
-        href: '/search?query=Culex%20West%20Nile%20Usutu',
-        description: 'Find related datasets indexed by VBD Hub.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X018172/1'),
-        description: 'View publications and reported outcomes for this award.'
-      }
-    ]
+    searchQuery: 'Culex West Nile Usutu'
   },
   {
     slug: 'reservoir-host-communities-tick-control',
@@ -80,20 +63,7 @@ export const fundedProjects: FundedProject[] = [
       'This project examines whether managing reservoir host communities at landscape scale can reduce tick-borne disease risk through a One Health approach.',
     hubRelevance:
       'Outputs can help connect ecological field evidence, host community data, pathogen observations, and practical intervention evidence across human, animal, and environmental health.',
-    awardUrl: bbsrcAwardUrl('BB/X017982/1'),
-    outputsUrl: gtrProjectUrl('BB/X017982/1'),
-    outputLinks: [
-      {
-        label: 'Hub data search',
-        href: '/search?query=RodTickPathMan%20ticks',
-        description: 'Find related tick and reservoir-host datasets.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X017982/1'),
-        description: 'View publications and reported outcomes for this award.'
-      }
-    ]
+    searchQuery: 'RodTickPathMan ticks'
   },
   {
     slug: 'genes-vbd-network',
@@ -111,20 +81,7 @@ export const fundedProjects: FundedProject[] = [
       'GenES-VBD develops genomic epidemiology resources for surveillance of vector-borne disease systems, with emphasis on ticks, reservoir species, and pathogens.',
     hubRelevance:
       'The project is closely aligned with Hub goals around reusable genomic resources, metadata, and cross-project data sharing for surveillance.',
-    awardUrl: bbsrcAwardUrl('BB/X018156/1'),
-    outputsUrl: gtrProjectUrl('BB/X018156/1'),
-    outputLinks: [
-      {
-        label: 'Hub data search',
-        href: '/search?query=GenES-VBD%20genomic%20epidemiology',
-        description: 'Find related genomic surveillance records.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X018156/1'),
-        description: 'View publications and reported outcomes for this award.'
-      }
-    ]
+    searchQuery: 'GenES-VBD genomic epidemiology'
   },
   {
     slug: 'scotland-mosquito-risk',
@@ -146,20 +103,7 @@ export const fundedProjects: FundedProject[] = [
       'This project addresses surveillance gaps in Scotland by sampling mosquitoes and birds, testing for zoonotic pathogens, assessing vector competence, and modelling current and future risk.',
     hubRelevance:
       'The work can contribute mosquito occurrence, pathogen screening, competence, and risk-map outputs for an under-sampled part of the UK.',
-    awardUrl: bbsrcAwardUrl('BB/X018113/1'),
-    outputsUrl: gtrProjectUrl('BB/X018113/1'),
-    outputLinks: [
-      {
-        label: 'Hub data search',
-        href: '/search?query=Scotland%20mosquito%20vector-borne',
-        description: 'Find Scottish mosquito and pathogen surveillance records.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X018113/1'),
-        description: 'View publications and reported outcomes for this award.'
-      }
-    ]
+    searchQuery: 'Scotland mosquito vector-borne'
   },
   {
     slug: 'vector-borne-radar',
@@ -182,26 +126,8 @@ export const fundedProjects: FundedProject[] = [
       'Vector-borne RADAR enhances surveillance for mosquito-borne diseases of wild birds in the UK by combining bird sampling, mosquito trapping, laboratory screening, sequencing, and outbreak early-warning methods.',
     hubRelevance:
       'RADAR demonstrates the type of multi-partner surveillance workflow the Hub is designed to make more discoverable and reusable across public, veterinary, and wildlife health contexts.',
-    awardUrl: bbsrcAwardUrl('BB/X017990/1'),
-    outputsUrl: gtrProjectUrl('BB/X017990/1'),
-    outputLinks: [
-      {
-        label: 'Project website',
-        href: 'http://www.vb-radar.com',
-        description: 'Read more about the RADAR project and its activities.'
-      },
-      {
-        label: 'Hub data search',
-        href: '/search?query=Vector-borne%20RADAR%20Usutu',
-        description: 'Find related bird and mosquito surveillance records.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X017990/1'),
-        description:
-          'View publications, policy influence, and engagement outputs.'
-      }
-    ]
+    searchQuery: 'Vector-borne RADAR Usutu',
+    website: 'http://www.vb-radar.com'
   },
   {
     slug: 'zoonotic-mosquito-borne-viral-disease',
@@ -223,20 +149,7 @@ export const fundedProjects: FundedProject[] = [
       'This project studies the conditions that could permit onward transmission of zoonotic mosquito-borne viruses in the UK, integrating field studies, ornithological data, vector biology, and spatial transmission models.',
     hubRelevance:
       'The project brings together the types of vector, host, pathogen, and model data needed for integrated forecasting and mitigation workflows.',
-    awardUrl: bbsrcAwardUrl('BB/X018024/1'),
-    outputsUrl: gtrProjectUrl('BB/X018024/1'),
-    outputLinks: [
-      {
-        label: 'Hub data search',
-        href: '/search?query=zoonotic%20mosquito-borne%20viral%20disease',
-        description: 'Find related mosquito-borne disease datasets.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X018024/1'),
-        description: 'View publications and reported outcomes for this award.'
-      }
-    ]
+    searchQuery: 'zoonotic mosquito-borne viral disease'
   },
   {
     slug: 'ticktools',
@@ -259,20 +172,7 @@ export const fundedProjects: FundedProject[] = [
       'TickTools develops field, laboratory, genomic, and serological tools to improve monitoring and control of tick-borne flaviviruses affecting people and livestock.',
     hubRelevance:
       'The project has already reported sequence datasets and data-sharing engagement with the VBD Hub, making it a strong candidate for discoverable project-output pages.',
-    awardUrl: bbsrcAwardUrl('BB/X018008/1'),
-    outputsUrl: gtrProjectUrl('BB/X018008/1'),
-    outputLinks: [
-      {
-        label: 'Hub data search',
-        href: '/search?query=TickTools',
-        description: 'Find related tick, pathogen, and sequence records.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X018008/1'),
-        description: 'View publications, data outputs, and collaborations.'
-      }
-    ]
+    searchQuery: 'TickTools'
   },
   {
     slug: 'optick',
@@ -296,25 +196,8 @@ export const fundedProjects: FundedProject[] = [
       'OpTick investigates how landscape change, farm management, climate, and host ecology affect tick-borne disease exposure for livestock and people on UK farms.',
     hubRelevance:
       'OpTick is expected to produce field evidence, risk guidance, stakeholder outputs, and modelling frameworks that fit the Hub mission of connecting data with policy-relevant use.',
-    awardUrl: bbsrcAwardUrl('BB/X017974/1'),
-    outputsUrl: gtrProjectUrl('BB/X017974/1'),
-    outputLinks: [
-      {
-        label: 'Project website',
-        href: 'https://www.optick.ceh.ac.uk/',
-        description: 'Read about the OpTick project, partners, and approach.'
-      },
-      {
-        label: 'Hub data search',
-        href: '/search?query=OpTick',
-        description: 'Find related tick-borne disease and landscape records.'
-      },
-      {
-        label: 'Gateway to Research',
-        href: gtrProjectUrl('BB/X017974/1'),
-        description: 'View publications and reported outcomes for this award.'
-      }
-    ]
+    searchQuery: 'OpTick',
+    website: 'https://www.optick.ceh.ac.uk/'
   }
 ];
 

@@ -35,6 +35,7 @@ export default function Layout({
   if (path.includes('learn')) lastComponent = 'learn';
   if (path.includes('datasets')) lastComponent = 'datasets';
   if (path.includes('projects')) lastComponent = 'projects';
+  const isProjectsPage = path.startsWith('/projects');
   const page = lastComponent
     ? lastComponent.charAt(0).toUpperCase() + lastComponent.slice(1)
     : lastComponent;
@@ -111,7 +112,7 @@ export default function Layout({
             <HeaderMenuItem
               href='/projects'
               as={Link}
-              isActive={path.startsWith('/projects')}
+              isActive={isProjectsPage}
             >
               Projects
             </HeaderMenuItem>
@@ -231,7 +232,7 @@ export default function Layout({
                 <HeaderMenuItem
                   href='/projects'
                   as={Link}
-                  isActive={path.startsWith('/projects')}
+                  isActive={isProjectsPage}
                 >
                   Projects
                 </HeaderMenuItem>
