@@ -8,8 +8,8 @@ import { normalizeNullableString, parseDateOnly } from './shared/normalization.j
 import type { JobDefinition } from '../types.js';
 
 const VECTRAITS_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
-const VECTRAITS_SOURCE_DB = 'vectraits';
-const VECTRAITS_CATEGORY: DatasetCategory = 'traits';
+const DB_NAME = 'vectraits';
+const DB_CATEGORY: DatasetCategory = 'traits';
 
 const vecTraitsIdsResponseSchema = z.looseObject({
   ids: z.array(z.coerce.number().int()).default([])
@@ -78,7 +78,7 @@ export const vtSyncJob: JobDefinition = {
           const homepageUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
           const sourceKey = String(id);
           const datasetData = {
-            category: VECTRAITS_CATEGORY,
+            category: DB_CATEGORY,
             title,
             description,
             homepageUrl,
@@ -95,12 +95,12 @@ export const vtSyncJob: JobDefinition = {
           const dataset = await prisma.dataset.upsert({
             where: {
               sourceDb_sourceKey: {
-                sourceDb: VECTRAITS_SOURCE_DB,
+                sourceDb: DB_NAME,
                 sourceKey
               }
             },
             create: {
-              sourceDb: VECTRAITS_SOURCE_DB,
+              sourceDb: DB_NAME,
               sourceKey,
               ...datasetData
             },
