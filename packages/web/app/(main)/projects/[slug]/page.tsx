@@ -12,6 +12,8 @@ import {
   gtrProjectUrl,
   hubSearchUrl
 } from '../projects';
+import ProjectDescription from './ProjectDescription';
+import ProjectImageGallery from './ProjectImageGallery';
 
 export function generateStaticParams() {
   return fundedProjects.map((project) => ({ slug: project.slug }));
@@ -81,11 +83,20 @@ export default async function ProjectPage(
               <p className='mt-1'>{project.question}</p>
             </div>
           )}
-          {project.description.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
+          <ProjectDescription paragraphs={project.description} />
         </Stack>
       </section>
+
+      {project.images && (
+        <section aria-labelledby='project-images'>
+          <Stack gap={4}>
+            <Heading as='h2' id='project-images' link={false}>
+              Project images
+            </Heading>
+            <ProjectImageGallery images={project.images} />
+          </Stack>
+        </section>
+      )}
 
       <section aria-labelledby='project-details'>
         <div className='grid gap-6 border-y border-gray-200 py-6 md:grid-cols-3'>

@@ -17,6 +17,13 @@ interface FundedProject {
   website?: string;
   projectLinks?: { label: string; href: string }[];
   dataOutputs?: string[];
+  images?: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+    caption: string;
+  }[];
 }
 
 export const gtrProjectUrl = (grantRef: string) =>
@@ -86,6 +93,36 @@ export const fundedProjects: FundedProject[] = [
     dataOutputs: [
       'Quantitative data on tick responses to host odours and naturally-derived repellents - VecTraits.',
       'Qualitative data on proportions of ticks which have fed on squirrels and other hosts, and changes to tick abundance and tick-borne pathogen prevalence following squirrel control - VecTraits and VecDyn.'
+    ],
+    images: [
+      {
+        src: '/assets/project-pages/lab work collecting ticks from squirrels.jpg',
+        alt: 'Researcher collecting ticks from a grey squirrel in the field',
+        width: 4032,
+        height: 3024,
+        caption: 'Collecting ticks from grey squirrels'
+      },
+      {
+        src: '/assets/project-pages/setting up camera traps 1.jpg',
+        alt: 'Researcher setting up a camera trap in woodland',
+        width: 2048,
+        height: 1873,
+        caption: 'Setting up camera traps in woodland study sites'
+      },
+      {
+        src: '/assets/project-pages/ethovision tracking tick behaviour bioassays.jpg',
+        alt: 'Tick behaviour bioassay plates being tracked with EthoVision software',
+        width: 1500,
+        height: 2000,
+        caption: 'Tracking tick behaviour bioassays'
+      },
+      {
+        src: '/assets/project-pages/tick stored in lab.jpg',
+        alt: 'Tick stored in a laboratory sample tube',
+        width: 1600,
+        height: 1600,
+        caption: 'Tick sample stored in the laboratory'
+      }
     ]
   },
   {
