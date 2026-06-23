@@ -65,8 +65,27 @@ export default async function ProjectPage(
         <Heading id='project-title' link={false}>
           {project.title}
         </Heading>
-        <p className='mt-4 text-xl text-gray-800'>{project.summary}</p>
+        <p className='mt-4 text-lg text-gray-800'>{project.summary}</p>
       </header>
+
+      <section aria-labelledby='about-project' className='max-w-3xl'>
+        <Stack gap={3}>
+          <Heading as='h2' id='about-project' link={false}>
+            About the project
+          </Heading>
+          {project.question && (
+            <div>
+              <p className='text-sm font-medium text-gray-600'>
+                Research question
+              </p>
+              <p className='mt-1'>{project.question}</p>
+            </div>
+          )}
+          {project.description.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </Stack>
+      </section>
 
       <section aria-labelledby='project-details'>
         <div className='grid gap-6 border-y border-gray-200 py-6 md:grid-cols-3'>
@@ -111,7 +130,7 @@ export default async function ProjectPage(
         </Stack>
       </section>
 
-      <section aria-labelledby='hub-connection'>
+      <section aria-labelledby='hub-connection' className='max-w-3xl'>
         <Stack gap={3}>
           <Heading as='h2' id='hub-connection' link={false}>
             Connection to VBD Hub
@@ -154,9 +173,27 @@ export default async function ProjectPage(
                 description='Read more about the project, partners, and activities.'
               />
             )}
+            {project.projectLinks?.map((link) => (
+              <OutputLink key={link.href} label={link.label} href={link.href} />
+            ))}
           </div>
         </Stack>
       </section>
+
+      {project.dataOutputs && (
+        <section aria-labelledby='data-outputs'>
+          <Stack gap={3}>
+            <Heading as='h2' id='data-outputs' link={false}>
+              Data outputs
+            </Heading>
+            <ul className='list-disc pl-5'>
+              {project.dataOutputs.map((output) => (
+                <li key={output}>{output}</li>
+              ))}
+            </ul>
+          </Stack>
+        </section>
+      )}
     </Stack>
   );
 }
@@ -168,7 +205,7 @@ function OutputLink({
 }: {
   label: string;
   href: string;
-  description: string;
+  description?: string;
 }) {
   const isExternal = href.startsWith('http');
 
@@ -183,7 +220,9 @@ function OutputLink({
         {label}
         {isExternal && <Launch size={16} />}
       </span>
-      <span className='mt-2 block text-gray-700'>{description}</span>
+      {description && (
+        <span className='mt-2 block text-gray-700'>{description}</span>
+      )}
     </Link>
   );
 }

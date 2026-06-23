@@ -9,10 +9,14 @@ interface FundedProject {
   period: string;
   theme: 'Mosquito-borne disease' | 'Tick-borne disease' | 'Genomics';
   focus: string[];
+  question?: string;
   summary: string;
+  description: string[];
   hubRelevance: string;
   searchQuery: string;
   website?: string;
+  projectLinks?: { label: string; href: string }[];
+  dataOutputs?: string[];
 }
 
 export const gtrProjectUrl = (grantRef: string) =>
@@ -32,12 +36,16 @@ export const fundedProjects: FundedProject[] = [
     lead: 'Professor Matthew Baylis',
     institution: 'University of Liverpool',
     grantRef: 'BB/X018172/1',
-    awardValue: 'GBP 984,395',
+    awardValue: '£984,395',
     period: 'April 2023 to March 2026',
     theme: 'Mosquito-borne disease',
     focus: ['Culex mosquitoes', 'West Nile virus', 'Usutu virus', 'Risk maps'],
     summary:
       'This project investigates the distribution, habitat use, host feeding preferences, and vector competence of native Culex mosquitoes for West Nile and Usutu viruses under current and future UK climate conditions.',
+    description: [
+      'This project assesses the risk from the UK Culex pipiens complex and related Culex torrentium mosquitoes for transmission of West Nile virus and Usutu virus.',
+      'The team is collecting geographic, larval habitat, host-feeding, and vector competence data to build UK transmission models under typical summer, heatwave, and future climate conditions.'
+    ],
     hubRelevance:
       'The project is expected to produce vector occurrence, habitat, competence, and model output data that can strengthen national preparedness for mosquito-borne arboviruses.',
     searchQuery: 'Culex West Nile Usutu'
@@ -50,8 +58,8 @@ export const fundedProjects: FundedProject[] = [
     lead: 'Professor Steven Belmain',
     institution: 'University of Greenwich',
     grantRef: 'BB/X017982/1',
-    awardValue: 'GBP 1,016,184',
-    period: 'April 2023 to March 2026',
+    awardValue: '£1,054,183',
+    period: 'March 2023 to March 2026',
     theme: 'Tick-borne disease',
     focus: [
       'Ticks',
@@ -59,11 +67,26 @@ export const fundedProjects: FundedProject[] = [
       'Landscape management',
       'Lyme disease ecology'
     ],
+    question:
+      'How does invasive wildlife contribute to the spread of ticks and Lyme disease?',
     summary:
-      'This project examines whether managing reservoir host communities at landscape scale can reduce tick-borne disease risk through a One Health approach.',
+      'Researchers investigated how grey squirrels contribute to Lyme disease risk and how different grey squirrel management strategies may influence this relationship.',
+    description: [
+      'Current UK reforestation policies aim to mitigate climate change while increasing habitat availability and connectivity for native wildlife. However, greater connectivity may also facilitate the spread of invasive species such as grey squirrels and disease vectors including the tick Ixodes ricinus, which transmits Borrelia burgdorferi, the bacterium responsible for Lyme disease. Researchers from the University of Greenwich, University of Salford, York University, APHA, and Forest Research investigated how grey squirrels contribute to Lyme disease risk and how different grey squirrel management strategies may influence this relationship.',
+      'The study was conducted across woodland sites in Cumbria, UK, where three grey squirrel management treatments were applied: culling, no culling, and simulated fertility-treatment culling. Vertebrate host populations were monitored using camera traps and acoustic recorders, while ticks were sampled over an 18-month period. Using a novel molecular blood-meal analysis method developed by the research team, researchers were able to identify which host species ticks had previously fed upon.',
+      'Preliminary results showed that, prior to treatment, approximately 10% of ticks tested had fed on grey squirrels, making them the second most important host species detected after deer. Despite this, there was no evidence that controlling grey squirrel populations significantly affected tick densities across the sites, likely due to the presence of numerous alternative hosts.',
+      'Additional assays are currently being developed to identify a wider range of host species, with particular focus on birds and pheasants, which are common in the study sites and are known to contribute to the spread of ticks and Borrelia. Ongoing work will assess whether the relative proportions of ticks feeding on different host species change following grey squirrel removal.',
+      'Further research by the team demonstrated that ticks can detect m-cresol, a compound commonly found in grey squirrel urine. Behavioural assays showed that ticks are attracted to this chemical, suggesting that host odours may play a role in host detection. Future work will test additional chemical compounds extracted from grey squirrel odours as well as pheromones released by ticks.',
+      'The project also explored stakeholder knowledge and perceptions of tick-borne diseases through interviews with land managers, medical professionals, and recreational users. While most participants reported moderate to high awareness of ticks and tick-borne diseases, this did not necessarily correspond with a high perception of personal risk. Many respondents felt that responsibility for managing tick risk should primarily lie with individuals accessing environments where ticks are present.',
+      'Together, these findings will contribute to a predictive risk model to better understand how climate change and land management practices influence Lyme disease risk, helping landowners and policymakers make informed decisions that balance wildlife conservation with the protection of public health.'
+    ],
     hubRelevance:
       'Outputs can help connect ecological field evidence, host community data, pathogen observations, and practical intervention evidence across human, animal, and environmental health.',
-    searchQuery: 'RodTickPathMan ticks'
+    searchQuery: 'RodTickPathMan ticks',
+    dataOutputs: [
+      'Quantitative data on tick responses to host odours and naturally-derived repellents - VecTraits.',
+      'Qualitative data on proportions of ticks which have fed on squirrels and other hosts, and changes to tick abundance and tick-borne pathogen prevalence following squirrel control - VecTraits and VecDyn.'
+    ]
   },
   {
     slug: 'genes-vbd-network',
@@ -73,24 +96,29 @@ export const fundedProjects: FundedProject[] = [
     lead: 'Dr Susana Campino',
     institution: 'London School of Hygiene and Tropical Medicine',
     grantRef: 'BB/X018156/1',
-    awardValue: 'GBP 690,694',
-    period: 'April 2023 to March 2026',
+    awardValue: '£728,693',
+    period: 'March 2023 to December 2026',
     theme: 'Genomics',
     focus: ['Genomic epidemiology', 'Tick species', 'Reservoirs', 'Pathogens'],
     summary:
       'GenES-VBD develops genomic epidemiology resources for surveillance of vector-borne disease systems, with emphasis on ticks, reservoir species, and pathogens.',
+    description: [
+      'GenES-VBD is developing genomic tools to improve surveillance of UK ticks and the pathogens they carry.',
+      'The project focuses on genetic barcodes, amplicon sequencing, geospatial and phylogenomic analysis, and bioinformatics capacity for stakeholders involved in tick-borne disease surveillance.'
+    ],
     hubRelevance:
       'The project is closely aligned with Hub goals around reusable genomic resources, metadata, and cross-project data sharing for surveillance.',
     searchQuery: 'GenES-VBD genomic epidemiology'
   },
   {
     slug: 'scotland-mosquito-risk',
+    shortName: 'Mosquito Scotland',
     title:
       'Assessing the risk of mosquito vector-borne diseases in Scotland and their response to environmental change',
     lead: 'Professor Heather Ferguson',
     institution: 'University of Glasgow',
     grantRef: 'BB/X018113/1',
-    awardValue: 'GBP 1,003,927',
+    awardValue: '£1,003,927',
     period: 'April 2023 to March 2026',
     theme: 'Mosquito-borne disease',
     focus: [
@@ -99,11 +127,33 @@ export const fundedProjects: FundedProject[] = [
       'Avian reservoirs',
       'Environmental change'
     ],
+    question: 'How will mosquito-borne disease risk respond to environmental change?',
     summary:
-      'This project addresses surveillance gaps in Scotland by sampling mosquitoes and birds, testing for zoonotic pathogens, assessing vector competence, and modelling current and future risk.',
+      'Mosquito Scotland set out to understand interactions between mosquito and bird populations in Scotland, and how environmental change may affect mosquito-borne disease risk.',
+    description: [
+      'Climate and other environmental changes are driving the expansion of mosquito vector-borne diseases into areas previously unsuitable for transmission. This is particularly true of mosquito-transmitted viruses that can normally circulate in bird populations and can spill over into humans. These include infections like West Nile virus and Usutu virus, which have been detected in the UK in recent years. The ability to detect and respond to emergence in the UK is constrained by major gaps in national surveillance, with current activities restricted almost entirely to England and Wales.',
+      'The Mosquito Scotland project set out to understand the interactions between mosquito and bird populations of Scotland. The project collected mosquitoes over two years in geographically and ecologically representative habitats across Scotland. Back in the laboratory, the team identified the host species field-collected mosquitoes had fed on, including humans, and whether they were infected with any viruses of public health or conservation concern.',
+      'The team also assessed the important mosquito vector Culex pipiens from Scotland for its ability to transmit viruses under controlled laboratory conditions.',
+      'The project has found widespread distribution of mosquitoes across Scotland, with at least 16 species detected. Mosquitoes were able to live at surprisingly northern latitudes, including a mosquito reported in Shetland. In addition to their research activities, the team has been involved in responding to reports of nuisance biting around Scotland and helping Edinburgh Zoo investigate a suspected avian malaria outbreak in penguins.',
+      'The results will support policy development by providing public and animal health authorities in the Scottish and UK governments with data on the presence of potential vector species and pathogens in avian reservoirs in Scotland.',
+      'The project has established a citizen science platform which has already received more than 1,000 mosquito reports from across Scotland. This tool has facilitated identification of local hotspots for biting nuisance and could be used to guide targeted surveillance or control activities.'
+    ],
     hubRelevance:
       'The work can contribute mosquito occurrence, pathogen screening, competence, and risk-map outputs for an under-sampled part of the UK.',
-    searchQuery: 'Scotland mosquito vector-borne'
+    searchQuery: 'Scotland mosquito vector-borne',
+    website: 'https://www.mosquito-scotland.com/',
+    projectLinks: [
+      {
+        label: 'Citizen science submission form',
+        href: 'https://www.mosquito-scotland.com/submission-form'
+      }
+    ],
+    dataOutputs: [
+      'Entomological surveillance from nature reserves - VecDyn.',
+      'Mosquito citizen science data - iNaturalist.',
+      'Lab mosquito fitness data - VecTraits.',
+      'Pathogen data in mosquitoes and birds - VecDyn can host mosquito data; Hub can host bird data.'
+    ]
   },
   {
     slug: 'vector-borne-radar',
@@ -112,7 +162,7 @@ export const fundedProjects: FundedProject[] = [
     lead: 'Dr Arran Folly',
     institution: 'Animal and Plant Health Agency',
     grantRef: 'BB/X017990/1',
-    awardValue: 'GBP 961,953',
+    awardValue: '£961,953',
     period: 'March 2023 to June 2026',
     theme: 'Mosquito-borne disease',
     focus: [
@@ -124,6 +174,10 @@ export const fundedProjects: FundedProject[] = [
     ],
     summary:
       'Vector-borne RADAR enhances surveillance for mosquito-borne diseases of wild birds in the UK by combining bird sampling, mosquito trapping, laboratory screening, sequencing, and outbreak early-warning methods.',
+    description: [
+      'Vector-borne RADAR enhances surveillance for mosquito-borne diseases of wild birds in the UK, including viruses of medical and veterinary importance.',
+      'The project combines bird sampling, mosquito trapping, laboratory screening, sequencing, citizen-science data, and early-warning methods to detect and understand emerging arbovirus risks.'
+    ],
     hubRelevance:
       'RADAR demonstrates the type of multi-partner surveillance workflow the Hub is designed to make more discoverable and reusable across public, veterinary, and wildlife health contexts.',
     searchQuery: 'Vector-borne RADAR Usutu',
@@ -136,7 +190,7 @@ export const fundedProjects: FundedProject[] = [
     lead: 'Dr Grant Leslie Hughes',
     institution: 'Liverpool School of Tropical Medicine',
     grantRef: 'BB/X018024/1',
-    awardValue: 'GBP 1,016,110',
+    awardValue: '£1,016,110',
     period: 'April 2023 to March 2026',
     theme: 'Mosquito-borne disease',
     focus: [
@@ -147,6 +201,10 @@ export const fundedProjects: FundedProject[] = [
     ],
     summary:
       'This project studies the conditions that could permit onward transmission of zoonotic mosquito-borne viruses in the UK, integrating field studies, ornithological data, vector biology, and spatial transmission models.',
+    description: [
+      'This project studies the conditions that could permit onward transmission of zoonotic mosquito-borne viruses in the UK.',
+      'The work brings together field studies, bird and mosquito data, vector biology, and spatial transmission models to support forecasting and mitigation of West Nile virus and Usutu virus risks.'
+    ],
     hubRelevance:
       'The project brings together the types of vector, host, pathogen, and model data needed for integrated forecasting and mitigation workflows.',
     searchQuery: 'zoonotic mosquito-borne viral disease'
@@ -159,7 +217,7 @@ export const fundedProjects: FundedProject[] = [
     lead: 'Dr Nicolas Johnson',
     institution: 'Animal and Plant Health Agency',
     grantRef: 'BB/X018008/1',
-    awardValue: 'GBP 1,048,010',
+    awardValue: '£1,048,010',
     period: 'March 2023 to December 2026',
     theme: 'Tick-borne disease',
     focus: [
@@ -168,11 +226,40 @@ export const fundedProjects: FundedProject[] = [
       'Tick microbiome',
       'Serological tools'
     ],
+    question:
+      'What can the tick microbiome tell us about the dispersal, potential spread, and control of zoonotic viruses?',
     summary:
-      'TickTools develops field, laboratory, genomic, and serological tools to improve monitoring and control of tick-borne flaviviruses affecting people and livestock.',
+      'TickTools has characterised the tick microbiome and interactome to support the UK response to tick-borne encephalitis virus, louping ill virus, and newly detected viral threats.',
+    description: [
+      'The UK is threatened by both recently emerged tick-borne encephalitis virus (TBEV) and the endemic pathogen of sheep, louping ill virus (LIV). Researchers from the Animal and Plant Health Agency, University of Nottingham, Liverpool School of Tropical Medicine, and the University of Glasgow have teamed up to collect data to support the UK response to these threats.',
+      'The TickTools project has characterised the microbiome and interactome, all of the molecular interactions of the microbiome including those with pathogenic viruses and bacteria that cause disease, of ticks from across the UK.',
+      'Their work has revealed an impressive diversity of UK tick microbiomes, with particular focus on viruses. The project has discovered two novel zoonotic viruses, Chimay rhabdovirus and Alongshan virus, in British ticks.',
+      'These important findings have already contributed to policy by highlighting the importance of surveillance for these new viral threats. In the near future, the sequence data generated by TickTools can be used to develop a deeper understanding of tick populations in the UK, the pathogens they carry, and how we can prevent, diagnose, and treat them.'
+    ],
     hubRelevance:
       'The project has already reported sequence datasets and data-sharing engagement with the VBD Hub, making it a strong candidate for discoverable project-output pages.',
-    searchQuery: 'TickTools'
+    searchQuery: 'TickTools',
+    website:
+      'https://aphascience.blog.gov.uk/2025/07/06/investigating-british-ticks-for-viral-threat/',
+    projectLinks: [
+      {
+        label: 'Tick microbiome paper',
+        href: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11054956/pdf/viruses-16-00504.pdf'
+      },
+      {
+        label: 'NCBI GenBank',
+        href: 'https://www.ncbi.nlm.nih.gov/genbank/'
+      },
+      {
+        label: 'University of Nottingham data repository',
+        href: 'https://rdmc.nottingham.ac.uk/handle/internal/10055'
+      }
+    ],
+    dataOutputs: [
+      'Sequence data - all sequences generated by TickTools are submitted to NCBI GenBank within the nucleotide and SRA databases.',
+      'Phage display data is posted on the University of Nottingham data website.',
+      'Distribution and abundance of the sheep tick Ixodes ricinus sampled during the project will be shared with VBD Hub.'
+    ]
   },
   {
     slug: 'optick',
@@ -183,8 +270,8 @@ export const fundedProjects: FundedProject[] = [
     institution:
       'UK Centre for Ecology and Hydrology and University of Liverpool',
     grantRef: 'BB/X017974/1',
-    awardValue: 'GBP 1,015,878',
-    period: 'April 2023 to March 2026',
+    awardValue: '£1,053,877',
+    period: 'March 2023 to December 2026',
     theme: 'Tick-borne disease',
     focus: [
       'Farm landscapes',
@@ -194,6 +281,10 @@ export const fundedProjects: FundedProject[] = [
     ],
     summary:
       'OpTick investigates how landscape change, farm management, climate, and host ecology affect tick-borne disease exposure for livestock and people on UK farms.',
+    description: [
+      'OpTick is focused on understanding and mitigating the changing burden and impacts of tick-borne diseases in UK farmland.',
+      'The project brings together ecology, epidemiology, economics, public and animal health, and social science to support surveillance tools, risk guidance, and management strategies for emerging and endemic tick-borne disease threats.'
+    ],
     hubRelevance:
       'OpTick is expected to produce field evidence, risk guidance, stakeholder outputs, and modelling frameworks that fit the Hub mission of connecting data with policy-relevant use.',
     searchQuery: 'OpTick',
