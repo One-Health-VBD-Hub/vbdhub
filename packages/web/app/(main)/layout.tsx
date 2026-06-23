@@ -34,6 +34,7 @@ export default function Layout({
   if (path.includes('blog')) lastComponent = 'blog';
   if (path.includes('learn')) lastComponent = 'learn';
   if (path.includes('datasets')) lastComponent = 'datasets';
+  if (path.includes('projects')) lastComponent = 'projects';
   const page = lastComponent
     ? lastComponent.charAt(0).toUpperCase() + lastComponent.slice(1)
     : lastComponent;
@@ -106,6 +107,13 @@ export default function Layout({
               isActive={path === '/about'}
             >
               About
+            </HeaderMenuItem>
+            <HeaderMenuItem
+              href='/projects'
+              as={Link}
+              isActive={path.startsWith('/projects')}
+            >
+              Projects
             </HeaderMenuItem>
             <HeaderMenu aria-label='Resources' menuLinkName='Resources'>
               <HeaderMenuItem
@@ -219,6 +227,13 @@ export default function Layout({
                   isActive={path === '/about'}
                 >
                   About
+                </HeaderMenuItem>
+                <HeaderMenuItem
+                  href='/projects'
+                  as={Link}
+                  isActive={path.startsWith('/projects')}
+                >
+                  Projects
                 </HeaderMenuItem>
                 <HeaderMenu aria-label='Resources' menuLinkName='Resources'>
                   <HeaderMenuItem
