@@ -144,7 +144,7 @@ export default async function ProjectPage(
       <section aria-labelledby='hub-connection' className='max-w-3xl'>
         <Stack gap={3}>
           <Heading as='h2' id='hub-connection' link={false}>
-            Connection to VBD Hub
+            How this connects to VBD Hub
           </Heading>
           <p>{project.hubRelevance}</p>
           <p>
@@ -159,7 +159,7 @@ export default async function ProjectPage(
       <section aria-labelledby='outputs'>
         <Stack gap={4}>
           <Heading as='h2' id='outputs' link={false}>
-            Outputs and links
+            Project links
           </Heading>
           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
             <OutputLink
@@ -195,7 +195,7 @@ export default async function ProjectPage(
         <section aria-labelledby='data-outputs'>
           <Stack gap={3}>
             <Heading as='h2' id='data-outputs' link={false}>
-              Data outputs
+              Data outputs and expected datasets
             </Heading>
             <ul className='list-disc pl-5'>
               {project.dataOutputs.map((output) => (

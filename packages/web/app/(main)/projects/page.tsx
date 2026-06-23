@@ -33,14 +33,13 @@ export default function ProjectsPage() {
         <p className='text-xl text-gray-800'>
           The UKRI-Defra One Health approach to vector-borne diseases programme
           funded a portfolio of research projects to help the UK forecast,
-          understand, mitigate, and avoid vector-borne disease threats. VBD Hub
-          was funded as a follow-on data hub to support discovery, sharing, and
+          understand, and reduce vector-borne disease threats. VBD Hub was
+          funded as a follow-on data hub to support discovery, sharing, and
           reuse of outputs from this community.
         </p>
         <p>
-          These pages provide a route into each funded project, including
-          official award records, Gateway to Research outputs, and related data
-          indexed by the Hub as it becomes available.
+          Each project page links to award records, Gateway to Research outputs,
+          and related data indexed by VBD Hub as it becomes available.
         </p>
       </Stack>
 
@@ -59,7 +58,7 @@ export default function ProjectsPage() {
               results generated through the programme.
             </p>
             <p className='mt-3'>
-              Source material:{' '}
+              Sources:{' '}
               <Anchor href='https://www.ukri.org/opportunity/ukri-defra-one-health-approach-to-vector-borne-diseases/'>
                 UKRI funding opportunity
               </Anchor>{' '}
