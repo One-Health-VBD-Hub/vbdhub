@@ -1,25 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 const COLLAPSED_PARAGRAPH_COUNT = 3;
 
 export default function ProjectDescription({
   paragraphs
 }: {
-  paragraphs: string[];
+  paragraphs: ReactNode[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const canCollapse = paragraphs.length > COLLAPSED_PARAGRAPH_COUNT;
-  const visibleParagraphs =
-    canCollapse && !expanded
-      ? paragraphs.slice(0, COLLAPSED_PARAGRAPH_COUNT)
-      : paragraphs;
+  const visibleParagraphs = expanded
+    ? paragraphs
+    : paragraphs.slice(0, COLLAPSED_PARAGRAPH_COUNT);
 
   return (
     <>
-      {visibleParagraphs.map((paragraph) => (
-        <p key={paragraph}>{paragraph}</p>
+      {visibleParagraphs.map((paragraph, index) => (
+        <p key={index}>{paragraph}</p>
       ))}
       {canCollapse && (
         <button

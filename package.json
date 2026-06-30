@@ -2,7 +2,7 @@
   "name": "vbdhub",
   "private": true,
   "version": "0.0.0",
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev:web": "pnpm -F @vbdhub/web run dev",
     "dev:service2": "pnpm -F @vbdhub/service2 run dev",
@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "prettier": "^3.8.4",
-    "typescript": "^5.9.3",
-    "prettier-plugin-tailwindcss": "^0.7.4"
+    "prettier-plugin-tailwindcss": "^0.7.4",
+    "typescript": "^5.9.3"
   }
 }

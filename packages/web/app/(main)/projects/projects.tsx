@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 interface FundedProject {
   slug: string;
   shortName?: string;
@@ -11,7 +13,7 @@ interface FundedProject {
   focus: string[];
   question?: string;
   summary: string;
-  description: string[];
+  description: ReactNode[];
   hubRelevance: string;
   searchQuery: string;
   website?: string;
@@ -50,7 +52,11 @@ export const fundedProjects: FundedProject[] = [
     summary:
       'This project investigates the distribution, habitat use, host feeding preferences, and vector competence of native Culex mosquitoes for West Nile and Usutu viruses under current and future UK climate conditions.',
     description: [
-      'This project assesses the risk from the UK Culex pipiens complex and related Culex torrentium mosquitoes for transmission of West Nile virus and Usutu virus.',
+      <>
+        This project assesses the risk from the UK <i>Culex pipiens</i> complex
+        and related <i>Culex torrentium</i> mosquitoes for transmission of West
+        Nile virus and Usutu virus.
+      </>,
       'The team is collecting geographic, larval habitat, host-feeding, and vector competence data to build UK transmission models under typical summer, heatwave, and future climate conditions.'
     ],
     hubRelevance:
@@ -79,10 +85,28 @@ export const fundedProjects: FundedProject[] = [
     summary:
       'Researchers investigated how grey squirrels contribute to Lyme disease risk and how different grey squirrel management strategies may influence this relationship.',
     description: [
-      'Current UK reforestation policies aim to mitigate climate change while increasing habitat availability and connectivity for native wildlife. However, greater connectivity may also facilitate the spread of invasive species such as grey squirrels and disease vectors including the tick Ixodes ricinus, which transmits Borrelia burgdorferi, the bacterium responsible for Lyme disease. Researchers from the University of Greenwich, University of Salford, York University, APHA, and Forest Research investigated how grey squirrels contribute to Lyme disease risk and how different grey squirrel management strategies may influence this relationship.',
+      <>
+        Current UK reforestation policies aim to mitigate climate change while
+        increasing habitat availability and connectivity for native wildlife.
+        However, greater connectivity may also facilitate the spread of invasive
+        species such as grey squirrels and disease vectors including the tick{' '}
+        <i>Ixodes ricinus</i>, which transmits <i>Borrelia burgdorferi</i>, the
+        bacterium responsible for Lyme disease. Researchers from the University
+        of Greenwich, University of Salford, York University, APHA, and Forest
+        Research investigated how grey squirrels contribute to Lyme disease
+        risk and how different grey squirrel management strategies may
+        influence this relationship.
+      </>,
       'The study was conducted across woodland sites in Cumbria, UK, where three grey squirrel management treatments were applied: culling, no culling, and simulated fertility-treatment culling. Vertebrate host populations were monitored using camera traps and acoustic recorders, while ticks were sampled over an 18-month period. Using a novel molecular blood-meal analysis method developed by the research team, researchers were able to identify which host species ticks had previously fed upon.',
       'Preliminary results showed that, prior to treatment, approximately 10% of ticks tested had fed on grey squirrels, making them the second most important host species detected after deer. Despite this, there was no evidence that controlling grey squirrel populations significantly affected tick densities across the sites, likely due to the presence of numerous alternative hosts.',
-      'Additional assays are currently being developed to identify a wider range of host species, with particular focus on birds and pheasants, which are common in the study sites and are known to contribute to the spread of ticks and Borrelia. Ongoing work will assess whether the relative proportions of ticks feeding on different host species change following grey squirrel removal.',
+      <>
+        Additional assays are currently being developed to identify a wider
+        range of host species, with particular focus on birds and pheasants,
+        which are common in the study sites and are known to contribute to the
+        spread of ticks and <i>Borrelia</i>. Ongoing work will assess whether
+        the relative proportions of ticks feeding on different host species
+        change following grey squirrel removal.
+      </>,
       'Further research by the team demonstrated that ticks can detect m-cresol, a compound commonly found in grey squirrel urine. Behavioural assays showed that ticks are attracted to this chemical, suggesting that host odours may play a role in host detection. Future work will test additional chemical compounds extracted from grey squirrel odours as well as pheromones released by ticks.',
       'The project also explored stakeholder knowledge and perceptions of tick-borne diseases through interviews with land managers, medical professionals, and recreational users. While most participants reported moderate to high awareness of ticks and tick-borne diseases, this did not necessarily correspond with a high perception of personal risk. Many respondents felt that responsibility for managing tick risk should primarily lie with individuals accessing environments where ticks are present.',
       'Together, these findings will contribute to a predictive risk model to better understand how climate change and land management practices influence Lyme disease risk, helping landowners and policymakers make informed decisions that balance wildlife conservation with the protection of public health.'
@@ -170,7 +194,11 @@ export const fundedProjects: FundedProject[] = [
     description: [
       'Climate and other environmental changes are driving the expansion of mosquito vector-borne diseases into areas previously unsuitable for transmission. This is particularly true of mosquito-transmitted viruses that can normally circulate in bird populations and can spill over into humans. These include infections like West Nile virus and Usutu virus, which have been detected in the UK in recent years. The ability to detect and respond to emergence in the UK is constrained by major gaps in national surveillance, with current activities restricted almost entirely to England and Wales.',
       'The Mosquito Scotland project set out to understand the interactions between mosquito and bird populations of Scotland. The project collected mosquitoes over two years in geographically and ecologically representative habitats across Scotland. Back in the laboratory, the team identified the host species field-collected mosquitoes had fed on, including humans, and whether they were infected with any viruses of public health or conservation concern.',
-      'The team also assessed the important mosquito vector Culex pipiens from Scotland for its ability to transmit viruses under controlled laboratory conditions.',
+      <>
+        The team also assessed the important mosquito vector{' '}
+        <i>Culex pipiens</i> from Scotland for its ability to transmit viruses
+        under controlled laboratory conditions.
+      </>,
       'The project has found widespread distribution of mosquitoes across Scotland, with at least 16 species detected. Mosquitoes were able to live at surprisingly northern latitudes, including a mosquito reported in Shetland. In addition to their research activities, the team has been involved in responding to reports of nuisance biting around Scotland and helping Edinburgh Zoo investigate a suspected avian malaria outbreak in penguins.',
       'The results will support policy development by providing public and animal health authorities in the Scottish and UK governments with data on the presence of potential vector species and pathogens in avian reservoirs in Scotland.',
       'The project has established a citizen science platform which has already received more than 1,000 mosquito reports from across Scotland. This tool has facilitated identification of local hotspots for biting nuisance and could be used to guide targeted surveillance or control activities.'
