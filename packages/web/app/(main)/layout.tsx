@@ -109,13 +109,6 @@ export default function Layout({
             >
               About
             </HeaderMenuItem>
-            <HeaderMenuItem
-              href='/projects'
-              as={Link}
-              isActive={isProjectsPage}
-            >
-              Projects
-            </HeaderMenuItem>
             <HeaderMenu aria-label='Resources' menuLinkName='Resources'>
               <HeaderMenuItem
                 href='/resources/package'
@@ -147,6 +140,13 @@ export default function Layout({
               </HeaderMenuItem>
             </HeaderMenu>
             <HeaderMenu aria-label='Community' menuLinkName='Community'>
+              <HeaderMenuItem
+                href='/projects'
+                as={Link}
+                isActive={isProjectsPage}
+              >
+                Projects
+              </HeaderMenuItem>
               <HeaderMenuItem
                 href='https://forum.vbdhub.org'
                 as={Link}
@@ -229,13 +229,6 @@ export default function Layout({
                 >
                   About
                 </HeaderMenuItem>
-                <HeaderMenuItem
-                  href='/projects'
-                  as={Link}
-                  isActive={isProjectsPage}
-                >
-                  Projects
-                </HeaderMenuItem>
                 <HeaderMenu aria-label='Resources' menuLinkName='Resources'>
                   <HeaderMenuItem
                     href='/resources/package'
@@ -267,6 +260,13 @@ export default function Layout({
                   </HeaderMenuItem>
                 </HeaderMenu>
                 <HeaderMenu aria-label='Community' menuLinkName='Community'>
+                  <HeaderMenuItem
+                    href='/projects'
+                    as={Link}
+                    isActive={isProjectsPage}
+                  >
+                    Projects
+                  </HeaderMenuItem>
                   <HeaderMenuItem
                     href='https://forum.vbdhub.org'
                     as={Link}
