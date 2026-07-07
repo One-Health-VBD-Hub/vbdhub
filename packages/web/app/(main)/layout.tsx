@@ -34,8 +34,6 @@ export default function Layout({
   if (path.includes('blog')) lastComponent = 'blog';
   if (path.includes('learn')) lastComponent = 'learn';
   if (path.includes('datasets')) lastComponent = 'datasets';
-  if (path.includes('projects')) lastComponent = 'projects';
-  const isProjectsPage = path.startsWith('/projects');
   const page = lastComponent
     ? lastComponent.charAt(0).toUpperCase() + lastComponent.slice(1)
     : lastComponent;
@@ -140,13 +138,6 @@ export default function Layout({
               </HeaderMenuItem>
             </HeaderMenu>
             <HeaderMenu aria-label='Community' menuLinkName='Community'>
-              <HeaderMenuItem
-                href='/projects'
-                as={Link}
-                isActive={isProjectsPage}
-              >
-                Projects
-              </HeaderMenuItem>
               <HeaderMenuItem
                 href='https://forum.vbdhub.org'
                 as={Link}
@@ -260,13 +251,6 @@ export default function Layout({
                   </HeaderMenuItem>
                 </HeaderMenu>
                 <HeaderMenu aria-label='Community' menuLinkName='Community'>
-                  <HeaderMenuItem
-                    href='/projects'
-                    as={Link}
-                    isActive={isProjectsPage}
-                  >
-                    Projects
-                  </HeaderMenuItem>
                   <HeaderMenuItem
                     href='https://forum.vbdhub.org'
                     as={Link}
