@@ -1,27 +1,15 @@
-import { createPrismaClient } from '@vbdhub/db';
-import type { DatasetCategory, Prisma } from '@prisma/client';
+import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import {
-  buildGlobalNamesRequestBody,
-  linkDatasetTaxa,
-  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
-  type ResolvedGbifTaxon
-} from './shared/taxonomy.js';
-import {
-  globalNamesVerificationResponseSchema,
-  nullableStringSchema
-} from './shared/schemas.js';
+import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { nullableStringSchema } from './shared/schemas.js';
 import {
   getBoundingBox,
   upsertSpatialGeometry,
   type BoundingBox,
   type Coordinate
 } from './shared/spatial.js';
-import {
-  normalizeNullableString,
-  parseDateOnly
-} from './shared/normalization.js';
+import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
 const VECDYN_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
@@ -34,10 +22,22 @@ const vecDynIdsResponseSchema = z.looseObject({
 
 const vecDynDetailResultsSchema = z.looseObject({
   Id: z.coerce.number().int().optional(),
-  Species: z.array(z.string()).nullish().transform((value) => value ?? []),
-  Years: z.array(z.string()).nullish().transform((value) => value ?? []),
-  CollectionMethods: z.array(z.string()).nullish().transform((value) => value ?? []),
-  Tags: z.array(z.string()).nullish().transform((value) => value ?? [])
+  Species: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? []),
+  Years: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? []),
+  CollectionMethods: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? []),
+  Tags: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? [])
 });
 
 const vecDynDetailResponseSchema = z.looseObject({
@@ -45,10 +45,7 @@ const vecDynDetailResponseSchema = z.looseObject({
 });
 
 const vecDynMapResponseSchema = z.array(
-  z.tuple([
-    z.union([z.string(), z.number()]),
-    z.union([z.string(), z.number()])
-  ])
+  z.tuple([z.union([z.string(), z.number()]), z.union([z.string(), z.number()])])
 );
 
 const vecDynCsvConsistentDataSchema = z.looseObject({
@@ -74,22 +71,10 @@ const vecDynCsvConsistentDataSchema = z.looseObject({
   citation: nullableStringSchema.optional()
 });
 
-const vecDynCsvResultSchema = z.looseObject({
-  species: nullableStringSchema.optional(),
-  sample_start_date: nullableStringSchema.optional(),
-  sample_end_date: nullableStringSchema.optional(),
-  sample_value: nullableStringSchema.optional(),
-  sample_sex: nullableStringSchema.optional(),
-  sample_lat_dd: nullableStringSchema.optional(),
-  sample_long_dd: nullableStringSchema.optional(),
-  sampling_method: nullableStringSchema.optional()
-});
-
 const vecDynCsvResponseSchema = z.looseObject({
-  count: z.coerce.number().int().optional(),
+  count: z.coerce.number().int(),
   digitized_from_graph: z.union([z.boolean(), z.string()]).optional(),
-  consistent_data: vecDynCsvConsistentDataSchema.optional(),
-  results: z.array(vecDynCsvResultSchema).default([])
+  consistent_data: vecDynCsvConsistentDataSchema.optional()
 });
 
 const vecDynSpeciesByDateResponseSchema = z.record(
@@ -105,67 +90,60 @@ type VecDynSpeciesByDateResponse = z.infer<typeof vecDynSpeciesByDateResponseSch
 
 export const vdSyncJob: JobDefinition = {
   name: 'vd',
-  description: 'Synchronise VecDyn records',
-  async run({ logger, signal }) {
-    if (signal.aborted) throw new Error('Job aborted before start');
-
+  async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
 
     try {
       logger.info('Fetching VecDyn dataset IDs');
-      const ids = await fetchVecDynDatasetIds(signal);
+      const ids = await fetchVecDynDatasetIds();
       logger.info({ count: ids.length }, 'VecDyn IDs fetched');
 
       for (const id of ids) {
-        if (signal.aborted) throw new Error('Job aborted');
-
         try {
-          const detail = await ky(
-            `${VECDYN_BASE_URL}/vecdyn-detail/${id}`,
-            { signal }
-          ).json(vecDynDetailResponseSchema);
+          const detail = await ky(`${VECDYN_BASE_URL}/vecdyn-detail/${id}`).json(
+            vecDynDetailResponseSchema
+          );
+          // The CSV rows are paged, but this job only needs page-level metadata.
           const csv = await ky(
             `${VECDYN_BASE_URL}/vecdyncsv/?${new URLSearchParams({
               page: '1',
               piids: String(id)
-            }).toString()}`,
-            { signal }
+            }).toString()}`
           ).json(vecDynCsvResponseSchema);
           const speciesByDate = await ky(
-            `${VECDYN_BASE_URL}/vecdyn-detail-species-by-date/${id}`,
-            { signal }
+            `${VECDYN_BASE_URL}/vecdyn-detail-species-by-date/${id}`
           ).json(vecDynSpeciesByDateResponseSchema);
-          const mapData = await ky(
-            `${VECDYN_BASE_URL}/vecdyn-get-map-data/${id}`,
-            { signal }
-          ).json(vecDynMapResponseSchema);
+          const mapData = await ky(`${VECDYN_BASE_URL}/vecdyn-get-map-data/${id}`).json(
+            vecDynMapResponseSchema
+          );
 
           const coordinates = parseCoordinates(mapData);
           const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNamesFromDetail(detail);
-          const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(
-            speciesByDate
-          );
+          const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(speciesByDate);
 
+          // VecDyn has no single canonical published date in these responses;
+          // use observed temporal coverage first, then fall back to declared years.
           const publishedAt =
-            temporalCoverage.startDate ??
-            parsePublishedAtFromYears(detail.results?.Years);
-          const title =
-            csv.consistent_data?.title?.trim() || `VecDyn dataset ${id}`;
+            temporalCoverage.startDate ?? parsePublishedAtFromYears(detail.results?.Years);
+          const title = csv.consistent_data?.title?.trim() || `VecDyn dataset ${id}`;
           const description =
             normalizeNullableString(csv.consistent_data?.description) ??
             buildDescription(csv.consistent_data);
-          const publisher =
-            csv.consistent_data?.contact_affiliation?.trim() ||
-            'VectorByte VecDyn';
+          const publisher = csv.consistent_data?.contact_affiliation?.trim() || 'VectorByte VecDyn';
           const doi = normalizeNullableString(csv.consistent_data?.doi);
           const homepageUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
           const sourceKey = String(id);
 
-          const rawPayload: Prisma.InputJsonObject = {
-            detail: buildVecDynDetailRaw(detail),
-            csvMeta: buildCsvRawMeta(csv),
+          const rawPayload = {
+            detail: detail.results ?? null,
+            csv: {
+              count: csv.count ?? null,
+              rowCount: csv.count,
+              digitizedFromGraph: csv.digitized_from_graph ?? null,
+              consistentData: csv.consistent_data ?? null
+            },
             temporalCoverage: {
               startDate: temporalCoverage.startDate
                 ? temporalCoverage.startDate.toISOString().slice(0, 10)
@@ -177,7 +155,7 @@ export const vdSyncJob: JobDefinition = {
               speciesCount: temporalCoverage.speciesCount
             },
             mapPointCount: coordinates.length
-          };
+          } as unknown as Prisma.InputJsonObject;
           const datasetData = {
             category: VECDYN_CATEGORY,
             title,
@@ -213,9 +191,7 @@ export const vdSyncJob: JobDefinition = {
             prisma,
             dataset.id,
             speciesNames,
-            signal,
-            taxonomyResolutionCache,
-            resolveGbifTaxaFromNames
+            taxonomyResolutionCache
           );
 
           logger.info(
@@ -230,10 +206,7 @@ export const vdSyncJob: JobDefinition = {
             'VecDyn dataset synchronised'
           );
         } catch (error) {
-          logger.error(
-            { err: error, sourceKey: id },
-            'Failed to sync VecDyn dataset'
-          );
+          logger.error({ err: error, sourceKey: id }, 'Failed to sync VecDyn dataset');
         }
       }
     } finally {
@@ -242,7 +215,8 @@ export const vdSyncJob: JobDefinition = {
   }
 };
 
-async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
+async function fetchVecDynDatasetIds(): Promise<number[]> {
+  // The paged data.results changes by page, but ids contains the full inventory.
   const url =
     `${VECDYN_BASE_URL}/vecdynbyprovider/?` +
     new URLSearchParams({
@@ -251,7 +225,7 @@ async function fetchVecDynDatasetIds(signal: AbortSignal): Promise<number[]> {
       sort_column: 'Id',
       sort_dir: 'asc'
     }).toString();
-  return (await ky(url, { signal }).json(vecDynIdsResponseSchema)).ids;
+  return (await ky(url).json(vecDynIdsResponseSchema)).ids;
 }
 
 function parseCoordinates(raw: VecDynMapResponse): Coordinate[] {
@@ -289,14 +263,14 @@ function extractSpeciesNamesFromDetail(detail: VecDynDetailResponse): string[] {
   });
 }
 
-function parseTemporalCoverageFromSpeciesByDate(
-  speciesByDate: VecDynSpeciesByDateResponse
-): {
+function parseTemporalCoverageFromSpeciesByDate(speciesByDate: VecDynSpeciesByDateResponse): {
   startDate: Date | null;
   endDate: Date | null;
   dateCount: number;
   speciesCount: number;
 } {
+  // The endpoint is keyed species -> date -> count, so date coverage needs to be
+  // collected across every species bucket.
   const uniqueDates = new Set<string>();
   const species = Object.keys(speciesByDate);
 
@@ -322,9 +296,7 @@ function parseTemporalCoverageFromSpeciesByDate(
   };
 }
 
-function buildDescription(
-  consistentData: VecDynCsvConsistentData | undefined
-): string | null {
+function buildDescription(consistentData: VecDynCsvConsistentData | undefined): string | null {
   if (!consistentData) return null;
 
   const parts = [
@@ -337,100 +309,4 @@ function buildDescription(
 
   if (parts.length === 0) return null;
   return parts.join(' | ');
-}
-
-function buildVecDynDetailRaw(detail: VecDynDetailResponse): Prisma.InputJsonObject {
-  const results = detail.results;
-
-  return {
-    id: results?.Id ?? null,
-    species: results?.Species ?? [],
-    years: results?.Years ?? [],
-    collectionMethods: results?.CollectionMethods ?? [],
-    tags: results?.Tags ?? []
-  };
-}
-
-function buildCsvRawMeta(csv: VecDynCsvResponse): Prisma.InputJsonObject {
-  const rowCount = csv.results?.length ?? 0;
-  const consistentData = csv.consistent_data;
-
-  return {
-    count: csv.count ?? null,
-    rowCount,
-    digitized_from_graph: csv.digitized_from_graph ?? null,
-    consistent_data: buildConsistentDataRaw(consistentData),
-    extracted: {
-      citation: normalizeNullableString(consistentData?.citation),
-      contributorEmail: normalizeNullableString(consistentData?.contributoremail),
-      contactName: normalizeNullableString(consistentData?.contact_name),
-      sampleStage: normalizeNullableString(consistentData?.sample_stage),
-      sampleUnit: normalizeNullableString(consistentData?.sample_unit),
-      speciesIdMethod: normalizeNullableString(consistentData?.species_id_method),
-      gpsObfuscationInfo: normalizeNullableString(
-        consistentData?.gps_obfuscation_info
-      ),
-      dateUncertaintyDueToGraph: parseBoolish(
-        normalizeNullableString(consistentData?.date_uncertainty_due_to_graph)
-      ),
-      curatedByCitation: normalizeNullableString(consistentData?.curatedbycitation),
-      curatedByDoi: normalizeNullableString(consistentData?.curatedbydoi)
-    } satisfies Prisma.InputJsonObject
-  };
-}
-
-function buildConsistentDataRaw(
-  consistentData: VecDynCsvConsistentData | undefined
-): Prisma.InputJsonObject | null {
-  if (!consistentData) return null;
-
-  return {
-    email: normalizeNullableString(consistentData.email),
-    title: normalizeNullableString(consistentData.title),
-    description: normalizeNullableString(consistentData.description),
-    datasetid: consistentData.datasetid ?? null,
-    sample_unit: normalizeNullableString(consistentData.sample_unit),
-    submittedby: normalizeNullableString(consistentData.submittedby),
-    contact_name: normalizeNullableString(consistentData.contact_name),
-    sample_stage: normalizeNullableString(consistentData.sample_stage),
-    sample_location: normalizeNullableString(consistentData.sample_location),
-    contributoremail: normalizeNullableString(consistentData.contributoremail),
-    species_id_method: normalizeNullableString(consistentData.species_id_method),
-    contact_affiliation: normalizeNullableString(consistentData.contact_affiliation),
-    digitized_from_graph: normalizeNullableString(consistentData.digitized_from_graph),
-    gps_obfuscation_info: normalizeNullableString(consistentData.gps_obfuscation_info),
-    date_uncertainty_due_to_graph: normalizeNullableString(
-      consistentData.date_uncertainty_due_to_graph
-    ),
-    curatedbycitation: normalizeNullableString(consistentData.curatedbycitation),
-    curatedbydoi: normalizeNullableString(consistentData.curatedbydoi),
-    location_description: normalizeNullableString(consistentData.location_description),
-    doi: normalizeNullableString(consistentData.doi),
-    citation: normalizeNullableString(consistentData.citation)
-  };
-}
-
-function parseBoolish(value: string | null): boolean | null {
-  if (!value) return null;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'true') return true;
-  if (normalized === 'false') return false;
-  return null;
-}
-
-async function resolveGbifTaxaFromNames(
-  names: string[],
-  signal: AbortSignal
-): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  return resolveGbifTaxaFromNamesShared(
-    names,
-    signal,
-    (batchNames, batchSignal) =>
-      ky
-        .post('https://verifier.globalnames.org/api/v1/verifications', {
-          signal: batchSignal,
-          json: buildGlobalNamesRequestBody(batchNames)
-        })
-        .json(globalNamesVerificationResponseSchema)
-  );
 }

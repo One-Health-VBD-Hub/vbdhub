@@ -13,9 +13,9 @@ pnpm --filter @vbdhub/db run prisma:migrate:deploy
 ## Usage
 
 ```ts
-import { PrismaClient, createPrismaClient } from '@vbdhub/db';
+import { createPrismaClient } from '@vbdhub/db';
 
 const prisma = createPrismaClient();
-// or
-const direct = new PrismaClient();
 ```
+
+Use `createPrismaClient()` so the required Prisma PostgreSQL adapter is configured.

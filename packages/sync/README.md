@@ -8,29 +8,14 @@ CLI:
 
 ```bash
 pnpm --filter @vbdhub/sync run build
-pnpm --filter @vbdhub/sync run sync -- --list
-pnpm --filter @vbdhub/sync run sync -- --job hub
+pnpm --filter @vbdhub/sync run sync --job hub
 pnpm --filter @vbdhub/sync run sync:hub
 ```
 
 Railway cron style:
 
 ```bash
-pnpm --filter @vbdhub/sync run sync -- --job hub
-# or with env
-SYNC_JOB=hub pnpm --filter @vbdhub/sync run sync
-```
-
-Programmatic:
-
-```ts
-import pino from 'pino';
-import { runJob } from '@vbdhub/sync';
-
-const abortController = new AbortController();
-const logger = pino({ name: 'sync-worker' });
-
-await runJob('gbif', { signal: abortController.signal, logger });
+pnpm --filter @vbdhub/sync run sync --job hub
 ```
 
 Available jobs:

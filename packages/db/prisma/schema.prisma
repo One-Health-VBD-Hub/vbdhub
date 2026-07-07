@@ -20,7 +20,8 @@
 //   You can add a generated tsvector + GIN index in a SQL migration (Prisma doesn't model tsvector well).
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {

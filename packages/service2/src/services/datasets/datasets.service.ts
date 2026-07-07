@@ -1,5 +1,4 @@
-import { PrismaClient } from '@vbdhub/db';
-import type { DatasetCategory, SourceDb } from '@prisma/client';
+import { PrismaClient, type DatasetCategory, type SourceDb } from '@vbdhub/db';
 import type Keyv from 'keyv';
 import { sanitizeHtmlText } from '../../common/html';
 
