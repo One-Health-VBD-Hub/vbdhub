@@ -19,9 +19,7 @@ export function generateStaticParams() {
   return fundedProjects.map((project) => ({ slug: project.slug }));
 }
 
-export async function generateMetadata(
-  props: PageProps<'/projects/[slug]'>
-): Promise<Metadata> {
+export async function generateMetadata(props: PageProps<'/projects/[slug]'>): Promise<Metadata> {
   const { slug } = await props.params;
   const project = getProject(slug);
 
@@ -40,9 +38,7 @@ export async function generateMetadata(
   };
 }
 
-export default async function ProjectPage(
-  props: PageProps<'/projects/[slug]'>
-) {
+export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) {
   const { slug } = await props.params;
   const project = getProject(slug);
 
@@ -51,16 +47,11 @@ export default async function ProjectPage(
   return (
     <Stack as='main' gap={7} className='mx-auto mt-24 sm:mt-32'>
       <header className='max-w-4xl'>
-        <Link
-          href='/projects'
-          className='mb-6 inline-block text-sm text-[#0f62fe] hover:underline'
-        >
+        <Link href='/projects' className='mb-6 inline-block text-sm text-[#0f62fe] hover:underline'>
           Back to funded projects
         </Link>
         <div className='mb-4 flex flex-wrap gap-2'>
-          <Tag type={project.theme === 'Genomics' ? 'purple' : 'teal'}>
-            {project.theme}
-          </Tag>
+          <Tag type={project.theme === 'Genomics' ? 'purple' : 'teal'}>{project.theme}</Tag>
           {project.shortName && <Tag type='gray'>{project.shortName}</Tag>}
           <Tag type='blue'>{project.grantRef}</Tag>
         </div>
@@ -77,9 +68,7 @@ export default async function ProjectPage(
           </Heading>
           {project.question && (
             <div>
-              <p className='text-sm font-medium text-gray-600'>
-                Research question
-              </p>
+              <p className='text-sm font-medium text-gray-600'>Research question</p>
               <p className='mt-1'>{project.question}</p>
             </div>
           )}
@@ -109,9 +98,7 @@ export default async function ProjectPage(
               <dd>{project.lead}</dd>
             </div>
             <div>
-              <dt className='text-sm font-medium text-gray-600'>
-                Lead organisation
-              </dt>
+              <dt className='text-sm font-medium text-gray-600'>Lead organisation</dt>
               <dd>{project.institution}</dd>
             </div>
             <div>
@@ -127,36 +114,32 @@ export default async function ProjectPage(
       </section>
 
       <section aria-labelledby='project-team'>
-        <div className='grid gap-6 md:grid-cols-3'>
+        <Stack gap={4}>
           <Heading as='h2' id='project-team' link={false}>
-            Project team
+            People and organisations
           </Heading>
-          <div className='grid gap-8 md:col-span-2 lg:grid-cols-[2fr_1fr]'>
+          <div className='grid gap-8 lg:grid-cols-[2fr_1fr]'>
             <div>
               <h3 className='text-lg font-medium'>Team members</h3>
               <ul className='mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2'>
                 {project.teamMembers.map((member) => (
                   <li key={member.name}>
                     <span className='font-medium'>{member.name}</span>
-                    <span className='block text-sm text-gray-600'>
-                      {member.role}
-                    </span>
+                    <span className='block text-sm text-gray-600'>{member.role}</span>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h3 className='text-lg font-medium'>
-                Participating organisations
-              </h3>
-              <ul className='mt-3 space-y-2'>
+              <h3 className='text-lg font-medium'>Participating organisations</h3>
+              <ul className='mt-3 space-y-1.5'>
                 {project.organisations.map((organisation) => (
                   <li key={organisation}>{organisation}</li>
                 ))}
               </ul>
             </div>
           </div>
-        </div>
+        </Stack>
       </section>
 
       <section aria-labelledby='research-focus'>
@@ -181,10 +164,9 @@ export default async function ProjectPage(
           </Heading>
           <p>{project.hubRelevance}</p>
           <p>
-            VBD Hub was not directly part of these research consortia. It was
-            funded as follow-on shared infrastructure to support discovery,
-            documentation, and reuse of outputs across the wider UK One Health
-            vector-borne disease community.
+            VBD Hub was not directly part of these research consortia. It was funded as follow-on
+            shared infrastructure to support discovery, documentation, and reuse of outputs across
+            the wider UK One Health vector-borne disease community.
           </p>
         </Stack>
       </section>
@@ -264,9 +246,7 @@ function OutputLink({
         {label}
         {isExternal && <Launch size={16} />}
       </span>
-      {description && (
-        <span className='mt-2 block text-gray-700'>{description}</span>
-      )}
+      {description && <span className='mt-2 block text-gray-700'>{description}</span>}
     </Link>
   );
 }

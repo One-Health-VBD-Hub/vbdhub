@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 interface FundedProject {
   slug: string;
@@ -36,8 +36,7 @@ export const gtrProjectUrl = (grantRef: string) =>
 export const bbsrcAwardUrl = (grantRef: string) =>
   `https://gow.bbsrc.ukri.org/grants/AwardDetails.aspx?FundingReference=${encodeURIComponent(grantRef)}`;
 
-export const hubSearchUrl = (query: string) =>
-  `/search?query=${encodeURIComponent(query)}`;
+export const hubSearchUrl = (query: string) => `/search?query=${encodeURIComponent(query)}`;
 
 export const fundedProjects: FundedProject[] = [
   {
@@ -68,11 +67,10 @@ export const fundedProjects: FundedProject[] = [
     summary:
       'This project investigates the distribution, habitat use, host feeding preferences, and vector competence of native Culex mosquitoes for West Nile and Usutu viruses under current and future UK climate conditions.',
     description: [
-      <>
-        This project assesses the risk from the UK <i>Culex pipiens</i> complex
-        and related <i>Culex torrentium</i> mosquitoes for transmission of West
-        Nile virus and Usutu virus.
-      </>,
+      <Fragment key='culex-risk'>
+        This project assesses the risk from the UK <i>Culex pipiens</i> complex and related{' '}
+        <i>Culex torrentium</i> mosquitoes for transmission of West Nile virus and Usutu virus.
+      </Fragment>,
       'The team is collecting geographic, larval habitat, host-feeding, and vector competence data to build UK transmission models under typical summer, heatwave, and future climate conditions.'
     ],
     hubRelevance:
@@ -111,39 +109,30 @@ export const fundedProjects: FundedProject[] = [
     awardValue: '£1,054,183',
     period: 'March 2023 to March 2026',
     theme: 'Tick-borne disease',
-    focus: [
-      'Ticks',
-      'Reservoir hosts',
-      'Landscape management',
-      'Lyme disease ecology'
-    ],
-    question:
-      'How does invasive wildlife contribute to the spread of ticks and Lyme disease?',
+    focus: ['Ticks', 'Reservoir hosts', 'Landscape management', 'Lyme disease ecology'],
+    question: 'How does invasive wildlife contribute to the spread of ticks and Lyme disease?',
     summary:
       'Researchers investigated how grey squirrels contribute to Lyme disease risk and how different grey squirrel management strategies may influence this relationship.',
     description: [
-      <>
-        Current UK reforestation policies aim to mitigate climate change while
-        increasing habitat availability and connectivity for native wildlife.
-        However, greater connectivity may also facilitate the spread of invasive
-        species such as grey squirrels and disease vectors including the tick{' '}
-        <i>Ixodes ricinus</i>, which transmits <i>Borrelia burgdorferi</i>, the
-        bacterium responsible for Lyme disease. Researchers from the University
-        of Greenwich, University of Salford, York University, APHA, and Forest
-        Research investigated how grey squirrels contribute to Lyme disease
-        risk and how different grey squirrel management strategies may
-        influence this relationship.
-      </>,
+      <Fragment key='rodtickpathman-context'>
+        Current UK reforestation policies aim to mitigate climate change while increasing habitat
+        availability and connectivity for native wildlife. However, greater connectivity may also
+        facilitate the spread of invasive species such as grey squirrels and disease vectors
+        including the tick <i>Ixodes ricinus</i>, which transmits <i>Borrelia burgdorferi</i>, the
+        bacterium responsible for Lyme disease. Researchers from the University of Greenwich,
+        University of Salford, York University, APHA, and Forest Research investigated how grey
+        squirrels contribute to Lyme disease risk and how different grey squirrel management
+        strategies may influence this relationship.
+      </Fragment>,
       'The study was conducted across woodland sites in Cumbria, UK, where three grey squirrel management treatments were applied: culling, no culling, and simulated fertility-treatment culling. Vertebrate host populations were monitored using camera traps and acoustic recorders, while ticks were sampled over an 18-month period. Using a novel molecular blood-meal analysis method developed by the research team, researchers were able to identify which host species ticks had previously fed upon.',
       'Preliminary results showed that, prior to treatment, approximately 10% of ticks tested had fed on grey squirrels, making them the second most important host species detected after deer. Despite this, there was no evidence that controlling grey squirrel populations significantly affected tick densities across the sites, likely due to the presence of numerous alternative hosts.',
-      <>
-        Additional assays are currently being developed to identify a wider
-        range of host species, with particular focus on birds and pheasants,
-        which are common in the study sites and are known to contribute to the
-        spread of ticks and <i>Borrelia</i>. Ongoing work will assess whether
-        the relative proportions of ticks feeding on different host species
-        change following grey squirrel removal.
-      </>,
+      <Fragment key='rodtickpathman-host-assays'>
+        Additional assays are currently being developed to identify a wider range of host species,
+        with particular focus on birds and pheasants, which are common in the study sites and are
+        known to contribute to the spread of ticks and <i>Borrelia</i>. Ongoing work will assess
+        whether the relative proportions of ticks feeding on different host species change following
+        grey squirrel removal.
+      </Fragment>,
       'Further research by the team demonstrated that ticks can detect m-cresol, a compound commonly found in grey squirrel urine. Behavioural assays showed that ticks are attracted to this chemical, suggesting that host odours may play a role in host detection. Future work will test additional chemical compounds extracted from grey squirrel odours as well as pheromones released by ticks.',
       'The project also explored stakeholder knowledge and perceptions of tick-borne diseases through interviews with land managers, medical professionals, and recreational users. While most participants reported moderate to high awareness of ticks and tick-borne diseases, this did not necessarily correspond with a high perception of personal risk. Many respondents felt that responsibility for managing tick risk should primarily lie with individuals accessing environments where ticks are present.',
       'Together, these findings will contribute to a predictive risk model to better understand how climate change and land management practices influence Lyme disease risk, helping landowners and policymakers make informed decisions that balance wildlife conservation with the protection of public health.'
@@ -201,10 +190,7 @@ export const fundedProjects: FundedProject[] = [
       { name: 'Mojca Kristan', role: 'Co-Investigator' },
       { name: 'Taane Clark', role: 'Co-Investigator' }
     ],
-    organisations: [
-      'London School of Hygiene and Tropical Medicine',
-      'UK Health Security Agency'
-    ],
+    organisations: ['London School of Hygiene and Tropical Medicine', 'UK Health Security Agency'],
     grantRef: 'BB/X018156/1',
     awardValue: '£728,693',
     period: 'March 2023 to December 2026',
@@ -247,23 +233,17 @@ export const fundedProjects: FundedProject[] = [
     awardValue: '£1,003,927',
     period: 'April 2023 to March 2026',
     theme: 'Mosquito-borne disease',
-    focus: [
-      'Mosquito surveillance',
-      'Scotland',
-      'Avian reservoirs',
-      'Environmental change'
-    ],
+    focus: ['Mosquito surveillance', 'Scotland', 'Avian reservoirs', 'Environmental change'],
     question: 'How will mosquito-borne disease risk respond to environmental change?',
     summary:
       'Mosquito Scotland set out to understand interactions between mosquito and bird populations in Scotland, and how environmental change may affect mosquito-borne disease risk.',
     description: [
       'Climate and other environmental changes are driving the expansion of mosquito vector-borne diseases into areas previously unsuitable for transmission. This is particularly true of mosquito-transmitted viruses that can normally circulate in bird populations and can spill over into humans. These include infections like West Nile virus and Usutu virus, which have been detected in the UK in recent years. The ability to detect and respond to emergence in the UK is constrained by major gaps in national surveillance, with current activities restricted almost entirely to England and Wales.',
       'The Mosquito Scotland project set out to understand the interactions between mosquito and bird populations of Scotland. The project collected mosquitoes over two years in geographically and ecologically representative habitats across Scotland. Back in the laboratory, the team identified the host species field-collected mosquitoes had fed on, including humans, and whether they were infected with any viruses of public health or conservation concern.',
-      <>
-        The team also assessed the important mosquito vector{' '}
-        <i>Culex pipiens</i> from Scotland for its ability to transmit viruses
-        under controlled laboratory conditions.
-      </>,
+      <Fragment key='mosquito-scotland-culex'>
+        The team also assessed the important mosquito vector <i>Culex pipiens</i> from Scotland for
+        its ability to transmit viruses under controlled laboratory conditions.
+      </Fragment>,
       'The project has found widespread distribution of mosquitoes across Scotland, with at least 16 species detected. Mosquitoes were able to live at surprisingly northern latitudes, including a mosquito reported in Shetland. In addition to their research activities, the team has been involved in responding to reports of nuisance biting around Scotland and helping Edinburgh Zoo investigate a suspected avian malaria outbreak in penguins.',
       'The results will support policy development by providing public and animal health authorities in the Scottish and UK governments with data on the presence of potential vector species and pathogens in avian reservoirs in Scotland.',
       'The project has established a citizen science platform which has already received more than 1,000 mosquito reports from across Scotland. This tool has facilitated identification of local hotspots for biting nuisance and could be used to guide targeted surveillance or control activities.'
@@ -307,13 +287,7 @@ export const fundedProjects: FundedProject[] = [
     awardValue: '£961,953',
     period: 'March 2023 to June 2026',
     theme: 'Mosquito-borne disease',
-    focus: [
-      'Wild birds',
-      'Mosquitoes',
-      'Usutu virus',
-      'West Nile virus',
-      'Early warning'
-    ],
+    focus: ['Wild birds', 'Mosquitoes', 'Usutu virus', 'West Nile virus', 'Early warning'],
     summary:
       'Vector-borne RADAR enhances surveillance for mosquito-borne diseases of wild birds in the UK by combining bird sampling, mosquito trapping, laboratory screening, sequencing, and outbreak early-warning methods.',
     description: [
@@ -355,12 +329,7 @@ export const fundedProjects: FundedProject[] = [
     awardValue: '£1,016,110',
     period: 'April 2023 to March 2026',
     theme: 'Mosquito-borne disease',
-    focus: [
-      'West Nile virus',
-      'Usutu virus',
-      'Transmission modelling',
-      'Mitigation'
-    ],
+    focus: ['West Nile virus', 'Usutu virus', 'Transmission modelling', 'Mitigation'],
     summary:
       'This project studies the conditions that could permit onward transmission of zoonotic mosquito-borne viruses in the UK, integrating field studies, ornithological data, vector biology, and spatial transmission models.',
     description: [
@@ -475,12 +444,7 @@ export const fundedProjects: FundedProject[] = [
     awardValue: '£1,053,877',
     period: 'March 2023 to December 2026',
     theme: 'Tick-borne disease',
-    focus: [
-      'Farm landscapes',
-      'Livestock tick-borne disease',
-      'Risk guidance',
-      'Co-production'
-    ],
+    focus: ['Farm landscapes', 'Livestock tick-borne disease', 'Risk guidance', 'Co-production'],
     summary:
       'OpTick investigates how landscape change, farm management, climate, and host ecology affect tick-borne disease exposure for livestock and people on UK farms.',
     description: [
