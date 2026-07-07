@@ -11,6 +11,8 @@ interface FundedProject {
   period: string;
   theme: 'Mosquito-borne disease' | 'Tick-borne disease' | 'Genomics';
   focus: string[];
+  teamMembers: { name: string; role: string }[];
+  organisations: string[];
   question?: string;
   summary: string;
   description: ReactNode[];
@@ -44,6 +46,20 @@ export const fundedProjects: FundedProject[] = [
       'Culex distribution, vector competence and threat of transmission of arboviruses to humans and animals in the UK',
     lead: 'Professor Matthew Baylis',
     institution: 'University of Liverpool',
+    teamMembers: [
+      { name: 'Matthew Baylis', role: 'Principal Investigator' },
+      { name: 'Lisa Reimer', role: 'Co-Investigator' },
+      { name: 'Jolyon Medlock', role: 'Co-Investigator' },
+      { name: 'Jennifer Lord', role: 'Co-Investigator' },
+      { name: 'Luigi Sedda', role: 'Co-Investigator' },
+      { name: 'Marcus Blagrove', role: 'Co-Investigator' }
+    ],
+    organisations: [
+      'University of Liverpool',
+      'Liverpool School of Tropical Medicine',
+      'UK Health Security Agency',
+      'Lancaster University'
+    ],
     grantRef: 'BB/X018172/1',
     awardValue: '£984,395',
     period: 'April 2023 to March 2026',
@@ -70,6 +86,27 @@ export const fundedProjects: FundedProject[] = [
       'One Health approach to tick-borne disease control through manipulation of reservoir host communities at landscape scale',
     lead: 'Professor Steven Belmain',
     institution: 'University of Greenwich',
+    teamMembers: [
+      { name: 'Steven Belmain', role: 'Principal Investigator' },
+      { name: 'Harry Marshall', role: 'Co-Investigator' },
+      { name: 'Daniel Bray', role: 'Co-Investigator' },
+      { name: 'Simon Croft', role: 'Co-Investigator' },
+      { name: 'Richard Birtles', role: 'Co-Investigator' },
+      { name: 'Giovanna Massei', role: 'Co-Investigator' },
+      { name: 'Holly Broadhurst', role: 'Postdoctoral Research Fellow' },
+      { name: 'Katherine August', role: 'Postdoctoral Research Fellow' },
+      { name: 'Georgy Abashin', role: 'Research Assistant' },
+      { name: 'Rachel Orchard', role: 'Social Scientist' },
+      { name: 'Greg Counsell', role: 'Social Scientist' },
+      { name: 'Samantha Beaudoin', role: 'PhD Researcher' }
+    ],
+    organisations: [
+      'University of Greenwich',
+      'Animal and Plant Health Agency',
+      'Forest Research',
+      'University of York',
+      'University of Salford'
+    ],
     grantRef: 'BB/X017982/1',
     awardValue: '£1,054,183',
     period: 'March 2023 to March 2026',
@@ -156,6 +193,18 @@ export const fundedProjects: FundedProject[] = [
       'Genomic Epidemiology tools for the Surveillance of Vector Borne Diseases: applied to tick species, reservoirs, and pathogens',
     lead: 'Dr Susana Campino',
     institution: 'London School of Hygiene and Tropical Medicine',
+    teamMembers: [
+      { name: 'Susana Campino', role: 'Principal Investigator' },
+      { name: 'Kayleigh Hansford', role: 'Co-Investigator' },
+      { name: 'Steven Pullan', role: 'Co-Investigator' },
+      { name: 'Jolyon Medlock', role: 'Co-Investigator' },
+      { name: 'Mojca Kristan', role: 'Co-Investigator' },
+      { name: 'Taane Clark', role: 'Co-Investigator' }
+    ],
+    organisations: [
+      'London School of Hygiene and Tropical Medicine',
+      'UK Health Security Agency'
+    ],
     grantRef: 'BB/X018156/1',
     awardValue: '£728,693',
     period: 'March 2023 to December 2026',
@@ -178,6 +227,22 @@ export const fundedProjects: FundedProject[] = [
       'Assessing the risk of mosquito vector-borne diseases in Scotland and their response to environmental change',
     lead: 'Professor Heather Ferguson',
     institution: 'University of Glasgow',
+    teamMembers: [
+      { name: 'Heather Ferguson', role: 'Principal Investigator' },
+      { name: 'Jolyon Medlock', role: 'Co-Investigator' },
+      { name: 'Juan Morales', role: 'Co-Investigator' },
+      { name: 'Emilie Pondeville', role: 'Co-Investigator' },
+      { name: 'Davide Dominoni', role: 'Co-Investigator' },
+      { name: 'Steven White', role: 'Co-Investigator' },
+      { name: 'Georgia Kirby', role: 'Research Co-Investigator' },
+      { name: 'Luca Nelli', role: 'Research Co-Investigator' },
+      { name: 'Francesco Baldini', role: 'Collaborator' }
+    ],
+    organisations: [
+      'University of Glasgow',
+      'UK Health Security Agency',
+      'UK Centre for Ecology & Hydrology'
+    ],
     grantRef: 'BB/X018113/1',
     awardValue: '£1,003,927',
     period: 'April 2023 to March 2026',
@@ -226,6 +291,18 @@ export const fundedProjects: FundedProject[] = [
     title: 'Vector-borne RADAR: Real-time Arbovirus Detection And Response',
     lead: 'Dr Arran Folly',
     institution: 'Animal and Plant Health Agency',
+    teamMembers: [
+      { name: 'Arran Folly', role: 'Principal Investigator' },
+      { name: 'Rob Robinson', role: 'Co-Investigator' },
+      { name: 'Jolyon Medlock', role: 'Co-Investigator' },
+      { name: 'Becki Lawson', role: 'Co-Investigator' }
+    ],
+    organisations: [
+      'Animal and Plant Health Agency',
+      'British Trust for Ornithology',
+      'UK Health Security Agency',
+      'Zoological Society of London'
+    ],
     grantRef: 'BB/X017990/1',
     awardValue: '£961,953',
     period: 'March 2023 to June 2026',
@@ -254,6 +331,26 @@ export const fundedProjects: FundedProject[] = [
       'Understanding, forecasting, and mitigating zoonotic mosquito-borne viral disease in the UK',
     lead: 'Dr Grant Leslie Hughes',
     institution: 'Liverpool School of Tropical Medicine',
+    teamMembers: [
+      { name: 'Grant Leslie Hughes', role: 'Principal Investigator' },
+      { name: 'Jennifer Lord', role: 'Co-Investigator' },
+      { name: 'Luke Mason', role: 'Co-Investigator' },
+      { name: 'Christopher Jones', role: 'Co-Investigator' },
+      { name: 'Jason Chapman', role: 'Co-Investigator' },
+      {
+        name: 'Joshua Longbottom',
+        role: 'Researcher Co-Investigator'
+      },
+      {
+        name: 'Aitor Casas-Sanchez',
+        role: 'Researcher Co-Investigator'
+      }
+    ],
+    organisations: [
+      'Liverpool School of Tropical Medicine',
+      'Science and Technology Facilities Council',
+      'University of Exeter'
+    ],
     grantRef: 'BB/X018024/1',
     awardValue: '£1,016,110',
     period: 'April 2023 to March 2026',
@@ -279,8 +376,22 @@ export const fundedProjects: FundedProject[] = [
     shortName: 'TickTools',
     title:
       'TickTools: development of tools to monitor and control tick-borne diseases of humans and livestock',
-    lead: 'Dr Nicolas Johnson',
+    lead: 'Dr Nicholas Johnson',
     institution: 'Animal and Plant Health Agency',
+    teamMembers: [
+      { name: 'Nicholas Johnson', role: 'Principal Investigator' },
+      { name: 'Janet Daly', role: 'Co-Investigator' },
+      { name: 'Kevin Gough', role: 'Co-Investigator' },
+      { name: 'Adam Blanchard', role: 'Co-Investigator' },
+      { name: 'Alain Kohl', role: 'Co-Investigator' },
+      { name: 'Benjamin Brennan', role: 'Co-Investigator' }
+    ],
+    organisations: [
+      'Animal and Plant Health Agency',
+      'University of Nottingham',
+      'Liverpool School of Tropical Medicine',
+      'University of Glasgow'
+    ],
     grantRef: 'BB/X018008/1',
     awardValue: '£1,048,010',
     period: 'March 2023 to December 2026',
@@ -331,9 +442,35 @@ export const fundedProjects: FundedProject[] = [
     shortName: 'OpTick',
     title:
       'One Health surveillance and management of tick-borne disease threats in a changing environment',
-    lead: 'Dr B. Purse and Dr C. Millins',
-    institution:
-      'UK Centre for Ecology and Hydrology & University of Liverpool',
+    lead: 'Dr Bethan Purse',
+    institution: 'UK Centre for Ecology & Hydrology',
+    teamMembers: [
+      { name: 'Bethan Purse', role: 'Principal Investigator' },
+      { name: 'Caroline Louise Millins', role: 'Co-Investigator' },
+      { name: 'Jolyon Medlock', role: 'Co-Investigator' },
+      { name: 'Nicholas Johnson', role: 'Co-Investigator' },
+      { name: 'Festus Asaaga', role: 'Co-Investigator' },
+      { name: 'Jonathan Rushton', role: 'Co-Investigator' },
+      {
+        name: 'Kayleigh Hansford',
+        role: 'Researcher Co-Investigator'
+      },
+      {
+        name: 'Maya Holding',
+        role: 'Researcher Co-Investigator'
+      },
+      {
+        name: 'Richard Hassall',
+        role: 'Researcher Co-Investigator'
+      }
+    ],
+    organisations: [
+      'UK Centre for Ecology & Hydrology',
+      'University of Liverpool',
+      'UK Health Security Agency',
+      'Animal and Plant Health Agency',
+      'Moredun Research Institute'
+    ],
     grantRef: 'BB/X017974/1',
     awardValue: '£1,053,877',
     period: 'March 2023 to December 2026',

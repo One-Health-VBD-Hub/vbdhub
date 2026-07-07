@@ -126,6 +126,39 @@ export default async function ProjectPage(
         </div>
       </section>
 
+      <section aria-labelledby='project-team'>
+        <div className='grid gap-6 md:grid-cols-3'>
+          <Heading as='h2' id='project-team' link={false}>
+            Project team
+          </Heading>
+          <div className='grid gap-8 md:col-span-2 lg:grid-cols-[2fr_1fr]'>
+            <div>
+              <h3 className='text-lg font-medium'>Team members</h3>
+              <ul className='mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2'>
+                {project.teamMembers.map((member) => (
+                  <li key={member.name}>
+                    <span className='font-medium'>{member.name}</span>
+                    <span className='block text-sm text-gray-600'>
+                      {member.role}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className='text-lg font-medium'>
+                Participating organisations
+              </h3>
+              <ul className='mt-3 space-y-2'>
+                {project.organisations.map((organisation) => (
+                  <li key={organisation}>{organisation}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section aria-labelledby='research-focus'>
         <Stack gap={4}>
           <Heading as='h2' id='research-focus' link={false}>
