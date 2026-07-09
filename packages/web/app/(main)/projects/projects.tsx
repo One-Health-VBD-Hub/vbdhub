@@ -452,11 +452,11 @@ export const fundedProjects: FundedProject[] = [
     shortName: 'OpTick',
     title:
       'One Health surveillance and management of tick-borne disease threats in a changing environment',
-    lead: 'Dr Bethan Purse',
+    lead: 'Dr Bethan Purse and Dr Caroline Louise Millins',
     institution: 'UK Centre for Ecology & Hydrology',
     teamMembers: [
       { name: 'Bethan Purse', role: 'Principal Investigator' },
-      { name: 'Caroline Louise Millins', role: 'Co-Investigator' },
+      { name: 'Caroline Louise Millins', role: 'Principal Investigator' },
       { name: 'Jolyon Medlock', role: 'Co-Investigator' },
       { name: 'Nicholas Johnson', role: 'Co-Investigator' },
       { name: 'Festus Asaaga', role: 'Co-Investigator' },
