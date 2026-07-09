@@ -105,9 +105,6 @@ export default function ProjectsPage() {
                         {project.title}
                       </Link>
                     </h3>
-                    <p className='mt-2 text-sm text-gray-600'>
-                      {project.lead}, {project.institution}
-                    </p>
                   </div>
 
                   <p>{project.summary}</p>
