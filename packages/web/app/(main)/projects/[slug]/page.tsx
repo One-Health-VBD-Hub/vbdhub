@@ -5,13 +5,7 @@ import { Launch } from '@carbon/react/icons';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import {
-  bbsrcAwardUrl,
-  fundedProjects,
-  getProject,
-  gtrProjectUrl,
-  hubSearchUrl
-} from '../projects';
+import { fundedProjects, getProject, gtrProjectUrl, hubSearchUrl } from '../projects';
 import ProjectDescription from './ProjectDescription';
 import ProjectImageGallery from './ProjectImageGallery';
 
@@ -179,7 +173,7 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
             <OutputLink
               label='Official award record'
-              href={bbsrcAwardUrl(project.grantRef)}
+              href={gtrProjectUrl(project.grantRef)}
               description='Read the official award record and project abstract.'
             />
             <OutputLink

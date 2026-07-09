@@ -33,9 +33,6 @@ interface FundedProject {
 export const gtrProjectUrl = (grantRef: string) =>
   `https://gtr.ukri.org/projects?ref=${encodeURIComponent(grantRef)}`;
 
-export const bbsrcAwardUrl = (grantRef: string) =>
-  `https://gow.bbsrc.ukri.org/grants/AwardDetails.aspx?FundingReference=${encodeURIComponent(grantRef)}`;
-
 export const hubSearchUrl = (query: string) => `/search?query=${encodeURIComponent(query)}`;
 
 export const fundedProjects: FundedProject[] = [
