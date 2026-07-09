@@ -88,7 +88,7 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
           </Heading>
           <dl className='grid gap-5 sm:grid-cols-2 md:col-span-2'>
             <div>
-              <dt className='text-sm font-medium text-gray-600'>Lead</dt>
+              <dt className='text-sm font-medium text-gray-600'>Project lead(s)</dt>
               <dd>{project.lead}</dd>
             </div>
             <div>

@@ -40,7 +40,7 @@ export const fundedProjects: FundedProject[] = [
     slug: 'culex-arbovirus-transmission',
     title:
       'Culex distribution, vector competence and threat of transmission of arboviruses to humans and animals in the UK',
-    lead: 'Professor Matthew Baylis',
+    lead: 'Professor Matthew Baylis and Marcus Blagrove',
     institution: 'University of Liverpool',
     teamMembers: [
       { name: 'Matthew Baylis', role: 'Principal Investigator' },
@@ -48,7 +48,7 @@ export const fundedProjects: FundedProject[] = [
       { name: 'Jolyon Medlock', role: 'Co-Investigator' },
       { name: 'Jennifer Lord', role: 'Co-Investigator' },
       { name: 'Luigi Sedda', role: 'Co-Investigator' },
-      { name: 'Marcus Blagrove', role: 'Co-Investigator' }
+      { name: 'Marcus Blagrove', role: 'Principal Investigator' }
     ],
     organisations: [
       'University of Liverpool',
