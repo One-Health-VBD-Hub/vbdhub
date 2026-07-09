@@ -82,7 +82,7 @@ export default function ProjectsPage() {
             {fundedProjects.map((project) => (
               <article
                 key={project.slug}
-                className='flex min-h-80 flex-col justify-between border border-gray-200 p-5'
+                className='flex min-h-64 flex-col justify-between border border-gray-200 p-5'
               >
                 <Stack gap={3}>
                   <div className='flex flex-wrap gap-2'>
