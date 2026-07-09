@@ -184,11 +184,6 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
               <span className='flex items-center gap-2 font-medium'>Hub data search</span>
               <span className='mt-2 block'>Find related datasets indexed by VBD Hub.</span>
             </div>
-            <OutputLink
-              label='Gateway to Research'
-              href={gtrProjectUrl(project.grantRef)}
-              description='View publications and reported outcomes for this award.'
-            />
             {project.website && (
               <OutputLink
                 label='Project website'
