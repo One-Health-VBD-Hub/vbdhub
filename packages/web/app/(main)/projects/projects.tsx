@@ -263,6 +263,50 @@ export const fundedProjects: FundedProject[] = [
       'Mosquito citizen science data - iNaturalist.',
       'Lab mosquito fitness data - VecTraits.',
       'Pathogen data in mosquitoes and birds - VecDyn can host mosquito data; Hub can host bird data.'
+    ],
+    images: [
+      {
+        src: '/assets/project-pages/IMG-20240512-WA0001.webp',
+        alt: 'Researcher setting up a mosquito trap in an enclosure',
+        width: 300,
+        height: 400,
+        caption: 'Setting up a mosquito trap'
+      },
+      {
+        src: '/assets/project-pages/IMG-20240611-WA0028.webp',
+        alt: 'Researcher hanging a mosquito trap from a tree',
+        width: 300,
+        height: 400,
+        caption: 'Installing mosquito trapping equipment'
+      },
+      {
+        src: '/assets/project-pages/IMG_20230719_143620.webp',
+        alt: 'Researcher surveying tall wetland vegetation',
+        width: 500,
+        height: 464,
+        caption: 'Surveying wetland habitat'
+      },
+      {
+        src: '/assets/project-pages/IMG_20230920_110510.webp',
+        alt: 'Researcher collecting field data beside wetland water',
+        width: 500,
+        height: 454,
+        caption: 'Collecting field data in wetland habitat'
+      },
+      {
+        src: '/assets/project-pages/IMG_20231002_152052418.webp',
+        alt: 'Researcher standing in a flooded grassland survey site',
+        width: 500,
+        height: 438,
+        caption: 'Surveying flooded grassland habitat'
+      },
+      {
+        src: '/assets/project-pages/IMG_20240611_152116478.webp',
+        alt: 'Researcher sampling near shallow wetland water',
+        width: 300,
+        height: 400,
+        caption: 'Sampling shallow wetland habitat'
+      }
     ]
   },
   {
