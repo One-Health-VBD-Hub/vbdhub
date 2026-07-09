@@ -42,7 +42,7 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
     <Stack as='main' gap={7} className='mx-auto mt-24 sm:mt-32'>
       <header className='max-w-4xl'>
         <Link href='/projects' className='mb-6 inline-block text-sm text-[#0f62fe] hover:underline'>
-          Back to funded projects
+          Back to community projects
         </Link>
         <div className='mb-4 flex flex-wrap gap-2'>
           <Tag type={project.theme === 'Genomics' ? 'purple' : 'teal'}>{project.theme}</Tag>
