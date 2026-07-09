@@ -5,7 +5,7 @@ import { Launch } from '@carbon/react/icons';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fundedProjects, getProject, gtrProjectUrl, hubSearchUrl } from '../projects';
+import { fundedProjects, getProject, gtrProjectUrl } from '../projects';
 import ProjectDescription from './ProjectDescription';
 import ProjectImageGallery from './ProjectImageGallery';
 
@@ -176,11 +176,14 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
               href={gtrProjectUrl(project.grantRef)}
               description='Read the official award record and project abstract.'
             />
-            <OutputLink
-              label='Hub data search'
-              href={hubSearchUrl(project.searchQuery)}
-              description='Find related datasets indexed by VBD Hub.'
-            />
+            <div
+              title='Coming to the Hub search soon.'
+              aria-disabled='true'
+              className='block border border-gray-200 p-4 text-gray-500'
+            >
+              <span className='flex items-center gap-2 font-medium'>Hub data search</span>
+              <span className='mt-2 block'>Find related datasets indexed by VBD Hub.</span>
+            </div>
             <OutputLink
               label='Gateway to Research'
               href={gtrProjectUrl(project.grantRef)}
