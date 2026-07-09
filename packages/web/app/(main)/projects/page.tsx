@@ -7,11 +7,11 @@ import Link from 'next/link';
 import { fundedProjects } from './projects';
 
 export const metadata = {
-  title: 'Funded projects - Vector-Borne Diseases Hub',
+  title: 'Community projects - Vector-Borne Diseases Hub',
   description:
     'Explore projects funded through the UKRI-Defra One Health approach to vector-borne diseases programme and their outputs.',
   openGraph: {
-    title: 'Funded projects - Vector-Borne Diseases Hub',
+    title: 'Community projects - Vector-Borne Diseases Hub',
     description:
       'Explore projects funded through the UKRI-Defra One Health approach to vector-borne diseases programme and their outputs.'
   },
@@ -27,8 +27,8 @@ export default function ProjectsPage() {
         <p className='text-sm font-medium tracking-wide text-gray-600 uppercase'>
           UKRI-Defra One Health programme
         </p>
-        <Heading id='funded-projects' link={false}>
-          Funded projects and outputs
+        <Heading id='community-projects' link={false}>
+          Community projects and outputs
         </Heading>
         <p className='text-xl text-gray-800'>
           The UKRI-Defra One Health approach to vector-borne diseases programme
@@ -82,7 +82,7 @@ export default function ProjectsPage() {
             {fundedProjects.map((project) => (
               <article
                 key={project.slug}
-                className='flex min-h-80 flex-col justify-between border border-gray-200 p-5'
+                className='flex min-h-64 flex-col justify-between border border-gray-200 p-5'
               >
                 <Stack gap={3}>
                   <div className='flex flex-wrap gap-2'>
@@ -105,9 +105,6 @@ export default function ProjectsPage() {
                         {project.title}
                       </Link>
                     </h3>
-                    <p className='mt-2 text-sm text-gray-600'>
-                      {project.lead}, {project.institution}
-                    </p>
                   </div>
 
                   <p>{project.summary}</p>

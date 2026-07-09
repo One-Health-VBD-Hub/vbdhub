@@ -33,9 +33,6 @@ interface FundedProject {
 export const gtrProjectUrl = (grantRef: string) =>
   `https://gtr.ukri.org/projects?ref=${encodeURIComponent(grantRef)}`;
 
-export const bbsrcAwardUrl = (grantRef: string) =>
-  `https://gow.bbsrc.ukri.org/grants/AwardDetails.aspx?FundingReference=${encodeURIComponent(grantRef)}`;
-
 export const hubSearchUrl = (query: string) => `/search?query=${encodeURIComponent(query)}`;
 
 export const fundedProjects: FundedProject[] = [
@@ -43,7 +40,7 @@ export const fundedProjects: FundedProject[] = [
     slug: 'culex-arbovirus-transmission',
     title:
       'Culex distribution, vector competence and threat of transmission of arboviruses to humans and animals in the UK',
-    lead: 'Professor Matthew Baylis',
+    lead: 'Professor Matthew Baylis and Marcus Blagrove',
     institution: 'University of Liverpool',
     teamMembers: [
       { name: 'Matthew Baylis', role: 'Principal Investigator' },
@@ -51,7 +48,7 @@ export const fundedProjects: FundedProject[] = [
       { name: 'Jolyon Medlock', role: 'Co-Investigator' },
       { name: 'Jennifer Lord', role: 'Co-Investigator' },
       { name: 'Luigi Sedda', role: 'Co-Investigator' },
-      { name: 'Marcus Blagrove', role: 'Co-Investigator' }
+      { name: 'Marcus Blagrove', role: 'Principal Investigator' }
     ],
     organisations: [
       'University of Liverpool',
@@ -263,6 +260,50 @@ export const fundedProjects: FundedProject[] = [
       'Mosquito citizen science data - iNaturalist.',
       'Lab mosquito fitness data - VecTraits.',
       'Pathogen data in mosquitoes and birds - VecDyn can host mosquito data; Hub can host bird data.'
+    ],
+    images: [
+      {
+        src: '/assets/project-pages/IMG-20240512-WA0001.webp',
+        alt: 'Researcher setting up a mosquito trap in an enclosure',
+        width: 300,
+        height: 400,
+        caption: 'Setting up a mosquito trap'
+      },
+      {
+        src: '/assets/project-pages/IMG-20240611-WA0028.webp',
+        alt: 'Researcher hanging a mosquito trap from a tree',
+        width: 300,
+        height: 400,
+        caption: 'Installing mosquito trapping equipment'
+      },
+      {
+        src: '/assets/project-pages/IMG_20230719_143620.webp',
+        alt: 'Researcher surveying tall wetland vegetation',
+        width: 500,
+        height: 464,
+        caption: 'Surveying wetland habitat'
+      },
+      {
+        src: '/assets/project-pages/IMG_20230920_110510.webp',
+        alt: 'Researcher collecting field data beside wetland water',
+        width: 500,
+        height: 454,
+        caption: 'Collecting field data in wetland habitat'
+      },
+      {
+        src: '/assets/project-pages/IMG_20231002_152052418.webp',
+        alt: 'Researcher standing in a flooded grassland survey site',
+        width: 500,
+        height: 438,
+        caption: 'Surveying flooded grassland habitat'
+      },
+      {
+        src: '/assets/project-pages/IMG_20240611_152116478.webp',
+        alt: 'Researcher sampling near shallow wetland water',
+        width: 300,
+        height: 400,
+        caption: 'Sampling shallow wetland habitat'
+      }
     ]
   },
   {
@@ -411,11 +452,11 @@ export const fundedProjects: FundedProject[] = [
     shortName: 'OpTick',
     title:
       'One Health surveillance and management of tick-borne disease threats in a changing environment',
-    lead: 'Dr Bethan Purse',
+    lead: 'Dr Bethan Purse and Dr Caroline Louise Millins',
     institution: 'UK Centre for Ecology & Hydrology',
     teamMembers: [
       { name: 'Bethan Purse', role: 'Principal Investigator' },
-      { name: 'Caroline Louise Millins', role: 'Co-Investigator' },
+      { name: 'Caroline Louise Millins', role: 'Principal Investigator' },
       { name: 'Jolyon Medlock', role: 'Co-Investigator' },
       { name: 'Nicholas Johnson', role: 'Co-Investigator' },
       { name: 'Festus Asaaga', role: 'Co-Investigator' },

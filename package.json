@@ -2,7 +2,7 @@
   "name": "vbdhub",
   "private": true,
   "version": "0.0.0",
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@11.10.0",
   "scripts": {
     "dev:web": "pnpm -F @vbdhub/web run dev",
     "dev:service2": "pnpm -F @vbdhub/service2 run dev",

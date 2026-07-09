@@ -5,13 +5,7 @@ import { Launch } from '@carbon/react/icons';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import {
-  bbsrcAwardUrl,
-  fundedProjects,
-  getProject,
-  gtrProjectUrl,
-  hubSearchUrl
-} from '../projects';
+import { fundedProjects, getProject, gtrProjectUrl } from '../projects';
 import ProjectDescription from './ProjectDescription';
 import ProjectImageGallery from './ProjectImageGallery';
 
@@ -48,7 +42,7 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
     <Stack as='main' gap={7} className='mx-auto mt-24 sm:mt-32'>
       <header className='max-w-4xl'>
         <Link href='/projects' className='mb-6 inline-block text-sm text-[#0f62fe] hover:underline'>
-          Back to funded projects
+          Back to community projects
         </Link>
         <div className='mb-4 flex flex-wrap gap-2'>
           <Tag type={project.theme === 'Genomics' ? 'purple' : 'teal'}>{project.theme}</Tag>
@@ -94,7 +88,7 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
           </Heading>
           <dl className='grid gap-5 sm:grid-cols-2 md:col-span-2'>
             <div>
-              <dt className='text-sm font-medium text-gray-600'>Lead</dt>
+              <dt className='text-sm font-medium text-gray-600'>Project lead(s)</dt>
               <dd>{project.lead}</dd>
             </div>
             <div>
@@ -179,19 +173,17 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
             <OutputLink
               label='Official award record'
-              href={bbsrcAwardUrl(project.grantRef)}
+              href={gtrProjectUrl(project.grantRef)}
               description='Read the official award record and project abstract.'
             />
-            <OutputLink
-              label='Hub data search'
-              href={hubSearchUrl(project.searchQuery)}
-              description='Find related datasets indexed by VBD Hub.'
-            />
-            <OutputLink
-              label='Gateway to Research'
-              href={gtrProjectUrl(project.grantRef)}
-              description='View publications and reported outcomes for this award.'
-            />
+            <div
+              title='Coming to the Hub search soon.'
+              aria-disabled='true'
+              className='block border border-gray-200 p-4 text-gray-500'
+            >
+              <span className='flex items-center gap-2 font-medium'>Hub data search</span>
+              <span className='mt-2 block'>Find related datasets indexed by VBD Hub.</span>
+            </div>
             {project.website && (
               <OutputLink
                 label='Project website'
