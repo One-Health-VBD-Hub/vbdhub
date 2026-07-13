@@ -76,7 +76,10 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
             <Heading as='h2' id='project-images' link={false}>
               Project images
             </Heading>
-            <ProjectImageGallery images={project.images} />
+            <ProjectImageGallery
+              images={project.images}
+              attribution={project.shortName ?? project.title}
+            />
           </Stack>
         </section>
       )}
