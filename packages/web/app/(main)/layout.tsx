@@ -22,7 +22,7 @@ import { usePathname } from 'next/navigation';
 import { useStytch, useStytchSession } from '@stytch/nextjs';
 import { NewTab } from '@carbon/icons-react';
 import Image from 'next/image';
-import logoTeal from '../../public/logo-teal.svg';
+import logoTeal from '../../public/logo-lgbtq.svg';
 import Anchor from '@/components/Anchor';
 
 export default function Layout({
