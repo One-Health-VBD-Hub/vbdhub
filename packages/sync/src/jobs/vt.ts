@@ -1,28 +1,15 @@
-import { createPrismaClient } from '@vbdhub/db';
-import type { DatasetCategory, Prisma } from '@prisma/client';
+import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import {
-  buildGlobalNamesRequestBody,
-  linkDatasetTaxa,
-  resolveGbifTaxaFromNames as resolveGbifTaxaFromNamesShared,
-  type ResolvedGbifTaxon
-} from './shared/taxonomy.js';
-import {
-  globalNamesVerificationResponseSchema,
-  nullableStringSchema
-} from './shared/schemas.js';
-import {
-  getBoundingBox,
-  upsertSpatialGeometry,
-  type Coordinate
-} from './shared/spatial.js';
+import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { nullableStringSchema } from './shared/schemas.js';
+import { getBoundingBox, upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
 const VECTRAITS_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
-const VECTRAITS_SOURCE_DB = 'vectraits';
-const VECTRAITS_CATEGORY: DatasetCategory = 'traits';
+const DB_NAME = 'vectraits';
+const DB_CATEGORY: DatasetCategory = 'traits';
 
 const vecTraitsIdsResponseSchema = z.looseObject({
   ids: z.array(z.coerce.number().int()).default([])
@@ -52,17 +39,6 @@ const vecTraitsDatasetRowSchema = z.looseObject({
 });
 
 const vecTraitsDatasetResponseSchema = z.object({
-  count: z.coerce.number().int().optional(),
-  total: z.coerce.number().int().optional(),
-  page: z.coerce.number().int().optional(),
-  page_size: z.coerce.number().int().optional(),
-  per_page: z.coerce.number().int().optional(),
-  total_pages: z.coerce.number().int().optional(),
-  num_pages: z.coerce.number().int().optional(),
-  has_next: z.boolean().optional(),
-  next_page: z.coerce.number().int().nullable().optional(),
-  next: nullableStringSchema.optional(),
-  previous: nullableStringSchema.optional(),
   results: z.array(vecTraitsDatasetRowSchema).default([])
 });
 
@@ -75,10 +51,7 @@ type TemporalCoverage = {
 
 export const vtSyncJob: JobDefinition = {
   name: 'vt',
-  description: 'Synchronise VecTraits records',
-  async run({ logger, signal }) {
-    if (signal.aborted) throw new Error('Job aborted before start');
-
+  async run({ logger }) {
     const prisma = createPrismaClient();
     const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
 
@@ -88,10 +61,8 @@ export const vtSyncJob: JobDefinition = {
       logger.info({ count: ids.length }, 'VecTraits IDs fetched');
 
       for (const id of ids) {
-        if (signal.aborted) throw new Error('Job aborted');
-
         try {
-          const rows = await fetchVecTraitsDatasetRows(id, signal);
+          const rows = await fetchVecTraitsDatasetRows(id);
           const coordinates = parseCoordinates(rows);
           const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNames(rows);
@@ -100,15 +71,14 @@ export const vtSyncJob: JobDefinition = {
           const title = buildDatasetTitle(citation, id);
           const description = buildDescription(rows);
           const publisher =
-            getFirstNonEmpty(rows, (row) => row.SubmittedBy) ??
-            'VectorByte VecTraits';
+            getFirstNonEmpty(rows, (row) => row.SubmittedBy) ?? 'VectorByte VecTraits';
           const doi = getFirstNonEmpty(rows, (row) => row.DOI);
           const temporalCoverage = parseLocationDateCoverage(rows);
           const publishedAt = parsePublishedAt(citation, temporalCoverage.startDate);
           const homepageUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
           const sourceKey = String(id);
           const datasetData = {
-            category: VECTRAITS_CATEGORY,
+            category: DB_CATEGORY,
             title,
             description,
             homepageUrl,
@@ -125,12 +95,12 @@ export const vtSyncJob: JobDefinition = {
           const dataset = await prisma.dataset.upsert({
             where: {
               sourceDb_sourceKey: {
-                sourceDb: VECTRAITS_SOURCE_DB,
+                sourceDb: DB_NAME,
                 sourceKey
               }
             },
             create: {
-              sourceDb: VECTRAITS_SOURCE_DB,
+              sourceDb: DB_NAME,
               sourceKey,
               ...datasetData
             },
@@ -142,9 +112,7 @@ export const vtSyncJob: JobDefinition = {
             prisma,
             dataset.id,
             speciesNames,
-            signal,
-            taxonomyResolutionCache,
-            resolveGbifTaxaFromNames
+            taxonomyResolutionCache
           );
 
           logger.info(
@@ -160,10 +128,7 @@ export const vtSyncJob: JobDefinition = {
             'VecTraits dataset synchronised'
           );
         } catch (error) {
-          logger.error(
-            { err: error, sourceKey: id },
-            'Failed to sync VecTraits dataset'
-          );
+          logger.error({ err: error, sourceKey: id }, 'Failed to sync VecTraits dataset');
         }
       }
     } finally {
@@ -173,7 +138,9 @@ export const vtSyncJob: JobDefinition = {
 };
 
 async function fetchVecTraitsDatasetIds(): Promise<number[]> {
-  const url = `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
+  // The explorer data.results is paged, but ids contains the full inventory.
+  const url =
+    `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
     new URLSearchParams({
       page: '1',
       sort_column: 'DatasetID',
@@ -182,29 +149,13 @@ async function fetchVecTraitsDatasetIds(): Promise<number[]> {
   return (await ky(url).json(vecTraitsIdsResponseSchema)).ids;
 }
 
-async function fetchVecTraitsDatasetRows(
-  datasetId: number,
-  signal: AbortSignal
-): Promise<VecTraitsDatasetRow[]> {
-  if (signal.aborted) throw new Error('Job aborted');
-
-  const url = `${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`;
-  const payload = await ky(url, { signal }).json(vecTraitsDatasetResponseSchema);
-  const uniqueRows = new Map<string, VecTraitsDatasetRow>();
-  const rowsWithoutId: VecTraitsDatasetRow[] = [];
-
-  for (const row of payload.results ?? []) {
-    const idValue = row.Id;
-    const rowId =
-      typeof idValue === 'number' ? String(idValue) : normalizeNullableString(idValue);
-    if (rowId) {
-      if (!uniqueRows.has(rowId)) uniqueRows.set(rowId, row);
-    } else {
-      rowsWithoutId.push(row);
-    }
-  }
-
-  return [...uniqueRows.values(), ...rowsWithoutId];
+async function fetchVecTraitsDatasetRows(datasetId: number): Promise<VecTraitsDatasetRow[]> {
+  // This endpoint returns all rows in one response; page parameters are ignored.
+  return (
+    await ky(`${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`).json(
+      vecTraitsDatasetResponseSchema
+    )
+  ).results;
 }
 
 function getFirstNonEmpty(
@@ -251,6 +202,8 @@ function extractTitleFromCitation(citation: string): string {
   const remaining = segments.slice(start);
   const titleParts: string[] = [];
 
+  // Citations usually start with authors/year and end with journal metadata.
+  // Keep the middle title-like segments until the text looks like a journal.
   for (let i = 0; i < remaining.length; i += 1) {
     const segment = remaining[i]!.trim();
     if (!segment) continue;
@@ -298,27 +251,23 @@ function buildDescription(rows: VecTraitsDatasetRow[]): string | null {
   const environments = collectUniqueValues(rows, (row) => row.LabField);
   const locations = collectUniqueValues(rows, (row) => row.Location);
 
-  return [
-    traits.length ? `Traits: ${traits.slice(0, 6).join(', ')}` : null,
-    habitats.length ? `Habitats: ${habitats.slice(0, 4).join(', ')}` : null,
-    environments.length
-      ? `Environment: ${environments.slice(0, 3).join(', ')}`
-      : null,
-    locations.length ? `Locations: ${locations.slice(0, 3).join(', ')}` : null
-  ]
-    .filter((part): part is string => Boolean(part))
-    .join(' | ') || null;
+  return (
+    [
+      traits.length ? `Traits: ${traits.slice(0, 6).join(', ')}` : null,
+      habitats.length ? `Habitats: ${habitats.slice(0, 4).join(', ')}` : null,
+      environments.length ? `Environment: ${environments.slice(0, 3).join(', ')}` : null,
+      locations.length ? `Locations: ${locations.slice(0, 3).join(', ')}` : null
+    ]
+      .filter((part): part is string => Boolean(part))
+      .join(' | ') || null
+  );
 }
 
 function buildRawPayload(
   rows: VecTraitsDatasetRow[],
   temporalCoverage: TemporalCoverage
-): Prisma.InputJsonValue {
+): Prisma.InputJsonObject {
   const traits = collectUniqueValues(rows, (row) => row.OriginalTraitName);
-  const standardizedTraits = collectUniqueValues(
-    rows,
-    (row) => row.StandardisedTraitName
-  );
   const habitats = collectUniqueValues(rows, (row) => row.Habitat);
   const labFieldValues = collectUniqueValues(rows, (row) => row.LabField);
   const locations = collectUniqueValues(rows, (row) => row.Location);
@@ -328,15 +277,9 @@ function buildRawPayload(
   const contributorEmail = getFirstNonEmpty(rows, (row) => row.ContributorEmail);
   const doi = getFirstNonEmpty(rows, (row) => row.DOI);
 
-  const fieldNames = Array.from(
-    new Set(rows.flatMap((row) => Object.keys(row)))
-  ).sort();
-
   return {
     rowCount: rows.length,
-    availableFields: fieldNames,
     traits,
-    standardisedTraits: standardizedTraits,
     habitats,
     labFieldValues,
     locationSample: locations.slice(0, 50),
@@ -370,10 +313,7 @@ function collectUniqueValues(
   );
 }
 
-function parsePublishedAt(
-  citation: string | null,
-  fallbackDate: Date | null
-): Date | null {
+function parsePublishedAt(citation: string | null, fallbackDate: Date | null): Date | null {
   return parseCitationYear(citation) ?? fallbackDate;
 }
 
@@ -398,6 +338,8 @@ function parseLocationDateCoverage(rows: VecTraitsDatasetRow[]): TemporalCoverag
     if (!raw) continue;
     uniqueDates.add(raw);
 
+    // Keep the distinct raw date count even when a source date is not strict
+    // YYYY-MM-DD and cannot be used for range bounds.
     const date = parseDateOnly(raw);
     if (!date) continue;
     if (!startDate || date < startDate) startDate = date;
@@ -456,31 +398,9 @@ function normalizeSpeciesName(value: unknown): string | null {
   if (!normalized) return null;
 
   const upper = normalized.toUpperCase();
-  if (
-    upper === 'NONE NONE' ||
-    upper === 'NONE' ||
-    upper === 'BLANK' ||
-    upper === 'NA'
-  ) {
+  if (upper === 'NONE NONE' || upper === 'NONE' || upper === 'BLANK' || upper === 'NA') {
     return null;
   }
 
   return normalized;
-}
-
-async function resolveGbifTaxaFromNames(
-  names: string[],
-  signal: AbortSignal
-): Promise<Map<string, ResolvedGbifTaxon | null>> {
-  return resolveGbifTaxaFromNamesShared(
-    names,
-    signal,
-    (batchNames, batchSignal) =>
-      ky
-        .post('https://verifier.globalnames.org/api/v1/verifications', {
-          signal: batchSignal,
-          json: buildGlobalNamesRequestBody(batchNames)
-        })
-        .json(globalNamesVerificationResponseSchema)
-  );
 }

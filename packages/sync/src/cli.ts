@@ -1,75 +1,35 @@
 import { parseArgs } from 'node:util';
 import pino from 'pino';
-import { listJobs } from './job-registry.js';
-import { runJob } from './runner.js';
+import { jobs } from './job-registry.js';
 import 'dotenv/config';
 
-function printHelp(): void {
-  const availableJobs = listJobs()
-    .map((job) => `  - ${job.name}: ${job.description}`)
-    .join('\n');
-
-  console.info(
-    [
-      'Usage:',
-      '  sync-jobs --job <name>',
-      '  sync-jobs --list',
-      '',
-      'Options:',
-      '  --job <name>   Run a named synchronisation job',
-      '  --list         List available jobs',
-      '  --help         Show help',
-      '  SYNC_JOB=<name> Alternative to --job for scheduler env config',
-      '',
-      'Jobs:',
-      availableJobs
-    ].join('\n')
-  );
-}
-
 async function main(): Promise<void> {
-  const logger = pino({ name: '@vbdhub/sync' });
-
-  const { values } = parseArgs({
-    options: {
-      job: { type: 'string' },
-      list: { type: 'boolean', default: false },
-      help: { type: 'boolean', default: false }
+  const logger = pino({
+    transport: {
+      target: 'pino-pretty',
+      options: { colorize: true, singleLine: true }
     }
   });
 
-  if (values.help || values.list) {
-    printHelp();
-    return;
-  }
+  const { values } = parseArgs({
+    options: { job: { type: 'string' } }
+  });
 
-  const jobName = values.job ?? process.env.SYNC_JOB;
+  const jobName = values.job;
   if (!jobName) {
-    printHelp();
+    logger.error('Missing required --job <name> option');
     process.exitCode = 1;
     return;
   }
 
-  const abortController = new AbortController();
-  const onSignal = () => {
-    logger.warn('Shutdown signal received, aborting job');
-    abortController.abort();
-  };
-
-  process.once('SIGINT', onSignal);
-  process.once('SIGTERM', onSignal);
-
   try {
-    await runJob(jobName, {
-      signal: abortController.signal,
-      logger: logger.child({ job: jobName })
-    });
+    const job = jobs.find((job) => job.name === jobName);
+    if (!job) throw new Error(`Unknown job: ${jobName}`);
+
+    await job.run({ logger });
   } catch (error) {
     logger.error({ err: error }, 'Job failed');
     process.exitCode = 1;
-  } finally {
-    process.off('SIGINT', onSignal);
-    process.off('SIGTERM', onSignal);
   }
 }
 

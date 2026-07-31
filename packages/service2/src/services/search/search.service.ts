@@ -1,5 +1,9 @@
-import { PrismaClient } from '@vbdhub/db';
-import type { DatasetCategory, Prisma, SourceDb } from '@prisma/client';
+import {
+  PrismaClient,
+  type DatasetCategory,
+  type Prisma,
+  type SourceDb
+} from '@vbdhub/db';
 import type Keyv from 'keyv';
 import { normalizeWktForGbif } from './geometry';
 import {

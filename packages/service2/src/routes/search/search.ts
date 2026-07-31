@@ -1,5 +1,5 @@
 import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
-import type { DatasetCategory, SourceDb } from '@prisma/client';
+import type { DatasetCategory, SourceDb } from '@vbdhub/db';
 import { SearchValidationError } from '../../services/search/search.service';
 import { buildCacheKey } from '../../common/cache-key';
 

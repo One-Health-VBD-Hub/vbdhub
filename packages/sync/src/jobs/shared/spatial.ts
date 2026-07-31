@@ -50,9 +50,13 @@ export async function upsertSpatialGeometry(
 
   const geoJson = JSON.stringify({
     type: 'MultiPoint',
+    // GeoJSON uses [longitude, latitude], while the rest of this package keeps
+    // coordinates as { lat, lon } for readability.
     coordinates: coordinates.map((point) => [point.lon, point.lat])
   });
 
+  // Prisma does not model PostGIS geometry columns directly, so write the
+  // spatial footprint with raw SQL while keeping values parameterized.
   await prisma.$executeRaw`
     UPDATE "Dataset"
     SET "spatialGeom" = ST_SetSRID(ST_GeomFromGeoJSON(${geoJson}), 4326)
