@@ -4,7 +4,8 @@
 - use `pnpm` over `npm`
 
 ## Design & Architecture
-- prefer simple, robust, and maintainable solutions following modern and best practices over complex ones
+- design and architecture should follow modern and best practices
+  - but prefer simple, robust, and maintainable solutions over complex ones
 - do not over-engineer (ask if in doubt)
 - challenge technical direction when a clearly better solution exists
 
