@@ -23,6 +23,7 @@ export default fp(async (fastify) => {
     instance.addHook('onRequest', instance.basicAuth);
     await instance.register(swaggerUi, {
       routePrefix: '/docs',
+      theme: { title: 'API Docs' },
       uiConfig: { docExpansion: 'list' }
     });
   });

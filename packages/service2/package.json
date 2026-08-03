@@ -39,6 +39,6 @@
     "concurrently": "^9.2.4",
     "fastify-tsconfig": "^3.0.0",
     "knip": "latest",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }
