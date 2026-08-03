@@ -5,35 +5,6 @@ export interface Coordinate {
   lon: number;
 }
 
-export interface BoundingBox {
-  minLat: number;
-  minLon: number;
-  maxLat: number;
-  maxLon: number;
-}
-
-export function getBoundingBox(coords: Coordinate[]): BoundingBox | null {
-  const first = coords[0];
-  if (!first) return null;
-
-  let minLat = first.lat;
-  let maxLat = first.lat;
-  let minLon = first.lon;
-  let maxLon = first.lon;
-
-  for (let i = 1; i < coords.length; i += 1) {
-    const coordinate = coords[i];
-    if (!coordinate) continue;
-    const { lat, lon } = coordinate;
-    if (lat < minLat) minLat = lat;
-    if (lat > maxLat) maxLat = lat;
-    if (lon < minLon) minLon = lon;
-    if (lon > maxLon) maxLon = lon;
-  }
-
-  return { minLat, minLon, maxLat, maxLon };
-}
-
 export async function upsertSpatialGeometry(
   prisma: ReturnType<typeof createPrismaClient>,
   datasetId: string,

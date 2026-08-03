@@ -3,7 +3,7 @@ import ky from 'ky';
 import { z } from 'zod';
 import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
-import { getBoundingBox, upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
+import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
@@ -64,7 +64,6 @@ export const vtSyncJob: JobDefinition = {
         try {
           const rows = await fetchVecTraitsDatasetRows(id);
           const coordinates = parseCoordinates(rows);
-          const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNames(rows);
 
           const citation = getFirstNonEmpty(rows, (row) => row.Citation);
@@ -85,11 +84,7 @@ export const vtSyncJob: JobDefinition = {
             publisher,
             doi,
             publishedAt,
-            raw: buildRawPayload(rows, temporalCoverage),
-            bboxMinLon: bbox?.minLon ?? null,
-            bboxMinLat: bbox?.minLat ?? null,
-            bboxMaxLon: bbox?.maxLon ?? null,
-            bboxMaxLat: bbox?.maxLat ?? null
+            raw: buildRawPayload(rows, temporalCoverage)
           };
 
           const dataset = await prisma.dataset.upsert({

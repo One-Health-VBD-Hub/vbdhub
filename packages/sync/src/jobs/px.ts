@@ -351,11 +351,7 @@ async function upsertDataset(
     doi,
     publisher,
     publishedAt,
-    raw: rawPayload,
-    bboxMinLon: null,
-    bboxMinLat: null,
-    bboxMaxLon: null,
-    bboxMaxLat: null
+    raw: rawPayload
   };
 
   return prisma.dataset.upsert({

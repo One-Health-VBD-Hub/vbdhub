@@ -1,7 +1,7 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import { parse } from 'csv-parse';
 import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
-import { getBoundingBox, upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
+import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import { createHubStorageClient, type HubBucketObject } from './shared/storage.js';
 import type { JobDefinition } from '../types.js';
@@ -323,7 +323,6 @@ async function upsertDataset(
   prisma: ReturnType<typeof createPrismaClient>,
   snapshot: DatasetSnapshot
 ) {
-  const bbox = getBoundingBox(snapshot.coordinates);
   const datasetData = {
     category: snapshot.category,
     title: snapshot.title,
@@ -333,11 +332,7 @@ async function upsertDataset(
     publisher: snapshot.publisher,
     license: snapshot.license,
     publishedAt: snapshot.publishedAt,
-    raw: snapshot.raw,
-    bboxMinLon: bbox?.minLon ?? null,
-    bboxMinLat: bbox?.minLat ?? null,
-    bboxMaxLon: bbox?.maxLon ?? null,
-    bboxMaxLat: bbox?.maxLat ?? null
+    raw: snapshot.raw
   };
 
   return prisma.dataset.upsert({

@@ -87,13 +87,6 @@ model Dataset {
   /// Queried with raw SQL (ST_Intersects / ST_Within / etc.).
   spatialGeom Unsupported("geometry(GEOMETRY, 4326)")?
 
-  /// Convenience bbox columns for cheap prefiltering (can help before PostGIS ops)
-  /// Useful for a quick “bbox overlaps” check before expensive geometry predicates.
-  bboxMinLon Float? @db.DoublePrecision
-  bboxMinLat Float? @db.DoublePrecision
-  bboxMaxLon Float? @db.DoublePrecision
-  bboxMaxLat Float? @db.DoublePrecision
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

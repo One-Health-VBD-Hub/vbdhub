@@ -3,12 +3,7 @@ import ky from 'ky';
 import { z } from 'zod';
 import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
-import {
-  getBoundingBox,
-  upsertSpatialGeometry,
-  type BoundingBox,
-  type Coordinate
-} from './shared/spatial.js';
+import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
@@ -119,7 +114,6 @@ export const vdSyncJob: JobDefinition = {
           );
 
           const coordinates = parseCoordinates(mapData);
-          const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNamesFromDetail(detail);
           const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(speciesByDate);
 
@@ -164,11 +158,7 @@ export const vdSyncJob: JobDefinition = {
             publisher,
             doi,
             publishedAt,
-            raw: rawPayload,
-            bboxMinLon: bbox?.minLon ?? null,
-            bboxMinLat: bbox?.minLat ?? null,
-            bboxMaxLon: bbox?.maxLon ?? null,
-            bboxMaxLat: bbox?.maxLat ?? null
+            raw: rawPayload
           };
 
           const dataset = await prisma.dataset.upsert({
