@@ -246,7 +246,10 @@ async function fetchCompactDatasetPage(
     pageNumber: String(pageNumber)
   });
 
-  return ky(`${PX_BASE_URL}/datasets?${params.toString()}`).json(pxCompactResponseSchema);
+  return ky(`${PX_BASE_URL}/datasets?${params.toString()}`, {
+    timeout: 30_000,
+    retry: { retryOnTimeout: true }
+  }).json(pxCompactResponseSchema);
 }
 
 function extractCompactDatasets(rows: PxCompactDatasetRow[]): PxCompactDataset[] {
@@ -283,9 +286,10 @@ function parseCompactDatasetRow(row: unknown): PxCompactDataset | null {
 
 async function fetchPxDatasetDetail(accession: string): Promise<PxDetailResponse> {
   try {
-    return await ky(`${PX_BASE_URL}/datasets/${encodeURIComponent(accession)}`).json(
-      pxDetailResponseSchema
-    );
+    return await ky(`${PX_BASE_URL}/datasets/${encodeURIComponent(accession)}`, {
+      timeout: 30_000,
+      retry: { retryOnTimeout: true }
+    }).json(pxDetailResponseSchema);
   } catch (error) {
     if (!(error instanceof HTTPError)) throw error;
 
