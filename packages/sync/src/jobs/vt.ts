@@ -74,13 +74,13 @@ export const vtSyncJob: JobDefinition = {
           const doi = getFirstNonEmpty(rows, (row) => row.DOI);
           const temporalCoverage = parseLocationDateCoverage(rows);
           const publishedAt = parsePublishedAt(citation, temporalCoverage.startDate);
-          const homepageUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
+          const sourceUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
           const sourceKey = String(id);
           const datasetData = {
             category: DB_CATEGORY,
             title,
             description,
-            homepageUrl,
+            sourceUrl,
             publisher,
             doi,
             publishedAt,

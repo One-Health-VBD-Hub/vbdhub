@@ -33,7 +33,7 @@ export interface DatasetDetail {
   doi?: string;
   publisher?: string;
   publishedAt?: string;
-  homepageUrl?: string;
+  sourceUrl?: string;
   license?: string;
 }
 
@@ -106,7 +106,7 @@ export const getCachedGbifDatasetDetail = async ({
     doi: rawDetail.doi ?? undefined,
     publisher: rawDetail.publishingOrganizationTitle ?? undefined,
     publishedAt: toIsoDateStringOrUndefined(rawDetail.pubDate),
-    homepageUrl: rawDetail.homepage ?? undefined,
+    sourceUrl: rawDetail.homepage ?? undefined,
     license: rawDetail.license ?? undefined
   };
 
@@ -152,7 +152,7 @@ export const buildDatasetService = ({
         doi: true,
         publisher: true,
         publishedAt: true,
-        homepageUrl: true,
+        sourceUrl: true,
         license: true
       }
     });
@@ -173,7 +173,7 @@ export const buildDatasetService = ({
       doi: dataset.doi ?? undefined,
       publisher: dataset.publisher ?? undefined,
       publishedAt: toIsoDateStringOrUndefined(dataset.publishedAt ?? undefined),
-      homepageUrl: dataset.homepageUrl ?? undefined,
+      sourceUrl: dataset.sourceUrl ?? undefined,
       license: dataset.license ?? undefined
     };
   };

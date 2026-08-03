@@ -70,7 +70,7 @@ model Dataset {
   /// Everything else can live in `raw` for heterogeneous per-source differences.
   title       String?
   description String?
-  homepageUrl String?
+  sourceUrl   String?
   doi         String?
   publisher   String?
   license     String?

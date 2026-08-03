@@ -127,7 +127,7 @@ export const vdSyncJob: JobDefinition = {
             buildDescription(csv.consistent_data);
           const publisher = csv.consistent_data?.contact_affiliation?.trim() || 'VectorByte VecDyn';
           const doi = normalizeNullableString(csv.consistent_data?.doi);
-          const homepageUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
+          const sourceUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
           const sourceKey = String(id);
 
           const rawPayload = {
@@ -154,7 +154,7 @@ export const vdSyncJob: JobDefinition = {
             category: VECDYN_CATEGORY,
             title,
             description,
-            homepageUrl,
+            sourceUrl,
             publisher,
             doi,
             publishedAt,

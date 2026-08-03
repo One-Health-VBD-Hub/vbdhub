@@ -20,7 +20,7 @@ const metadataFieldAliases = {
   title: ['title'],
   description: ['description'],
   doi: ['doi'],
-  homepageUrl: ['homepageurl', 'homepage', 'url'],
+  sourceUrl: ['homepageurl', 'homepage', 'url'],
   license: ['license', 'licence'],
   publisher: ['contactaffiliation', 'publisher', 'submittedby'],
   publishedAt: ['publishedat', 'publicationdate', 'dateusedforstatistics', 'year']
@@ -58,7 +58,7 @@ interface DatasetSnapshot {
   title: string;
   description: string | null;
   publisher: string | null;
-  homepageUrl: string | null;
+  sourceUrl: string | null;
   doi: string | null;
   license: string | null;
   publishedAt: Date | null;
@@ -72,7 +72,7 @@ interface DatasetAccumulator {
   title: string | null;
   description: string | null;
   publisher: string | null;
-  homepageUrl: string | null;
+  sourceUrl: string | null;
   doi: string | null;
   license: string | null;
   publishedAt: Date | null;
@@ -193,7 +193,7 @@ async function processDataset(
     title: null,
     description: null,
     publisher: null,
-    homepageUrl: null,
+    sourceUrl: null,
     doi: null,
     license: null,
     publishedAt: null,
@@ -220,7 +220,7 @@ async function processDataset(
     title: accumulator.title ?? humanizeSourceKey(dataset.sourceKey),
     description: accumulator.description,
     publisher: accumulator.publisher,
-    homepageUrl: accumulator.homepageUrl,
+    sourceUrl: accumulator.sourceUrl,
     doi: accumulator.doi,
     license: accumulator.license,
     publishedAt,
@@ -294,7 +294,7 @@ function absorbRecord(accumulator: DatasetAccumulator, record: Record<string, st
   accumulator.publisher ??=
     getFirstString(record, metadataFieldAliases.publisher) ??
     getFirstString(record, personFieldAliases.contactAffiliation);
-  accumulator.homepageUrl ??= getFirstString(record, metadataFieldAliases.homepageUrl);
+  accumulator.sourceUrl ??= getFirstString(record, metadataFieldAliases.sourceUrl);
   accumulator.doi ??= getFirstString(record, metadataFieldAliases.doi);
   accumulator.license ??= getFirstString(record, metadataFieldAliases.license);
   accumulator.publishedAt ??= extractDate(record, metadataFieldAliases.publishedAt);
@@ -327,7 +327,7 @@ async function upsertDataset(
     category: snapshot.category,
     title: snapshot.title,
     description: snapshot.description,
-    homepageUrl: snapshot.homepageUrl,
+    sourceUrl: snapshot.sourceUrl,
     doi: snapshot.doi,
     publisher: snapshot.publisher,
     license: snapshot.license,

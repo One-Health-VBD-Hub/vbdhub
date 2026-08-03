@@ -326,7 +326,7 @@ async function upsertDataset(
   const title = normalizeNullableString(detail.title) ?? compact.title ?? sourceKey;
   const description = normalizeNullableString(detail.description) ?? compact.publicationSummary;
   const doi = extractDoi(detail);
-  const homepageUrl = extractHomepageUrl(detail, sourceKey);
+  const sourceUrl = extractSourceUrl(detail, sourceKey);
   const publishedAt = parseDateOnly(compact.announceDate);
   const publisher =
     compact.repository ?? extractContactAffiliation(detail.contacts) ?? 'ProteomeXchange';
@@ -347,7 +347,7 @@ async function upsertDataset(
     category: PX_CATEGORY,
     title,
     description,
-    homepageUrl,
+    sourceUrl,
     doi,
     publisher,
     publishedAt,
@@ -412,7 +412,7 @@ function isHumanOnlyDataset(speciesNames: string[]): boolean {
   return normalized === 'homo sapiens';
 }
 
-function extractHomepageUrl(detail: PxDetailResponse, sourceKey: string): string {
+function extractSourceUrl(detail: PxDetailResponse, sourceKey: string): string {
   const urls = [
     ...extractTermUrls(detail.fullDatasetLinks),
     ...extractTermUrls(detail.identifiers)
