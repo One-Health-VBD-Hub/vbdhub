@@ -5,17 +5,17 @@ import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
 import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
-import type { JobDefinition } from '../types.js';
+import type { JobDefinition, TemporalCoverage } from '../types.js';
 
 const VECTRAITS_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
 const DB_NAME = 'vectraits';
 const DB_CATEGORY: DatasetCategory = 'traits';
 
-const vecTraitsIdsResponseSchema = z.looseObject({
-  ids: z.array(z.coerce.number().int()).default([])
+const vecTraitsIdsResponseSchema = z.object({
+  ids: z.array(z.coerce.number().int())
 });
 
-const vecTraitsDatasetRowSchema = z.looseObject({
+const vecTraitsDatasetRowSchema = z.object({
   Id: z.union([z.coerce.number().int(), z.string()]).optional(),
   DatasetID: z.coerce.number().int().optional(),
   OriginalTraitName: nullableStringSchema.optional(),
@@ -39,15 +39,10 @@ const vecTraitsDatasetRowSchema = z.looseObject({
 });
 
 const vecTraitsDatasetResponseSchema = z.object({
-  results: z.array(vecTraitsDatasetRowSchema).default([])
+  results: z.array(vecTraitsDatasetRowSchema)
 });
 
 type VecTraitsDatasetRow = z.infer<typeof vecTraitsDatasetRowSchema>;
-type TemporalCoverage = {
-  startDate: Date | null;
-  endDate: Date | null;
-  dateCount: number;
-};
 
 export const vtSyncJob: JobDefinition = {
   name: 'vt',
@@ -62,13 +57,13 @@ export const vtSyncJob: JobDefinition = {
 
       for (const id of ids) {
         try {
-          const rows = await fetchVecTraitsDatasetRows(id);
+          const rows: VecTraitsDatasetRow[] = await fetchVecTraitsDatasetRows(id);
           const coordinates = parseCoordinates(rows);
           const speciesNames = extractSpeciesNames(rows);
 
           const citation = getFirstNonEmpty(rows, (row) => row.Citation);
-          const title = buildDatasetTitle(citation, id);
-          const description = buildDescription(rows);
+          const title = buildVtDatasetTitle(citation, id);
+          const description = buildVtDescription(rows);
           const publisher =
             getFirstNonEmpty(rows, (row) => row.SubmittedBy) ?? 'VectorByte VecTraits';
           const doi = getFirstNonEmpty(rows, (row) => row.DOI);
@@ -164,7 +159,7 @@ function getFirstNonEmpty(
   return null;
 }
 
-function buildDatasetTitle(citation: string | null, id: number): string {
+function buildVtDatasetTitle(citation: string | null, id: number): string {
   if (!citation) return `VecTraits dataset ${id}`;
 
   const extracted = extractTitleFromCitation(citation);
@@ -240,7 +235,7 @@ function isLikelyJournalSegment(segment: string): boolean {
   return false;
 }
 
-function buildDescription(rows: VecTraitsDatasetRow[]): string | null {
+function buildVtDescription(rows: VecTraitsDatasetRow[]): string | null {
   const traits = collectUniqueValues(rows, (row) => row.OriginalTraitName);
   const habitats = collectUniqueValues(rows, (row) => row.Habitat);
   const environments = collectUniqueValues(rows, (row) => row.LabField);
