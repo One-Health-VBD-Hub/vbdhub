@@ -5,12 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -F @vbdhub/db build && tsc",
-    "sync": "node dist/cli.js",
-    "sync:gbif": "pnpm sync --job gbif",
-    "sync:hub": "pnpm sync --job hub",
-    "sync:px": "pnpm sync --job px",
-    "sync:vd": "pnpm sync --job vd",
-    "sync:vt": "pnpm sync --job vt"
+    "sync:gbif": "node dist/cli.js --job gbif",
+    "sync:hub": "node dist/cli.js --job hub",
+    "sync:px": "node dist/cli.js --job px",
+    "sync:vd": "node dist/cli.js --job vd",
+    "sync:vt": "node dist/cli.js --job vt"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {
