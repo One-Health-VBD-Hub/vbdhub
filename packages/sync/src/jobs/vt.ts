@@ -1,5 +1,6 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
+import { Temporal } from 'temporal-polyfill';
 import { z } from 'zod';
 import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
@@ -68,7 +69,9 @@ export const vtSyncJob: JobDefinition = {
             getFirstNonEmpty(rows, (row) => row.SubmittedBy) ?? 'VectorByte VecTraits';
           const doi = getFirstNonEmpty(rows, (row) => row.DOI);
           const temporalCoverage = parseLocationDateCoverage(rows);
-          const publishedAt = parsePublishedAt(citation, temporalCoverage.startDate);
+          const publishedAt = doi
+            ? await fetchDoiPublicationDate(doi)
+            : parseCitationYear(citation);
           const sourceUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
           const sourceKey = String(id);
           const datasetData = {
@@ -303,8 +306,23 @@ function collectUniqueValues(
   );
 }
 
-function parsePublishedAt(citation: string | null, fallbackDate: Date | null): Date | null {
-  return parseCitationYear(citation) ?? fallbackDate;
+async function fetchDoiPublicationDate(doi: string): Promise<Date | null> {
+  const schema = z.object({
+    issued: z
+      .object({
+        'date-parts': z.array(z.array(z.number().int()))
+      })
+      .optional()
+  });
+
+  const metadata = await ky('https://citation.doi.org/metadata', {
+    searchParams: { doi }
+  }).json(schema);
+  const [year, month = 1, day = 1] = metadata.issued?.['date-parts'][0] ?? [];
+  if (!year) return null;
+
+  const date = Temporal.PlainDate.from({ year, month, day }, { overflow: 'reject' });
+  return new Date(date.toZonedDateTime('UTC').epochMilliseconds);
 }
 
 function parseCitationYear(citation: string | null): Date | null {
