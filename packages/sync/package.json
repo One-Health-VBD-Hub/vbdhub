@@ -14,7 +14,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@vbdhub/db": "workspace:^",
-    "csv-parse": "^6.2.1",
+    "csv-parse": "^7.0.2",
     "dotenv": "^17.4.2",
     "ky": "^2.0.2",
     "minio": "^8.0.7",
