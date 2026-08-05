@@ -3,7 +3,6 @@ import ky from 'ky';
 import { Temporal } from 'temporal-polyfill';
 import { z } from 'zod';
 import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
-import { nullableStringSchema } from './shared/schemas.js';
 import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition, TemporalCoverage } from '../types.js';
@@ -12,31 +11,22 @@ const VECTRAITS_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
 const DB_NAME = 'vectraits';
 const DB_CATEGORY: DatasetCategory = 'traits';
 
-const vecTraitsIdsResponseSchema = z.object({
-  ids: z.array(z.coerce.number().int())
-});
-
 const vecTraitsDatasetRowSchema = z.object({
-  Id: z.union([z.coerce.number().int(), z.string()]).optional(),
-  DatasetID: z.coerce.number().int().optional(),
-  OriginalTraitName: nullableStringSchema.optional(),
-  StandardisedTraitName: nullableStringSchema.optional(),
-  OriginalTraitDef: nullableStringSchema.optional(),
-  StandardisedTraitDef: nullableStringSchema.optional(),
-  Habitat: nullableStringSchema.optional(),
-  LabField: nullableStringSchema.optional(),
-  Location: nullableStringSchema.optional(),
-  LocationDate: nullableStringSchema.optional(),
-  DOI: nullableStringSchema.optional(),
-  Citation: nullableStringSchema.optional(),
-  CuratedByCitation: nullableStringSchema.optional(),
-  CuratedByDOI: nullableStringSchema.optional(),
-  SubmittedBy: nullableStringSchema.optional(),
-  ContributorEmail: nullableStringSchema.optional(),
-  Interactor1: nullableStringSchema.optional(),
-  Interactor2: nullableStringSchema.optional(),
-  Latitude: z.union([z.number(), z.string(), z.null()]).optional(),
-  Longitude: z.union([z.number(), z.string(), z.null()]).optional()
+  OriginalTraitName: z.string().trim().nullable(),
+  Habitat: z.string().trim().nullable(),
+  LabField: z.string().trim().nullable(),
+  Location: z.string().trim(),
+  LocationDate: z.string().trim().nullable(),
+  DOI: z.string().trim().nullable(),
+  Citation: z.string().trim(),
+  CuratedByCitation: z.string().trim().nullable(),
+  CuratedByDOI: z.string().trim().nullable(),
+  SubmittedBy: z.string().trim(),
+  ContributorEmail: z.string().trim(),
+  Interactor1: z.string().trim().nullable(),
+  Interactor2: z.string().trim().nullable(),
+  Latitude: z.number().nullable(),
+  Longitude: z.number().nullable()
 });
 
 const vecTraitsDatasetResponseSchema = z.object({
@@ -131,15 +121,14 @@ export const vtSyncJob: JobDefinition = {
 };
 
 async function fetchVecTraitsDatasetIds(): Promise<number[]> {
+  const schema = z.object({
+    ids: z.array(z.number().int())
+  });
+
   // The explorer data.results is paged, but ids contains the full inventory.
-  const url =
-    `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
-    new URLSearchParams({
-      page: '1',
-      sort_column: 'DatasetID',
-      sort_dir: 'asc'
-    }).toString();
-  return (await ky(url).json(vecTraitsIdsResponseSchema)).ids;
+  const url = `${VECTRAITS_BASE_URL}/vectraits-explorer/?page=1&sort_column=DatasetID&sort_dir=asc`;
+
+  return (await ky(url).json(schema)).ids;
 }
 
 async function fetchVecTraitsDatasetRows(datasetId: number): Promise<VecTraitsDatasetRow[]> {
@@ -362,9 +351,8 @@ function parseCoordinates(rows: VecTraitsDatasetRow[]): Coordinate[] {
   const seen = new Set<string>();
 
   for (const row of rows) {
-    const lat = parseNumber(row.Latitude);
-    const lon = parseNumber(row.Longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const { Latitude: lat, Longitude: lon } = row;
+    if (lat === null || lon === null) continue;
 
     const key = `${lat},${lon}`;
     if (seen.has(key)) continue;
@@ -374,16 +362,6 @@ function parseCoordinates(rows: VecTraitsDatasetRow[]): Coordinate[] {
   }
 
   return coordinates;
-}
-
-function parseNumber(value: number | string | null | undefined): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (trimmed.length === 0) return Number.NaN;
-    return Number(trimmed);
-  }
-  return Number.NaN;
 }
 
 function extractSpeciesNames(rows: VecTraitsDatasetRow[]): string[] {
