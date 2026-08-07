@@ -4,7 +4,6 @@ import { Temporal } from 'temporal-polyfill';
 import { z } from 'zod';
 import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
 import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
-import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition, TemporalCoverage } from '../types.js';
 
 const VECTRAITS_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
@@ -16,13 +15,16 @@ const vecTraitsDatasetRowSchema = z.object({
   Habitat: z.string().trim().nullable(),
   LabField: z.string().trim().nullable(),
   Location: z.string().trim(),
-  LocationDate: z.string().trim().nullable(),
+  LocationDate: z.iso
+    .date()
+    .nullable()
+    .transform((v) => (v ? new Date(v) : null)), // always in YYYY-MM-DD
   DOI: z.string().trim().nullable(),
   Citation: z.string().trim(),
   CuratedByCitation: z.string().trim().nullable(),
   CuratedByDOI: z.string().trim().nullable(),
   SubmittedBy: z.string().trim(),
-  ContributorEmail: z.string().trim(),
+  ContributorEmail: z.email().trim(),
   Interactor1: z.string().trim().nullable(),
   Interactor2: z.string().trim().nullable(),
   Latitude: z.number().nullable(),
@@ -64,6 +66,7 @@ export const vtSyncJob: JobDefinition = {
             : parseCitationYear(citation);
           const sourceUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
           const sourceKey = String(id);
+
           const datasetData = {
             category: DB_CATEGORY,
             title,
@@ -142,10 +145,10 @@ async function fetchVecTraitsDatasetRows(datasetId: number): Promise<VecTraitsDa
 
 function getFirstNonEmpty(
   rows: VecTraitsDatasetRow[],
-  getter: (row: VecTraitsDatasetRow) => unknown
+  getter: (row: VecTraitsDatasetRow) => string | null
 ): string | null {
   for (const row of rows) {
-    const value = normalizeNullableString(getter(row));
+    const value = getter(row);
     if (value) return value;
   }
   return null;
@@ -187,8 +190,7 @@ function extractTitleFromCitation(citation: string): string {
   // Citations usually start with authors/year and end with journal metadata.
   // Keep the middle title-like segments until the text looks like a journal.
   for (let i = 0; i < remaining.length; i += 1) {
-    const segment = remaining[i]!.trim();
-    if (!segment) continue;
+    const segment = remaining[i]!;
     if (isLikelyJournalSegment(segment)) break;
 
     if (/^\d+$/.test(segment)) {
@@ -271,28 +273,17 @@ function buildRawPayload(
     contributorEmail,
     doi,
     temporalCoverage: {
-      startDate: temporalCoverage.startDate
-        ? temporalCoverage.startDate.toISOString().slice(0, 10)
-        : null,
-      endDate: temporalCoverage.endDate
-        ? temporalCoverage.endDate.toISOString().slice(0, 10)
-        : null,
-      dateCount: temporalCoverage.dateCount
+      startDate: temporalCoverage.startDate?.toISOString().slice(0, 10) ?? null,
+      endDate: temporalCoverage.endDate?.toISOString().slice(0, 10) ?? null
     }
   } satisfies Prisma.InputJsonObject;
 }
 
 function collectUniqueValues(
   rows: VecTraitsDatasetRow[],
-  getter: (row: VecTraitsDatasetRow) => unknown
+  getter: (row: VecTraitsDatasetRow) => string | null
 ): string[] {
-  return Array.from(
-    new Set(
-      rows
-        .map((row) => normalizeNullableString(getter(row)))
-        .filter((value): value is string => Boolean(value))
-    )
-  );
+  return Array.from(new Set(rows.map(getter).filter((value): value is string => Boolean(value))));
 }
 
 async function fetchDoiPublicationDate(doi: string): Promise<Date | null> {
@@ -315,35 +306,24 @@ async function fetchDoiPublicationDate(doi: string): Promise<Date | null> {
 }
 
 function parseCitationYear(citation: string | null): Date | null {
-  for (const yearText of citation?.match(/\b(18|19|20)\d{2}\b/g) ?? []) {
-    const year = Number(yearText);
-    if (year >= 1800 && year <= 2100) {
-      return new Date(Date.UTC(year, 0, 1, 0, 0, 0));
-    }
-  }
+  const yearText = citation?.match(/\b(18|19|20)\d{2}\b/g)?.[0];
+  if (!yearText) return null;
 
-  return null;
+  return new Date(Date.UTC(Number(yearText), 0, 1));
 }
 
 function parseLocationDateCoverage(rows: VecTraitsDatasetRow[]): TemporalCoverage {
-  const uniqueDates = new Set<string>();
   let startDate: Date | null = null;
   let endDate: Date | null = null;
 
   for (const row of rows) {
-    const raw = normalizeNullableString(row.LocationDate);
-    if (!raw) continue;
-    uniqueDates.add(raw);
-
-    // Keep the distinct raw date count even when a source date is not strict
-    // YYYY-MM-DD and cannot be used for range bounds.
-    const date = parseDateOnly(raw);
+    const date = row.LocationDate;
     if (!date) continue;
     if (!startDate || date < startDate) startDate = date;
     if (!endDate || date > endDate) endDate = date;
   }
 
-  return { startDate, endDate, dateCount: uniqueDates.size };
+  return { startDate, endDate };
 }
 
 function parseCoordinates(rows: VecTraitsDatasetRow[]): Coordinate[] {
@@ -379,14 +359,12 @@ function extractSpeciesNames(rows: VecTraitsDatasetRow[]): string[] {
   return Array.from(names);
 }
 
-function normalizeSpeciesName(value: unknown): string | null {
-  const normalized = normalizeNullableString(value);
-  if (!normalized) return null;
+// necessary because the API returns sentinel values for missing species names
+function normalizeSpeciesName(value: string | null): string | null {
+  if (!value) return null;
 
-  const upper = normalized.toUpperCase();
-  if (upper === 'NONE NONE' || upper === 'NONE' || upper === 'BLANK' || upper === 'NA') {
-    return null;
-  }
+  const upper = value.toUpperCase();
+  if (upper === 'NONE NONE' || upper === 'NONE' || upper === 'BLANK' || upper === 'NA') return null;
 
-  return normalized;
+  return value;
 }

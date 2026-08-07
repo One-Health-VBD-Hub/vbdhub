@@ -8,5 +8,4 @@ export interface JobDefinition {
 export type TemporalCoverage = {
   startDate: Date | null;
   endDate: Date | null;
-  dateCount: number;
 };
