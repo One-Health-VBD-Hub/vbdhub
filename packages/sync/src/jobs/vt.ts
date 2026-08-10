@@ -2,7 +2,7 @@ import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/d
 import ky from 'ky';
 import { Temporal } from 'temporal-polyfill';
 import { z } from 'zod';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
 import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import type { JobDefinition, TemporalCoverage } from '../types.js';
 
@@ -41,7 +41,7 @@ export const vtSyncJob: JobDefinition = {
   name: 'vt',
   async run({ logger }) {
     const prisma = createPrismaClient();
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
 
     try {
       logger.info('Fetching VecTraits dataset IDs');
@@ -94,12 +94,7 @@ export const vtSyncJob: JobDefinition = {
           });
 
           await upsertSpatialGeometry(prisma, dataset.id, coordinates);
-          const linkedTaxa = await linkDatasetTaxa(
-            prisma,
-            dataset.id,
-            speciesNames,
-            taxonomyResolutionCache
-          );
+          const linkedTaxa = await linkDatasetTaxa(dataset.id, speciesNames);
 
           logger.info(
             {

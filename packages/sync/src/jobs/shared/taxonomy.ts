@@ -39,7 +39,7 @@ interface TaxonUpsertRow {
   genusId: number | null;
 }
 
-export interface ResolvedGbifTaxon {
+interface ResolvedGbifTaxon {
   taxon: TaxonUpsertRow;
   ancestors: TaxonUpsertRow[];
 }
@@ -157,55 +157,60 @@ async function fetchGlobalNamesBatch(
     .json(globalNamesVerificationResponseSchema);
 }
 
-export async function linkDatasetTaxa(
+export function createDatasetTaxaLinker(
   prisma: ReturnType<typeof createPrismaClient>,
-  datasetId: string,
-  speciesNames: string[],
-  taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>,
   options?: ResolveGbifTaxaOptions
-): Promise<number> {
-  if (speciesNames.length === 0) return 0;
+): (datasetId: string, speciesNames: string[]) => Promise<number> {
+  const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
 
-  const queryNames = Array.from(
-    new Set(
-      speciesNames
-        .map(cleanTaxonQueryName)
-        .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
-    )
-  );
-  if (queryNames.length === 0) return 0;
+  // Resolve unique species names, persist their GBIF lineages, and create missing dataset links
+  return async function linkDatasetTaxa(datasetId, speciesNames) {
+    if (speciesNames.length === 0) return 0;
 
-  const unresolvedNames = queryNames.filter((name) => !taxonomyResolutionCache.has(name));
+    const queryNames = Array.from(
+      new Set(
+        speciesNames
+          .map(cleanTaxonQueryName)
+          .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
+      )
+    );
+    if (queryNames.length === 0) return 0;
 
-  if (unresolvedNames.length > 0) {
-    // Cache both hits and misses for the lifetime of a job so repeated species
-    // across datasets do not repeatedly call Global Names.
-    const resolvedFromApi = await resolveGbifTaxaFromNames(unresolvedNames, options);
-    for (const name of unresolvedNames) {
-      taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
+    const unresolvedNames = queryNames.filter((name) => !taxonomyResolutionCache.has(name));
+
+    if (unresolvedNames.length > 0) {
+      // Cache both hits and misses for the lifetime of a job so repeated species
+      // across datasets do not repeatedly call Global Names.
+      const resolvedFromApi = await resolveGbifTaxaFromNames(unresolvedNames, options);
+      for (const name of unresolvedNames) {
+        taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
+      }
     }
-  }
 
-  const uniqueTaxonIds = new Set<number>();
-  for (const name of queryNames) {
-    const resolved = taxonomyResolutionCache.get(name);
-    if (!resolved) continue;
+    const uniqueTaxonIds = new Set<number>();
+    for (const name of queryNames) {
+      const resolved = taxonomyResolutionCache.get(name);
+      if (!resolved) continue;
 
-    await upsertResolvedTaxon(prisma, resolved);
-    uniqueTaxonIds.add(resolved.taxon.gbifTaxonId);
-  }
+      // Creates or updates the taxon and its ancestors in the local taxonomy table, so that
+      // the dataset-taxon link can be created
+      await upsertResolvedTaxon(prisma, resolved);
+      uniqueTaxonIds.add(resolved.taxon.gbifTaxonId);
+    }
 
-  if (uniqueTaxonIds.size === 0) return 0;
+    if (uniqueTaxonIds.size === 0) return 0;
 
-  const created = await prisma.datasetTaxon.createMany({
-    data: Array.from(uniqueTaxonIds, (gbifTaxonId) => ({
-      datasetId,
-      gbifTaxonId
-    })),
-    skipDuplicates: true
-  });
+    // Create missing dataset-taxon links in bulk, skipping duplicates
+    const created = await prisma.datasetTaxon.createMany({
+      data: Array.from(uniqueTaxonIds, (gbifTaxonId) => ({
+        datasetId,
+        gbifTaxonId
+      })),
+      skipDuplicates: true
+    });
 
-  return created.count;
+    return created.count;
+  };
 }
 
 function normalizeTaxonSearchName(name: string): string {

@@ -1,6 +1,6 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import { parse } from 'csv-parse';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
 import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import { createHubStorageClient, type HubBucketObject } from './shared/storage.js';
@@ -103,7 +103,7 @@ export const hubSyncJob: JobDefinition = {
       secretKey,
       bucket
     });
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
 
     try {
       logger.info('Starting hub synchronisation');
@@ -119,12 +119,7 @@ export const hubSyncJob: JobDefinition = {
           const datasetRecord = await upsertDataset(prisma, snapshot);
           await upsertSpatialGeometry(prisma, datasetRecord.id, snapshot.coordinates);
 
-          const taxaLinked = await linkDatasetTaxa(
-            prisma,
-            datasetRecord.id,
-            snapshot.speciesNames,
-            taxonomyResolutionCache
-          );
+          const taxaLinked = await linkDatasetTaxa(datasetRecord.id, snapshot.speciesNames);
 
           logger.info(
             {

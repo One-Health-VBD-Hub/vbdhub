@@ -1,7 +1,7 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
 import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
@@ -87,7 +87,7 @@ export const vdSyncJob: JobDefinition = {
   name: 'vd',
   async run({ logger }) {
     const prisma = createPrismaClient();
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
 
     try {
       logger.info('Fetching VecDyn dataset IDs');
@@ -177,12 +177,7 @@ export const vdSyncJob: JobDefinition = {
           });
 
           await upsertSpatialGeometry(prisma, dataset.id, coordinates);
-          const linkedTaxa = await linkDatasetTaxa(
-            prisma,
-            dataset.id,
-            speciesNames,
-            taxonomyResolutionCache
-          );
+          const linkedTaxa = await linkDatasetTaxa(dataset.id, speciesNames);
 
           logger.info(
             {

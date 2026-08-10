@@ -1,7 +1,7 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky, { HTTPError } from 'ky';
 import { z } from 'zod';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
@@ -97,7 +97,10 @@ export const pxSyncJob: JobDefinition = {
   name: 'px',
   async run({ logger }) {
     const prisma = createPrismaClient();
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma, {
+      batchSize: GLOBALNAMES_BATCH_SIZE,
+      retryAttempts: GLOBALNAMES_RETRY_ATTEMPTS
+    });
     const counters = {
       scanned: 0,
       synced: 0,
@@ -147,16 +150,7 @@ export const pxSyncJob: JobDefinition = {
                 return;
               }
               const dataset = await upsertDataset(prisma, compactDataset, detail);
-              const taxaLinked = await linkDatasetTaxa(
-                prisma,
-                dataset.id,
-                speciesNames,
-                taxonomyResolutionCache,
-                {
-                  batchSize: GLOBALNAMES_BATCH_SIZE,
-                  retryAttempts: GLOBALNAMES_RETRY_ATTEMPTS
-                }
-              );
+              const taxaLinked = await linkDatasetTaxa(dataset.id, speciesNames);
 
               counters.synced += 1;
               logger.debug(
