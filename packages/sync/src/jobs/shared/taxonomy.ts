@@ -116,7 +116,7 @@ async function resolveGbifTaxaFromNames(
 
     const response = await fetchGlobalNamesBatch(batch, options);
     for (const item of response.names ?? []) {
-      const name = normalizeTaxonQueryName(item.name ?? '');
+      const name = cleanTaxonQueryName(item.name ?? '');
       if (!name) continue;
       const matches =
         item.results && item.results.length > 0
@@ -169,7 +169,7 @@ export async function linkDatasetTaxa(
   const queryNames = Array.from(
     new Set(
       speciesNames
-        .map(normalizeTaxonQueryName)
+        .map(cleanTaxonQueryName)
         .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
     )
   );
@@ -208,19 +208,14 @@ export async function linkDatasetTaxa(
   return created.count;
 }
 
-function normalizeTaxonName(name: string): string {
-  return cleanTaxonName(name).toLowerCase();
+function normalizeTaxonSearchName(name: string): string {
+  return cleanTaxonQueryName(name).toLowerCase();
 }
 
-function normalizeTaxonQueryName(name: string): string {
-  return cleanTaxonName(name);
-}
-
-function cleanTaxonName(name: string): string {
+function cleanTaxonQueryName(name: string): string {
   return (
     name
-      // Source systems often include non-taxonomic qualifiers that reduce match
-      // quality against the GBIF backbone.
+      // These source qualifiers reduce matching quality against the GBIF backbone.
       .replace(/\bcomplex\b/gi, '')
       .replace(/\bmorphological group\b/gi, '')
       .replace(/\bsp\.\b/gi, '')
@@ -243,7 +238,7 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
     taxon: {
       gbifTaxonId,
       scientificName,
-      nameNorm: normalizeTaxonName(scientificName),
+      nameNorm: normalizeTaxonSearchName(scientificName),
       rank: classification.matchedRank,
       parentGbifTaxonId: classification.parentGbifTaxonId,
       ...classification.lineage
@@ -356,7 +351,7 @@ function buildTaxonRowsFromClassification(
     taxonRows.push({
       gbifTaxonId,
       scientificName,
-      nameNorm: normalizeTaxonName(scientificName),
+      nameNorm: normalizeTaxonSearchName(scientificName),
       rank,
       parentGbifTaxonId: lastNumericId,
       ...lineage
