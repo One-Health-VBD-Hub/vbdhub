@@ -94,11 +94,9 @@ type GlobalNamesVerificationResponse = z.infer<typeof globalNamesVerificationRes
 function buildGlobalNamesRequestBody(nameStrings: string[]) {
   return {
     nameStrings,
-    // These relaxed options help source metadata names resolve despite common
-    // qualifiers like "complex", casing drift, or incomplete uninomial names.
-    withRelaxedFuzzyMatch: true,
+    // withRelaxedFuzzyMatch: true,
     withCapitalization: true,
-    withUninomialFuzzyMatch: true,
+    // withUninomialFuzzyMatch: true,
     dataSources: [GBIF_DATASOURCE_ID] as const
   };
 }
@@ -112,8 +110,6 @@ async function resolveGbifTaxaFromNames(
 
   for (let i = 0; i < names.length; i += batchSize) {
     const batch = names.slice(i, i + batchSize);
-    if (batch.length === 0) continue;
-
     const response = await fetchGlobalNamesBatch(batch, options);
     if (response.names.length !== batch.length) {
       throw new Error(`GN returned ${response.names.length} results for ${batch.length} names`);
@@ -123,11 +119,7 @@ async function resolveGbifTaxaFromNames(
       const name = stripQualifiersFromTaxonName(item.name ?? '');
       if (!name) continue;
       const matches =
-        item.results && item.results.length > 0
-          ? item.results
-          : item.bestResult
-            ? [item.bestResult]
-            : [];
+        item.results.length > 0 ? item.results : item.bestResult ? [item.bestResult] : [];
       const resolved = resolveGlobalNamesGbifMatch(matches);
       resultMap.set(name, resolved);
     }
