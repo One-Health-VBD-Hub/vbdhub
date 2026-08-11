@@ -78,14 +78,14 @@ const globalNamesMatchResultSchema = z.looseObject({
   classificationIds: nullableStringSchema.optional()
 });
 
-const globalNamesNameResultSchema = z.looseObject({
+const globalNamesNameResultSchema = z.object({
   name: nullableStringSchema.optional(),
   results: z.array(globalNamesMatchResultSchema).default([]),
   bestResult: globalNamesMatchResultSchema.optional()
 });
 
-const globalNamesVerificationResponseSchema = z.looseObject({
-  names: z.array(globalNamesNameResultSchema).default([])
+const globalNamesVerificationResponseSchema = z.object({
+  names: z.array(globalNamesNameResultSchema)
 });
 
 type GlobalNamesMatchResult = z.infer<typeof globalNamesMatchResultSchema>;
@@ -115,8 +115,12 @@ async function resolveGbifTaxaFromNames(
     if (batch.length === 0) continue;
 
     const response = await fetchGlobalNamesBatch(batch, options);
-    for (const item of response.names ?? []) {
-      const name = cleanTaxonQueryName(item.name ?? '');
+    if (response.names.length !== batch.length) {
+      throw new Error(`GN returned ${response.names.length} results for ${batch.length} names`);
+    }
+
+    for (const item of response.names) {
+      const name = stripQualifiersFromTaxonName(item.name ?? '');
       if (!name) continue;
       const matches =
         item.results && item.results.length > 0
@@ -161,41 +165,49 @@ export function createDatasetTaxaLinker(
   prisma: ReturnType<typeof createPrismaClient>,
   options?: ResolveGbifTaxaOptions
 ): (datasetId: string, speciesNames: string[]) => Promise<number> {
-  const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+  // Caches resolved taxa for the lifetime of a job so repeated species across datasets do not repeatedly call Global Names API
+  const taxonResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+  // Caches persisted taxa IDs for the lifetime of a job so repeated matched species across datasets do not repeatedly upsert the same taxon
+  const persistedTaxonIds = new Set<number>();
 
-  // Resolve unique species names, persist their GBIF lineages, and create missing dataset links
+  // Links are additive: existing dataset-taxon links are retained when names disappear.
   return async function linkDatasetTaxa(datasetId, speciesNames) {
     if (speciesNames.length === 0) return 0;
 
-    const queryNames = Array.from(
+    const cleanedNames = Array.from(
       new Set(
         speciesNames
-          .map(cleanTaxonQueryName)
+          .map(stripQualifiersFromTaxonName)
           .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
       )
     );
-    if (queryNames.length === 0) return 0;
+    if (cleanedNames.length === 0) return 0;
 
-    const unresolvedNames = queryNames.filter((name) => !taxonomyResolutionCache.has(name));
+    const unresolvedNames = cleanedNames.filter((name) => !taxonResolutionCache.has(name));
 
+    // If we have any unresolved names, we need to resolve them first
     if (unresolvedNames.length > 0) {
-      // Cache both hits and misses for the lifetime of a job so repeated species
-      // across datasets do not repeatedly call Global Names.
-      const resolvedFromApi = await resolveGbifTaxaFromNames(unresolvedNames, options);
+      const resolvedNames = await resolveGbifTaxaFromNames(unresolvedNames, options);
       for (const name of unresolvedNames) {
-        taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
+        taxonResolutionCache.set(name, resolvedNames.get(name) ?? null);
       }
     }
 
     const uniqueTaxonIds = new Set<number>();
-    for (const name of queryNames) {
-      const resolved = taxonomyResolutionCache.get(name);
-      if (!resolved) continue;
+    for (const name of cleanedNames) {
+      const resolvedTaxon = taxonResolutionCache.get(name);
+      if (!resolvedTaxon) continue;
 
-      // Creates or updates the taxon and its ancestors in the local taxonomy table, so that
-      // the dataset-taxon link can be created
-      await upsertResolvedTaxon(prisma, resolved);
-      uniqueTaxonIds.add(resolved.taxon.gbifTaxonId);
+      const { gbifTaxonId } = resolvedTaxon.taxon;
+
+      if (!persistedTaxonIds.has(gbifTaxonId)) {
+        // Creates or updates the taxon and its ancestors in the local taxonomy table, so that
+        // the dataset-taxon link can be created
+        await upsertResolvedTaxon(prisma, resolvedTaxon);
+        persistedTaxonIds.add(gbifTaxonId);
+      }
+
+      uniqueTaxonIds.add(gbifTaxonId);
     }
 
     if (uniqueTaxonIds.size === 0) return 0;
@@ -214,18 +226,18 @@ export function createDatasetTaxaLinker(
 }
 
 function normalizeTaxonSearchName(name: string): string {
-  return cleanTaxonQueryName(name).toLowerCase();
+  return stripQualifiersFromTaxonName(name).toLowerCase();
 }
 
-function cleanTaxonQueryName(name: string): string {
+function stripQualifiersFromTaxonName(name: string): string {
   return (
     name
       // These source qualifiers reduce matching quality against the GBIF backbone.
-      .replace(/\bcomplex\b/gi, '')
-      .replace(/\bmorphological group\b/gi, '')
-      .replace(/\bsp\.\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
+      .replace(/\bcomplex\b/gi, '') // converts e.g. "Asteraceae complex" to "Asteraceae"
+      .replace(/\bmorphological group\b/gi, '') // converts e.g. "Asteraceae morphological group" to "Asteraceae"
+      .replace(/\bsp\./gi, '') // converts e.g. "Asteraceae sp." to "Asteraceae"
+      .replace(/\s+/g, ' ') // collapse multiple spaces
+      .trim() // trim leading/trailing spaces
   );
 }
 
