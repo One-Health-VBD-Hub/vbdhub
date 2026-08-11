@@ -61,9 +61,16 @@ export const vtSyncJob: JobDefinition = {
             getFirstNonEmpty(rows, (row) => row.SubmittedBy) ?? 'VectorByte VecTraits';
           const doi = getFirstNonEmpty(rows, (row) => row.DOI);
           const temporalCoverage = parseLocationDateCoverage(rows);
-          const publishedAt = doi
-            ? await fetchDoiPublicationDate(doi)
-            : parseCitationYear(citation);
+          const publishedAt =
+            (doi
+              ? await fetchDoiPublicationDate(doi).catch((error) => {
+                  logger.warn(
+                    { err: error, sourceKey: id },
+                    'Failed to fetch DOI publication date'
+                  );
+                  return null;
+                })
+              : null) ?? parseCitationYear(citation);
           const sourceUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
           const sourceKey = String(id);
 
