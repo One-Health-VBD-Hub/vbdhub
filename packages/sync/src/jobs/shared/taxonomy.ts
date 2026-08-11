@@ -205,7 +205,7 @@ export function createDatasetTaxaLinker(
     if (uniqueTaxonIds.size === 0) return 0;
 
     // Create missing dataset-taxon links in bulk, skipping duplicates
-    const created = await prisma.datasetTaxon.createMany({
+    await prisma.datasetTaxon.createMany({
       data: Array.from(uniqueTaxonIds, (gbifTaxonId) => ({
         datasetId,
         gbifTaxonId
@@ -213,7 +213,7 @@ export function createDatasetTaxaLinker(
       skipDuplicates: true
     });
 
-    return created.count;
+    return uniqueTaxonIds.size;
   };
 }
 
