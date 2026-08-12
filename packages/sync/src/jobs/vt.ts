@@ -289,10 +289,14 @@ function collectUniqueValues(
 }
 
 async function fetchDoiPublicationDate(doi: string): Promise<Date | null> {
+  const doiDatePartSchema = z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .pipe(z.number().int().positive());
   const schema = z.object({
     issued: z
       .object({
-        'date-parts': z.array(z.array(z.number().int()))
+        'date-parts': z.array(z.array(doiDatePartSchema))
       })
       .optional()
   });
