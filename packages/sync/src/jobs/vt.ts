@@ -14,7 +14,7 @@ const vecTraitsDatasetRowSchema = z.object({
   OriginalTraitName: z.string().trim().nullable(),
   Habitat: z.string().trim().nullable(),
   LabField: z.string().trim().nullable(),
-  Location: z.string().trim(),
+  Location: z.string().trim().nullable(), // returns `null` even though the docs say otherwise
   LocationDate: z.iso
     .date()
     .nullable()
