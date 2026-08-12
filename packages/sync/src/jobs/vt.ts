@@ -352,21 +352,19 @@ function extractSpeciesNames(rows: VecTraitsDatasetRow[]): string[] {
   for (const row of rows) {
     const candidates = [row.Interactor1, row.Interactor2];
     for (const candidate of candidates) {
-      const normalized = normalizeSpeciesName(candidate);
-      if (!normalized) continue;
-      names.add(normalized);
+      const upper = candidate?.toUpperCase();
+      // necessary because the API returns sentinel values for missing species names
+      if (
+        !candidate ||
+        upper === 'NONE NONE' ||
+        upper === 'NONE' ||
+        upper === 'BLANK' ||
+        upper === 'NA'
+      )
+        continue;
+      names.add(candidate);
     }
   }
 
   return Array.from(names);
-}
-
-// necessary because the API returns sentinel values for missing species names
-function normalizeSpeciesName(value: string | null): string | null {
-  if (!value) return null;
-
-  const upper = value.toUpperCase();
-  if (upper === 'NONE NONE' || upper === 'NONE' || upper === 'BLANK' || upper === 'NA') return null;
-
-  return value;
 }
