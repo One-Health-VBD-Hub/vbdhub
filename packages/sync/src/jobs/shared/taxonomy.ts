@@ -60,6 +60,8 @@ interface ParsedGbifClassification {
   matchedPathName: string | undefined;
 }
 
+// Global Names API returns empty strings for some fields when they are not available,
+// but we want to treat those as undefined in our TypeScript types. This schema transforms empty strings to undefined.
 const emptyStringToUndefinedSchema = z
   .string()
   .trim()
