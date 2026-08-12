@@ -1,7 +1,6 @@
 import { createPrismaClient } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import { nullableStringSchema } from './schemas.js';
 
 const GBIF_DATASOURCE_ID = 11;
 const GLOBAL_NAMES_VERIFICATION_URL = 'https://verifier.globalnames.org/api/v1/verifications';
@@ -61,31 +60,35 @@ interface ParsedGbifClassification {
   matchedPathName: string | undefined;
 }
 
-const globalNamesMatchResultSchema = z.looseObject({
-  dataSourceId: z.number().optional(),
-  sortScore: z.number().optional(),
-  taxonomicStatus: nullableStringSchema.optional(),
-  isSynonym: z.boolean().optional(),
-  recordId: nullableStringSchema.optional(),
-  currentRecordId: nullableStringSchema.optional(),
-  currentCanonicalSimple: nullableStringSchema.optional(),
-  currentCanonicalFull: nullableStringSchema.optional(),
-  matchedCanonicalSimple: nullableStringSchema.optional(),
-  matchedCanonicalFull: nullableStringSchema.optional(),
-  currentName: nullableStringSchema.optional(),
-  classificationPath: nullableStringSchema.optional(),
-  classificationRanks: nullableStringSchema.optional(),
-  classificationIds: nullableStringSchema.optional()
-});
+const emptyStringToUndefinedSchema = z
+  .string()
+  .trim()
+  .transform((value) => value || undefined);
 
-const globalNamesNameResultSchema = z.object({
-  name: nullableStringSchema.optional(),
-  results: z.array(globalNamesMatchResultSchema).default([]),
-  bestResult: globalNamesMatchResultSchema.optional()
+const globalNamesMatchResultSchema = z.object({
+  dataSourceId: z.int(),
+  sortScore: z.number(),
+  taxonomicStatus: z.enum(['Accepted', 'Synonym', 'N/A']),
+  currentRecordId: z.string().trim().min(1),
+  currentCanonicalSimple: emptyStringToUndefinedSchema,
+  currentCanonicalFull: emptyStringToUndefinedSchema,
+  matchedCanonicalSimple: emptyStringToUndefinedSchema.optional(),
+  matchedCanonicalFull: emptyStringToUndefinedSchema.optional(),
+  currentName: emptyStringToUndefinedSchema,
+  classificationPath: emptyStringToUndefinedSchema.optional(),
+  classificationRanks: emptyStringToUndefinedSchema.optional(),
+  classificationIds: emptyStringToUndefinedSchema.optional()
 });
 
 const globalNamesVerificationResponseSchema = z.object({
-  names: z.array(globalNamesNameResultSchema)
+  names: z.array(
+    z.object({
+      name: z.string().trim().min(1),
+      results: z.array(globalNamesMatchResultSchema).default([]),
+      bestResults: z.array(globalNamesMatchResultSchema).default([]),
+      bestResult: globalNamesMatchResultSchema.optional()
+    })
+  )
 });
 
 type GlobalNamesMatchResult = z.infer<typeof globalNamesMatchResultSchema>;
@@ -116,10 +119,13 @@ async function resolveGbifTaxaFromNames(
     }
 
     for (const item of response.names) {
-      const name = stripQualifiersFromTaxonName(item.name ?? '');
+      const name = stripQualifiersFromTaxonName(item.name);
       if (!name) continue;
-      const matches =
-        item.results.length > 0 ? item.results : item.bestResult ? [item.bestResult] : [];
+
+      let matches = item.results;
+      if (matches.length === 0) matches = item.bestResults;
+      if (matches.length === 0 && item.bestResult) matches = [item.bestResult];
+
       const resolved = resolveGlobalNamesGbifMatch(matches);
       resultMap.set(name, resolved);
     }
@@ -237,7 +243,7 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
   const match = findBestAcceptedGbifMatch(matches);
   if (!match) return null;
 
-  const gbifTaxonId = parseGbifId(match.currentRecordId ?? match.recordId);
+  const gbifTaxonId = parseGbifId(match.currentRecordId);
   if (!gbifTaxonId) return null;
 
   const classification = parseGbifClassification(match, gbifTaxonId);
@@ -259,16 +265,16 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
 function findBestAcceptedGbifMatch(
   matches: GlobalNamesMatchResult[]
 ): GlobalNamesMatchResult | undefined {
-  // The local taxonomy table is GBIF-only, so ignore other Global Names
-  // datasources and synonym records even if they score highly.
   return matches
-    .filter(
-      (match) =>
-        match.dataSourceId === GBIF_DATASOURCE_ID &&
-        (match.taxonomicStatus ?? '').toLowerCase() === 'accepted' &&
-        match.isSynonym === false
-    )
-    .sort((a, b) => (b.sortScore ?? 0) - (a.sortScore ?? 0))[0];
+    .filter((match) => {
+      if (match.dataSourceId !== GBIF_DATASOURCE_ID) return false;
+
+      return (
+        match.taxonomicStatus === 'Accepted' ||
+        (match.taxonomicStatus === 'Synonym' && parseGbifId(match.currentRecordId) !== null)
+      );
+    })
+    .sort((a, b) => b.sortScore - a.sortScore)[0];
 }
 
 function chooseScientificName(
@@ -287,9 +293,8 @@ function chooseScientificName(
   );
 }
 
-function splitPipe(value: string | null | undefined): string[] {
-  if (!value) return [];
-  return value.split('|').map((part) => part.trim());
+function splitPipe(value?: string): string[] {
+  return value?.split('|').map((part) => part.trim()) ?? [];
 }
 
 function parseGbifClassification(
