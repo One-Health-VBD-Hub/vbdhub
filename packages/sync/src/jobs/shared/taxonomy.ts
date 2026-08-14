@@ -96,22 +96,12 @@ const globalNamesVerificationResponseSchema = z.object({
 type GlobalNamesMatchResult = z.infer<typeof globalNamesMatchResultSchema>;
 type GlobalNamesVerificationResponse = z.infer<typeof globalNamesVerificationResponseSchema>;
 
-function buildGlobalNamesRequestBody(nameStrings: string[]) {
-  return {
-    nameStrings,
-    // withRelaxedFuzzyMatch: true,
-    withCapitalization: true,
-    // withUninomialFuzzyMatch: true,
-    dataSources: [GBIF_DATASOURCE_ID] as const
-  };
-}
-
 async function resolveGbifTaxaFromNames(
   names: string[],
   options?: ResolveGbifTaxaOptions
 ): Promise<Map<string, ResolvedGbifTaxon | null>> {
   const resultMap = new Map<string, ResolvedGbifTaxon | null>();
-  const batchSize = Math.max(1, options?.batchSize ?? (names.length || 1));
+  const batchSize = Math.max(1, options?.batchSize ?? 1000);
 
   for (let i = 0; i < names.length; i += batchSize) {
     const batch = names.slice(i, i + batchSize);
@@ -148,7 +138,13 @@ async function fetchGlobalNamesBatch(
 
   return ky
     .post(GLOBAL_NAMES_VERIFICATION_URL, {
-      json: buildGlobalNamesRequestBody(nameStrings),
+      json: {
+        nameStrings,
+        // withRelaxedFuzzyMatch: true,
+        withCapitalization: true,
+        // withUninomialFuzzyMatch: true,
+        dataSources: [GBIF_DATASOURCE_ID]
+      },
       retry:
         retryAttempts > 1
           ? {

@@ -50,6 +50,7 @@ export const vtSyncJob: JobDefinition = {
 
       for (const id of ids) {
         try {
+          const sourceKey = String(id);
           const rows: VecTraitsDatasetRow[] = await fetchVecTraitsDatasetRows(id);
           const coordinates = parseCoordinates(rows);
           const speciesNames = extractSpeciesNames(rows);
@@ -72,7 +73,6 @@ export const vtSyncJob: JobDefinition = {
                 })
               : null) ?? parseCitationYear(citation);
           const sourceUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
-          const sourceKey = String(id);
 
           const datasetData = {
             category: DB_CATEGORY,
