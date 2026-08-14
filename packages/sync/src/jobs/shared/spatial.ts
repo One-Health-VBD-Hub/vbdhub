@@ -5,35 +5,6 @@ export interface Coordinate {
   lon: number;
 }
 
-export interface BoundingBox {
-  minLat: number;
-  minLon: number;
-  maxLat: number;
-  maxLon: number;
-}
-
-export function getBoundingBox(coords: Coordinate[]): BoundingBox | null {
-  const first = coords[0];
-  if (!first) return null;
-
-  let minLat = first.lat;
-  let maxLat = first.lat;
-  let minLon = first.lon;
-  let maxLon = first.lon;
-
-  for (let i = 1; i < coords.length; i += 1) {
-    const coordinate = coords[i];
-    if (!coordinate) continue;
-    const { lat, lon } = coordinate;
-    if (lat < minLat) minLat = lat;
-    if (lat > maxLat) maxLat = lat;
-    if (lon < minLon) minLon = lon;
-    if (lon > maxLon) maxLon = lon;
-  }
-
-  return { minLat, minLon, maxLat, maxLon };
-}
-
 export async function upsertSpatialGeometry(
   prisma: ReturnType<typeof createPrismaClient>,
   datasetId: string,
@@ -44,6 +15,7 @@ export async function upsertSpatialGeometry(
       UPDATE "Dataset"
       SET "spatialGeom" = NULL
       WHERE "id" = ${datasetId}
+        AND "spatialGeom" IS NOT NULL
     `;
     return;
   }
@@ -55,11 +27,16 @@ export async function upsertSpatialGeometry(
     coordinates: coordinates.map((point) => [point.lon, point.lat])
   });
 
-  // Prisma does not model PostGIS geometry columns directly, so write the
-  // spatial footprint with raw SQL while keeping values parameterized.
+  // Prisma cannot model PostGIS geometry columns directly. Create a candidate
+  // geometry and update only when it differs, avoiding needless GiST index writes.
   await prisma.$executeRaw`
+    WITH input AS (
+      SELECT ST_SetSRID(ST_GeomFromGeoJSON(${geoJson}), 4326) AS geom
+    )
     UPDATE "Dataset"
-    SET "spatialGeom" = ST_SetSRID(ST_GeomFromGeoJSON(${geoJson}), 4326)
-    WHERE "id" = ${datasetId}
+    SET "spatialGeom" = input.geom
+    FROM input
+    WHERE "Dataset"."id" = ${datasetId}
+      AND "Dataset"."spatialGeom" IS DISTINCT FROM input.geom
   `;
 }

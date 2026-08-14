@@ -1,7 +1,7 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import { parse } from 'csv-parse';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
-import { getBoundingBox, upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
+import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import { createHubStorageClient, type HubBucketObject } from './shared/storage.js';
 import type { JobDefinition } from '../types.js';
@@ -20,7 +20,7 @@ const metadataFieldAliases = {
   title: ['title'],
   description: ['description'],
   doi: ['doi'],
-  homepageUrl: ['homepageurl', 'homepage', 'url'],
+  sourceUrl: ['homepageurl', 'homepage', 'url'],
   license: ['license', 'licence'],
   publisher: ['contactaffiliation', 'publisher', 'submittedby'],
   publishedAt: ['publishedat', 'publicationdate', 'dateusedforstatistics', 'year']
@@ -58,7 +58,7 @@ interface DatasetSnapshot {
   title: string;
   description: string | null;
   publisher: string | null;
-  homepageUrl: string | null;
+  sourceUrl: string | null;
   doi: string | null;
   license: string | null;
   publishedAt: Date | null;
@@ -72,7 +72,7 @@ interface DatasetAccumulator {
   title: string | null;
   description: string | null;
   publisher: string | null;
-  homepageUrl: string | null;
+  sourceUrl: string | null;
   doi: string | null;
   license: string | null;
   publishedAt: Date | null;
@@ -103,7 +103,7 @@ export const hubSyncJob: JobDefinition = {
       secretKey,
       bucket
     });
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
 
     try {
       logger.info('Starting hub synchronisation');
@@ -119,12 +119,7 @@ export const hubSyncJob: JobDefinition = {
           const datasetRecord = await upsertDataset(prisma, snapshot);
           await upsertSpatialGeometry(prisma, datasetRecord.id, snapshot.coordinates);
 
-          const taxaLinked = await linkDatasetTaxa(
-            prisma,
-            datasetRecord.id,
-            snapshot.speciesNames,
-            taxonomyResolutionCache
-          );
+          const taxaLinked = await linkDatasetTaxa(datasetRecord.id, snapshot.speciesNames);
 
           logger.info(
             {
@@ -193,7 +188,7 @@ async function processDataset(
     title: null,
     description: null,
     publisher: null,
-    homepageUrl: null,
+    sourceUrl: null,
     doi: null,
     license: null,
     publishedAt: null,
@@ -220,7 +215,7 @@ async function processDataset(
     title: accumulator.title ?? humanizeSourceKey(dataset.sourceKey),
     description: accumulator.description,
     publisher: accumulator.publisher,
-    homepageUrl: accumulator.homepageUrl,
+    sourceUrl: accumulator.sourceUrl,
     doi: accumulator.doi,
     license: accumulator.license,
     publishedAt,
@@ -294,7 +289,7 @@ function absorbRecord(accumulator: DatasetAccumulator, record: Record<string, st
   accumulator.publisher ??=
     getFirstString(record, metadataFieldAliases.publisher) ??
     getFirstString(record, personFieldAliases.contactAffiliation);
-  accumulator.homepageUrl ??= getFirstString(record, metadataFieldAliases.homepageUrl);
+  accumulator.sourceUrl ??= getFirstString(record, metadataFieldAliases.sourceUrl);
   accumulator.doi ??= getFirstString(record, metadataFieldAliases.doi);
   accumulator.license ??= getFirstString(record, metadataFieldAliases.license);
   accumulator.publishedAt ??= extractDate(record, metadataFieldAliases.publishedAt);
@@ -323,21 +318,16 @@ async function upsertDataset(
   prisma: ReturnType<typeof createPrismaClient>,
   snapshot: DatasetSnapshot
 ) {
-  const bbox = getBoundingBox(snapshot.coordinates);
   const datasetData = {
     category: snapshot.category,
     title: snapshot.title,
     description: snapshot.description,
-    homepageUrl: snapshot.homepageUrl,
+    sourceUrl: snapshot.sourceUrl,
     doi: snapshot.doi,
     publisher: snapshot.publisher,
     license: snapshot.license,
     publishedAt: snapshot.publishedAt,
-    raw: snapshot.raw,
-    bboxMinLon: bbox?.minLon ?? null,
-    bboxMinLat: bbox?.minLat ?? null,
-    bboxMaxLon: bbox?.maxLon ?? null,
-    bboxMaxLat: bbox?.maxLat ?? null
+    raw: snapshot.raw
   };
 
   return prisma.dataset.upsert({

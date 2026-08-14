@@ -49,7 +49,7 @@ const datasetDetailResponseSchema = {
     doi: { type: 'string', maxLength: 2048 },
     publisher: { type: 'string' },
     publishedAt: { type: 'string', format: 'date-time' },
-    homepageUrl: { type: 'string', maxLength: 2048 },
+    sourceUrl: { type: 'string', maxLength: 2048 },
     license: { type: 'string' }
   }
 } as const;

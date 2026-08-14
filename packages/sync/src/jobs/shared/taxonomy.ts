@@ -1,7 +1,6 @@
 import { createPrismaClient } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import { nullableStringSchema } from './schemas.js';
 
 const GBIF_DATASOURCE_ID = 11;
 const GLOBAL_NAMES_VERIFICATION_URL = 'https://verifier.globalnames.org/api/v1/verifications';
@@ -39,7 +38,7 @@ interface TaxonUpsertRow {
   genusId: number | null;
 }
 
-export interface ResolvedGbifTaxon {
+interface ResolvedGbifTaxon {
   taxon: TaxonUpsertRow;
   ancestors: TaxonUpsertRow[];
 }
@@ -61,31 +60,37 @@ interface ParsedGbifClassification {
   matchedPathName: string | undefined;
 }
 
-const globalNamesMatchResultSchema = z.looseObject({
-  dataSourceId: z.number().optional(),
-  sortScore: z.number().optional(),
-  taxonomicStatus: nullableStringSchema.optional(),
-  isSynonym: z.boolean().optional(),
-  recordId: nullableStringSchema.optional(),
-  currentRecordId: nullableStringSchema.optional(),
-  currentCanonicalSimple: nullableStringSchema.optional(),
-  currentCanonicalFull: nullableStringSchema.optional(),
-  matchedCanonicalSimple: nullableStringSchema.optional(),
-  matchedCanonicalFull: nullableStringSchema.optional(),
-  currentName: nullableStringSchema.optional(),
-  classificationPath: nullableStringSchema.optional(),
-  classificationRanks: nullableStringSchema.optional(),
-  classificationIds: nullableStringSchema.optional()
+// Global Names API returns empty strings for some fields when they are not available,
+// but we want to treat those as undefined in our TypeScript types. This schema transforms empty strings to undefined.
+const emptyStringToUndefinedSchema = z
+  .string()
+  .trim()
+  .transform((value) => value || undefined);
+
+const globalNamesMatchResultSchema = z.object({
+  dataSourceId: z.int(),
+  sortScore: z.number(),
+  taxonomicStatus: z.enum(['Accepted', 'Synonym', 'N/A']),
+  currentRecordId: z.string().trim().min(1),
+  currentCanonicalSimple: emptyStringToUndefinedSchema,
+  currentCanonicalFull: emptyStringToUndefinedSchema,
+  matchedCanonicalSimple: emptyStringToUndefinedSchema.optional(),
+  matchedCanonicalFull: emptyStringToUndefinedSchema.optional(),
+  currentName: emptyStringToUndefinedSchema,
+  classificationPath: emptyStringToUndefinedSchema.optional(),
+  classificationRanks: emptyStringToUndefinedSchema.optional(),
+  classificationIds: emptyStringToUndefinedSchema.optional()
 });
 
-const globalNamesNameResultSchema = z.looseObject({
-  name: nullableStringSchema.optional(),
-  results: z.array(globalNamesMatchResultSchema).default([]),
-  bestResult: globalNamesMatchResultSchema.optional()
-});
-
-const globalNamesVerificationResponseSchema = z.looseObject({
-  names: z.array(globalNamesNameResultSchema).default([])
+const globalNamesVerificationResponseSchema = z.object({
+  names: z.array(
+    z.object({
+      name: z.string().trim().min(1),
+      results: z.array(globalNamesMatchResultSchema).default([]),
+      bestResults: z.array(globalNamesMatchResultSchema).default([]),
+      bestResult: globalNamesMatchResultSchema.optional()
+    })
+  )
 });
 
 type GlobalNamesMatchResult = z.infer<typeof globalNamesMatchResultSchema>;
@@ -94,11 +99,9 @@ type GlobalNamesVerificationResponse = z.infer<typeof globalNamesVerificationRes
 function buildGlobalNamesRequestBody(nameStrings: string[]) {
   return {
     nameStrings,
-    // These relaxed options help source metadata names resolve despite common
-    // qualifiers like "complex", casing drift, or incomplete uninomial names.
-    withRelaxedFuzzyMatch: true,
+    // withRelaxedFuzzyMatch: true,
     withCapitalization: true,
-    withUninomialFuzzyMatch: true,
+    // withUninomialFuzzyMatch: true,
     dataSources: [GBIF_DATASOURCE_ID] as const
   };
 }
@@ -112,18 +115,19 @@ async function resolveGbifTaxaFromNames(
 
   for (let i = 0; i < names.length; i += batchSize) {
     const batch = names.slice(i, i + batchSize);
-    if (batch.length === 0) continue;
-
     const response = await fetchGlobalNamesBatch(batch, options);
-    for (const item of response.names ?? []) {
-      const name = normalizeTaxonQueryName(item.name ?? '');
+    if (response.names.length !== batch.length) {
+      throw new Error(`GN returned ${response.names.length} results for ${batch.length} names`);
+    }
+
+    for (const item of response.names) {
+      const name = stripQualifiersFromTaxonName(item.name);
       if (!name) continue;
-      const matches =
-        item.results && item.results.length > 0
-          ? item.results
-          : item.bestResult
-            ? [item.bestResult]
-            : [];
+
+      let matches = item.results;
+      if (matches.length === 0) matches = item.bestResults;
+      if (matches.length === 0 && item.bestResult) matches = [item.bestResult];
+
       const resolved = resolveGlobalNamesGbifMatch(matches);
       resultMap.set(name, resolved);
     }
@@ -157,75 +161,83 @@ async function fetchGlobalNamesBatch(
     .json(globalNamesVerificationResponseSchema);
 }
 
-export async function linkDatasetTaxa(
+export function createDatasetTaxaLinker(
   prisma: ReturnType<typeof createPrismaClient>,
-  datasetId: string,
-  speciesNames: string[],
-  taxonomyResolutionCache: Map<string, ResolvedGbifTaxon | null>,
   options?: ResolveGbifTaxaOptions
-): Promise<number> {
-  if (speciesNames.length === 0) return 0;
+): (datasetId: string, speciesNames: string[]) => Promise<number> {
+  // Caches resolved taxa for the lifetime of a job so repeated species across datasets do not repeatedly call Global Names API
+  const taxonResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+  // Caches persisted taxa IDs for the lifetime of a job so repeated matched species across datasets do not repeatedly upsert the same taxon
+  const persistedTaxonIds = new Set<number>();
 
-  const queryNames = Array.from(
-    new Set(
-      speciesNames
-        .map(normalizeTaxonQueryName)
-        .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
-    )
-  );
-  if (queryNames.length === 0) return 0;
+  // Links are additive: existing dataset-taxon links are retained when names disappear.
+  return async function linkDatasetTaxa(datasetId, speciesNames) {
+    if (speciesNames.length === 0) return 0;
 
-  const unresolvedNames = queryNames.filter((name) => !taxonomyResolutionCache.has(name));
+    const cleanedNames = Array.from(
+      new Set(
+        speciesNames
+          .map(stripQualifiersFromTaxonName)
+          .filter((name) => name.length > 0 && name.toUpperCase() !== 'BLANK')
+      )
+    );
+    if (cleanedNames.length === 0) return 0;
 
-  if (unresolvedNames.length > 0) {
-    // Cache both hits and misses for the lifetime of a job so repeated species
-    // across datasets do not repeatedly call Global Names.
-    const resolvedFromApi = await resolveGbifTaxaFromNames(unresolvedNames, options);
-    for (const name of unresolvedNames) {
-      taxonomyResolutionCache.set(name, resolvedFromApi.get(name) ?? null);
+    const unresolvedNames = cleanedNames.filter((name) => !taxonResolutionCache.has(name));
+
+    // If we have any unresolved names, we need to resolve them first
+    if (unresolvedNames.length > 0) {
+      const resolvedNames = await resolveGbifTaxaFromNames(unresolvedNames, options);
+      for (const name of unresolvedNames) {
+        taxonResolutionCache.set(name, resolvedNames.get(name) ?? null);
+      }
     }
-  }
 
-  const uniqueTaxonIds = new Set<number>();
-  for (const name of queryNames) {
-    const resolved = taxonomyResolutionCache.get(name);
-    if (!resolved) continue;
+    const uniqueTaxonIds = new Set<number>();
+    for (const name of cleanedNames) {
+      const resolvedTaxon = taxonResolutionCache.get(name);
+      if (!resolvedTaxon) continue;
 
-    await upsertResolvedTaxon(prisma, resolved);
-    uniqueTaxonIds.add(resolved.taxon.gbifTaxonId);
-  }
+      const { gbifTaxonId } = resolvedTaxon.taxon;
 
-  if (uniqueTaxonIds.size === 0) return 0;
+      if (!persistedTaxonIds.has(gbifTaxonId)) {
+        // Creates or updates the taxon and its ancestors in the local taxonomy table, so that
+        // the dataset-taxon link can be created
+        await upsertResolvedTaxon(prisma, resolvedTaxon);
+        persistedTaxonIds.add(gbifTaxonId);
+      }
 
-  const created = await prisma.datasetTaxon.createMany({
-    data: Array.from(uniqueTaxonIds, (gbifTaxonId) => ({
-      datasetId,
-      gbifTaxonId
-    })),
-    skipDuplicates: true
-  });
+      uniqueTaxonIds.add(gbifTaxonId);
+    }
 
-  return created.count;
+    if (uniqueTaxonIds.size === 0) return 0;
+
+    // Create missing dataset-taxon links in bulk, skipping duplicates
+    await prisma.datasetTaxon.createMany({
+      data: Array.from(uniqueTaxonIds, (gbifTaxonId) => ({
+        datasetId,
+        gbifTaxonId
+      })),
+      skipDuplicates: true
+    });
+
+    return uniqueTaxonIds.size;
+  };
 }
 
-function normalizeTaxonName(name: string): string {
-  return cleanTaxonName(name).toLowerCase();
+function normalizeTaxonSearchName(name: string): string {
+  return stripQualifiersFromTaxonName(name).toLowerCase();
 }
 
-function normalizeTaxonQueryName(name: string): string {
-  return cleanTaxonName(name);
-}
-
-function cleanTaxonName(name: string): string {
+function stripQualifiersFromTaxonName(name: string): string {
   return (
     name
-      // Source systems often include non-taxonomic qualifiers that reduce match
-      // quality against the GBIF backbone.
-      .replace(/\bcomplex\b/gi, '')
-      .replace(/\bmorphological group\b/gi, '')
-      .replace(/\bsp\.\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
+      // These source qualifiers reduce matching quality against the GBIF backbone.
+      .replace(/\bcomplex\b/gi, '') // converts e.g. "Asteraceae complex" to "Asteraceae"
+      .replace(/\bmorphological group\b/gi, '') // converts e.g. "Asteraceae morphological group" to "Asteraceae"
+      .replace(/\bsp\./gi, '') // converts e.g. "Asteraceae sp." to "Asteraceae"
+      .replace(/\s+/g, ' ') // collapse multiple spaces
+      .trim() // trim leading/trailing spaces
   );
 }
 
@@ -233,7 +245,7 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
   const match = findBestAcceptedGbifMatch(matches);
   if (!match) return null;
 
-  const gbifTaxonId = parseGbifId(match.currentRecordId ?? match.recordId);
+  const gbifTaxonId = parseGbifId(match.currentRecordId);
   if (!gbifTaxonId) return null;
 
   const classification = parseGbifClassification(match, gbifTaxonId);
@@ -243,7 +255,7 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
     taxon: {
       gbifTaxonId,
       scientificName,
-      nameNorm: normalizeTaxonName(scientificName),
+      nameNorm: normalizeTaxonSearchName(scientificName),
       rank: classification.matchedRank,
       parentGbifTaxonId: classification.parentGbifTaxonId,
       ...classification.lineage
@@ -255,16 +267,16 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
 function findBestAcceptedGbifMatch(
   matches: GlobalNamesMatchResult[]
 ): GlobalNamesMatchResult | undefined {
-  // The local taxonomy table is GBIF-only, so ignore other Global Names
-  // datasources and synonym records even if they score highly.
   return matches
-    .filter(
-      (match) =>
-        match.dataSourceId === GBIF_DATASOURCE_ID &&
-        (match.taxonomicStatus ?? '').toLowerCase() === 'accepted' &&
-        match.isSynonym === false
-    )
-    .sort((a, b) => (b.sortScore ?? 0) - (a.sortScore ?? 0))[0];
+    .filter((match) => {
+      if (match.dataSourceId !== GBIF_DATASOURCE_ID) return false;
+
+      return (
+        match.taxonomicStatus === 'Accepted' ||
+        (match.taxonomicStatus === 'Synonym' && parseGbifId(match.currentRecordId) !== null)
+      );
+    })
+    .sort((a, b) => b.sortScore - a.sortScore)[0];
 }
 
 function chooseScientificName(
@@ -283,9 +295,8 @@ function chooseScientificName(
   );
 }
 
-function splitPipe(value: string | null | undefined): string[] {
-  if (!value) return [];
-  return value.split('|').map((part) => part.trim());
+function splitPipe(value?: string): string[] {
+  return value?.split('|').map((part) => part.trim()) ?? [];
 }
 
 function parseGbifClassification(
@@ -356,7 +367,7 @@ function buildTaxonRowsFromClassification(
     taxonRows.push({
       gbifTaxonId,
       scientificName,
-      nameNorm: normalizeTaxonName(scientificName),
+      nameNorm: normalizeTaxonSearchName(scientificName),
       rank,
       parentGbifTaxonId: lastNumericId,
       ...lineage

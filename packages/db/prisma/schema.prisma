@@ -1,8 +1,7 @@
-// Goals:
-// - PostgreSQL + PostGIS as the primary store
-// - One taxonomy DB: GBIF backbone only
-// - Datasets from multiple SourceDb values with heterogeneous per-source metadata in `raw`
-// - Filters you care about: taxonomy (by GBIF IDs + “under rank X”), location, publishedAt, category, sourceDb
+// - PostgreSQL + PostGIS are the primary store
+// - 1 taxonomy source: GBIF backbone only
+// - `Dataset` model represents records from multiple sources, with source-specific metadata in `raw`
+// - Key filters: taxonomy (by GBIF IDs + “under rank X”), location, publishedAt, category, sourceDb
 //
 // Key design choices:
 // - Taxonomy is normalized into a Taxon table (one row per GBIF usageKey)
@@ -12,12 +11,12 @@
 //
 // Notes on PostGIS + Prisma:
 // - Prisma does not natively support PostGIS geometry/geography types, so we use Unsupported(...)
-// - You will query spatial predicates (ST_Intersects / ST_Within / ST_DWithin / etc.) via $queryRaw,
+// - Query spatial predicates (ST_Intersects / ST_Within / ST_DWithin / etc.) via $queryRaw,
 //   ideally wrapped in Prisma Client extensions + SafeQL.
 //
 // Notes on metadata search:
-// - If you only search over metadata (datasets), Postgres full-text search is usually sufficient.
-//   You can add a generated tsvector + GIN index in a SQL migration (Prisma doesn't model tsvector well).
+// - For search over metadata (datasets), Postgres full-text search is usually sufficient.
+//   Can add a generated tsvector + GIN index in a SQL migration (Prisma doesn't model tsvector well).
 
 generator client {
   provider = "prisma-client"
@@ -28,8 +27,8 @@ datasource db {
   provider = "postgresql"
 }
 
+// Source systems whose datasets metadata we ingest and unify
 enum SourceDb {
-  // Source systems whose dataset metadata we ingest and unify
   gbif
   proteomexchange
   vecdyn
@@ -37,8 +36,8 @@ enum SourceDb {
   hub
 }
 
+// High-level category used for filtering and UI grouping
 enum DatasetCategory {
-  // High-level category used for filtering and UI grouping
   occurrence
   abundance
   traits
@@ -46,8 +45,8 @@ enum DatasetCategory {
   epidemiology
 }
 
+// Normalized ranks for consistent filtering
 enum TaxonRank {
-  // Normalized ranks for consistent filterin
   kingdom
   phylum
   class
@@ -71,7 +70,7 @@ model Dataset {
   /// Everything else can live in `raw` for heterogeneous per-source differences.
   title       String?
   description String?
-  homepageUrl String?
+  sourceUrl   String?
   doi         String?
   publisher   String?
   license     String?
@@ -85,15 +84,8 @@ model Dataset {
 
   /// Spatial footprint / coverage.
   /// Store ANY geometry (Point/Polygon/MultiPolygon/GeometryCollection) in SRID 4326.
-  /// You’ll query this with raw SQL (ST_Intersects / ST_Within / etc.).
+  /// Queried with raw SQL (ST_Intersects / ST_Within / etc.).
   spatialGeom Unsupported("geometry(GEOMETRY, 4326)")?
-
-  /// Optional convenience bbox columns for cheap prefiltering (can help before PostGIS ops)
-  /// Useful if you want a quick “bbox overlaps” check before expensive geometry predicates.
-  bboxMinLon Float? @db.DoublePrecision
-  bboxMinLat Float? @db.DoublePrecision
-  bboxMaxLon Float? @db.DoublePrecision
-  bboxMaxLat Float? @db.DoublePrecision
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -107,16 +99,15 @@ model Dataset {
   @@index([category])
   @@index([publishedAt])
   @@index([sourceDb, category, publishedAt])
-  // Optional if DOIs are common and frequently queried
+  // Optional
   @@index([doi])
 }
 
 model Taxon {
   /// GBIF backbone usageKey (integer identifier)
-  /// You said you want to stick to GBIF as the single taxonomy DB.
   gbifTaxonId Int @id
 
-  /// Display name (GBIF scientificName or your preferred canonical display)
+  /// Display name (GBIF scientificName or preferred canonical display)
   scientificName String
 
   /// Normalized name for reliable, indexed matching from user input
@@ -128,19 +119,18 @@ model Taxon {
   rank TaxonRank?
 
   /// Optional parent pointer (not required for querying if lineage columns are populated)
-  /// Useful if you later want to rebuild lineage columns or debug taxonomy.
+  /// Useful to rebuild lineage columns or debug taxonomy.
   parentGbifTaxonId Int?
   parent            Taxon?  @relation("TaxonParent", fields: [parentGbifTaxonId], references: [gbifTaxonId], onDelete: Restrict)
   children          Taxon[] @relation("TaxonParent")
 
-  /// The “simple but powerful” part:
   /// store the IDs of the ancestor at each major rank.
   ///
-  /// This enables “under X” queries without recursive CTEs or closure tables:
+  /// Enables “under X” queries without recursive CTEs or closure tables:
   /// - “under class Insecta” => taxon.classId = insectaId
   /// - “under family Culicidae and phylum Arthropoda” => taxon.familyId = culicidaeId AND taxon.phylumId = arthropodaId
   ///
-  /// Populate these once per Taxon at ingest time from the GBIF backbone lineage.
+  /// Populated once per Taxon at ingest time from the GBIF backbone lineage.
   kingdomId          Int?
   kingdomTaxon       Taxon?  @relation("TaxonKingdom", fields: [kingdomId], references: [gbifTaxonId], onDelete: Restrict)
   kingdomDescendants Taxon[] @relation("TaxonKingdom")
@@ -191,7 +181,7 @@ model DatasetTaxon {
   gbifTaxonId Int
   taxon       Taxon @relation(fields: [gbifTaxonId], references: [gbifTaxonId], onDelete: Restrict)
 
-  /// Relationship-specific metadata can go here if needed later (optional):
+  /// Relationship-specific metadata can go here if needed later:
   /// - evidence/source (“declared in metadata” vs “inferred”)
   /// - extraction method/version
   /// - confidence score, etc.
@@ -207,11 +197,11 @@ model DatasetTaxon {
 // 1) PostGIS index for spatial queries (Prisma can't express GiST on Unsupported well):
 //    CREATE INDEX dataset_spatial_gist ON "Dataset" USING GIST ("spatialGeom");
 //
-// 2) If you want fuzzy/partial name matching for Taxon lookup (“anoph…”), enable pg_trgm:
+// 2) For fuzzy/partial name matching for Taxon lookup (“anoph…”), enable pg_trgm:
 //    CREATE EXTENSION IF NOT EXISTS pg_trgm;
 //    CREATE INDEX taxon_name_trgm ON "Taxon" USING GIN ("nameNorm" gin_trgm_ops);
 //
-// 3) If you want metadata full-text search on Dataset, add tsvector + GIN in SQL migration:
+// 3) For metadata full-text search on Dataset, add tsvector + GIN in SQL migration:
 //    (example)
 //    ALTER TABLE "Dataset" ADD COLUMN search_vector tsvector
 //      GENERATED ALWAYS AS (

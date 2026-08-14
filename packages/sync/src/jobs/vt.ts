@@ -1,59 +1,47 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
+import { Temporal } from 'temporal-polyfill';
 import { z } from 'zod';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
-import { nullableStringSchema } from './shared/schemas.js';
-import { getBoundingBox, upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
-import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
-import type { JobDefinition } from '../types.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
+import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
+import type { JobDefinition, TemporalCoverage } from '../types.js';
 
 const VECTRAITS_BASE_URL = 'https://vectorbyte.crc.nd.edu/portal/api';
 const DB_NAME = 'vectraits';
 const DB_CATEGORY: DatasetCategory = 'traits';
 
-const vecTraitsIdsResponseSchema = z.looseObject({
-  ids: z.array(z.coerce.number().int()).default([])
-});
-
-const vecTraitsDatasetRowSchema = z.looseObject({
-  Id: z.union([z.coerce.number().int(), z.string()]).optional(),
-  DatasetID: z.coerce.number().int().optional(),
-  OriginalTraitName: nullableStringSchema.optional(),
-  StandardisedTraitName: nullableStringSchema.optional(),
-  OriginalTraitDef: nullableStringSchema.optional(),
-  StandardisedTraitDef: nullableStringSchema.optional(),
-  Habitat: nullableStringSchema.optional(),
-  LabField: nullableStringSchema.optional(),
-  Location: nullableStringSchema.optional(),
-  LocationDate: nullableStringSchema.optional(),
-  DOI: nullableStringSchema.optional(),
-  Citation: nullableStringSchema.optional(),
-  CuratedByCitation: nullableStringSchema.optional(),
-  CuratedByDOI: nullableStringSchema.optional(),
-  SubmittedBy: nullableStringSchema.optional(),
-  ContributorEmail: nullableStringSchema.optional(),
-  Interactor1: nullableStringSchema.optional(),
-  Interactor2: nullableStringSchema.optional(),
-  Latitude: z.union([z.number(), z.string(), z.null()]).optional(),
-  Longitude: z.union([z.number(), z.string(), z.null()]).optional()
+const vecTraitsDatasetRowSchema = z.object({
+  OriginalTraitName: z.string().trim().nullable(),
+  Habitat: z.string().trim().nullable(),
+  LabField: z.string().trim().nullable(),
+  Location: z.string().trim().nullable(), // returns `null` even though the docs say otherwise
+  LocationDate: z.iso
+    .date()
+    .nullable()
+    .transform((v) => (v ? new Date(v) : null)), // always in YYYY-MM-DD
+  DOI: z.string().trim().nullable(),
+  Citation: z.string().trim(),
+  CuratedByCitation: z.string().trim().nullable(),
+  CuratedByDOI: z.string().trim().nullable(),
+  SubmittedBy: z.string().trim(),
+  ContributorEmail: z.email().trim(),
+  Interactor1: z.string().trim().nullable(),
+  Interactor2: z.string().trim().nullable(),
+  Latitude: z.number().nullable(),
+  Longitude: z.number().nullable()
 });
 
 const vecTraitsDatasetResponseSchema = z.object({
-  results: z.array(vecTraitsDatasetRowSchema).default([])
+  results: z.array(vecTraitsDatasetRowSchema)
 });
 
 type VecTraitsDatasetRow = z.infer<typeof vecTraitsDatasetRowSchema>;
-type TemporalCoverage = {
-  startDate: Date | null;
-  endDate: Date | null;
-  dateCount: number;
-};
 
 export const vtSyncJob: JobDefinition = {
   name: 'vt',
   async run({ logger }) {
     const prisma = createPrismaClient();
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
 
     try {
       logger.info('Fetching VecTraits dataset IDs');
@@ -62,34 +50,39 @@ export const vtSyncJob: JobDefinition = {
 
       for (const id of ids) {
         try {
-          const rows = await fetchVecTraitsDatasetRows(id);
+          const rows: VecTraitsDatasetRow[] = await fetchVecTraitsDatasetRows(id);
           const coordinates = parseCoordinates(rows);
-          const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNames(rows);
 
           const citation = getFirstNonEmpty(rows, (row) => row.Citation);
-          const title = buildDatasetTitle(citation, id);
-          const description = buildDescription(rows);
+          const title = buildVtDatasetTitle(citation, id);
+          const description = buildVtDescription(rows);
           const publisher =
             getFirstNonEmpty(rows, (row) => row.SubmittedBy) ?? 'VectorByte VecTraits';
           const doi = getFirstNonEmpty(rows, (row) => row.DOI);
           const temporalCoverage = parseLocationDateCoverage(rows);
-          const publishedAt = parsePublishedAt(citation, temporalCoverage.startDate);
-          const homepageUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
+          const publishedAt =
+            (doi
+              ? await fetchDoiPublicationDate(doi).catch((error) => {
+                  logger.warn(
+                    { err: error, sourceKey: id },
+                    'Failed to fetch DOI publication date'
+                  );
+                  return null;
+                })
+              : null) ?? parseCitationYear(citation);
+          const sourceUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
           const sourceKey = String(id);
+
           const datasetData = {
             category: DB_CATEGORY,
             title,
             description,
-            homepageUrl,
+            sourceUrl,
             publisher,
             doi,
             publishedAt,
-            raw: buildRawPayload(rows, temporalCoverage),
-            bboxMinLon: bbox?.minLon ?? null,
-            bboxMinLat: bbox?.minLat ?? null,
-            bboxMaxLon: bbox?.maxLon ?? null,
-            bboxMaxLat: bbox?.maxLat ?? null
+            raw: buildRawPayload(rows, temporalCoverage)
           };
 
           const dataset = await prisma.dataset.upsert({
@@ -108,12 +101,7 @@ export const vtSyncJob: JobDefinition = {
           });
 
           await upsertSpatialGeometry(prisma, dataset.id, coordinates);
-          const linkedTaxa = await linkDatasetTaxa(
-            prisma,
-            dataset.id,
-            speciesNames,
-            taxonomyResolutionCache
-          );
+          const linkedTaxa = await linkDatasetTaxa(dataset.id, speciesNames);
 
           logger.info(
             {
@@ -138,15 +126,14 @@ export const vtSyncJob: JobDefinition = {
 };
 
 async function fetchVecTraitsDatasetIds(): Promise<number[]> {
+  const schema = z.object({
+    ids: z.array(z.number().int())
+  });
+
   // The explorer data.results is paged, but ids contains the full inventory.
-  const url =
-    `${VECTRAITS_BASE_URL}/vectraits-explorer/?` +
-    new URLSearchParams({
-      page: '1',
-      sort_column: 'DatasetID',
-      sort_dir: 'asc'
-    }).toString();
-  return (await ky(url).json(vecTraitsIdsResponseSchema)).ids;
+  const url = `${VECTRAITS_BASE_URL}/vectraits-explorer/?page=1&sort_column=DatasetID&sort_dir=asc`;
+
+  return (await ky(url).json(schema)).ids;
 }
 
 async function fetchVecTraitsDatasetRows(datasetId: number): Promise<VecTraitsDatasetRow[]> {
@@ -160,16 +147,16 @@ async function fetchVecTraitsDatasetRows(datasetId: number): Promise<VecTraitsDa
 
 function getFirstNonEmpty(
   rows: VecTraitsDatasetRow[],
-  getter: (row: VecTraitsDatasetRow) => unknown
+  getter: (row: VecTraitsDatasetRow) => string | null
 ): string | null {
   for (const row of rows) {
-    const value = normalizeNullableString(getter(row));
+    const value = getter(row);
     if (value) return value;
   }
   return null;
 }
 
-function buildDatasetTitle(citation: string | null, id: number): string {
+function buildVtDatasetTitle(citation: string | null, id: number): string {
   if (!citation) return `VecTraits dataset ${id}`;
 
   const extracted = extractTitleFromCitation(citation);
@@ -205,8 +192,7 @@ function extractTitleFromCitation(citation: string): string {
   // Citations usually start with authors/year and end with journal metadata.
   // Keep the middle title-like segments until the text looks like a journal.
   for (let i = 0; i < remaining.length; i += 1) {
-    const segment = remaining[i]!.trim();
-    if (!segment) continue;
+    const segment = remaining[i]!;
     if (isLikelyJournalSegment(segment)) break;
 
     if (/^\d+$/.test(segment)) {
@@ -245,7 +231,7 @@ function isLikelyJournalSegment(segment: string): boolean {
   return false;
 }
 
-function buildDescription(rows: VecTraitsDatasetRow[]): string | null {
+function buildVtDescription(rows: VecTraitsDatasetRow[]): string | null {
   const traits = collectUniqueValues(rows, (row) => row.OriginalTraitName);
   const habitats = collectUniqueValues(rows, (row) => row.Habitat);
   const environments = collectUniqueValues(rows, (row) => row.LabField);
@@ -289,64 +275,61 @@ function buildRawPayload(
     contributorEmail,
     doi,
     temporalCoverage: {
-      startDate: temporalCoverage.startDate
-        ? temporalCoverage.startDate.toISOString().slice(0, 10)
-        : null,
-      endDate: temporalCoverage.endDate
-        ? temporalCoverage.endDate.toISOString().slice(0, 10)
-        : null,
-      dateCount: temporalCoverage.dateCount
+      startDate: temporalCoverage.startDate?.toISOString().slice(0, 10) ?? null,
+      endDate: temporalCoverage.endDate?.toISOString().slice(0, 10) ?? null
     }
   } satisfies Prisma.InputJsonObject;
 }
 
 function collectUniqueValues(
   rows: VecTraitsDatasetRow[],
-  getter: (row: VecTraitsDatasetRow) => unknown
+  getter: (row: VecTraitsDatasetRow) => string | null
 ): string[] {
-  return Array.from(
-    new Set(
-      rows
-        .map((row) => normalizeNullableString(getter(row)))
-        .filter((value): value is string => Boolean(value))
-    )
-  );
+  return Array.from(new Set(rows.map(getter).filter((value): value is string => Boolean(value))));
 }
 
-function parsePublishedAt(citation: string | null, fallbackDate: Date | null): Date | null {
-  return parseCitationYear(citation) ?? fallbackDate;
+async function fetchDoiPublicationDate(doi: string): Promise<Date | null> {
+  const doiDatePartSchema = z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .pipe(z.number().int().positive());
+  const schema = z.object({
+    issued: z
+      .object({
+        'date-parts': z.array(z.array(doiDatePartSchema))
+      })
+      .optional()
+  });
+
+  const metadata = await ky('https://citation.doi.org/metadata', {
+    searchParams: { doi }
+  }).json(schema);
+  const [year, month = 1, day = 1] = metadata.issued?.['date-parts'][0] ?? [];
+  if (!year) return null;
+
+  const date = Temporal.PlainDate.from({ year, month, day }, { overflow: 'reject' });
+  return new Date(date.toZonedDateTime('UTC').epochMilliseconds);
 }
 
 function parseCitationYear(citation: string | null): Date | null {
-  for (const yearText of citation?.match(/\b(18|19|20)\d{2}\b/g) ?? []) {
-    const year = Number(yearText);
-    if (year >= 1800 && year <= 2100) {
-      return new Date(Date.UTC(year, 0, 1, 0, 0, 0));
-    }
-  }
+  const yearText = citation?.match(/\b(18|19|20)\d{2}\b/g)?.[0];
+  if (!yearText) return null;
 
-  return null;
+  return new Date(Date.UTC(Number(yearText), 0, 1));
 }
 
 function parseLocationDateCoverage(rows: VecTraitsDatasetRow[]): TemporalCoverage {
-  const uniqueDates = new Set<string>();
   let startDate: Date | null = null;
   let endDate: Date | null = null;
 
   for (const row of rows) {
-    const raw = normalizeNullableString(row.LocationDate);
-    if (!raw) continue;
-    uniqueDates.add(raw);
-
-    // Keep the distinct raw date count even when a source date is not strict
-    // YYYY-MM-DD and cannot be used for range bounds.
-    const date = parseDateOnly(raw);
+    const date = row.LocationDate;
     if (!date) continue;
     if (!startDate || date < startDate) startDate = date;
     if (!endDate || date > endDate) endDate = date;
   }
 
-  return { startDate, endDate, dateCount: uniqueDates.size };
+  return { startDate, endDate };
 }
 
 function parseCoordinates(rows: VecTraitsDatasetRow[]): Coordinate[] {
@@ -354,9 +337,8 @@ function parseCoordinates(rows: VecTraitsDatasetRow[]): Coordinate[] {
   const seen = new Set<string>();
 
   for (const row of rows) {
-    const lat = parseNumber(row.Latitude);
-    const lon = parseNumber(row.Longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const { Latitude: lat, Longitude: lon } = row;
+    if (lat === null || lon === null) continue;
 
     const key = `${lat},${lon}`;
     if (seen.has(key)) continue;
@@ -368,39 +350,25 @@ function parseCoordinates(rows: VecTraitsDatasetRow[]): Coordinate[] {
   return coordinates;
 }
 
-function parseNumber(value: number | string | null | undefined): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (trimmed.length === 0) return Number.NaN;
-    return Number(trimmed);
-  }
-  return Number.NaN;
-}
-
 function extractSpeciesNames(rows: VecTraitsDatasetRow[]): string[] {
   const names = new Set<string>();
 
   for (const row of rows) {
     const candidates = [row.Interactor1, row.Interactor2];
     for (const candidate of candidates) {
-      const normalized = normalizeSpeciesName(candidate);
-      if (!normalized) continue;
-      names.add(normalized);
+      const upper = candidate?.toUpperCase();
+      // necessary because the API returns sentinel values for missing species names
+      if (
+        !candidate ||
+        upper === 'NONE NONE' ||
+        upper === 'NONE' ||
+        upper === 'BLANK' ||
+        upper === 'NA'
+      )
+        continue;
+      names.add(candidate);
     }
   }
 
   return Array.from(names);
-}
-
-function normalizeSpeciesName(value: unknown): string | null {
-  const normalized = normalizeNullableString(value);
-  if (!normalized) return null;
-
-  const upper = normalized.toUpperCase();
-  if (upper === 'NONE NONE' || upper === 'NONE' || upper === 'BLANK' || upper === 'NA') {
-    return null;
-  }
-
-  return normalized;
 }

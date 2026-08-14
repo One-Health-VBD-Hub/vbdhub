@@ -1,14 +1,9 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky from 'ky';
 import { z } from 'zod';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
-import {
-  getBoundingBox,
-  upsertSpatialGeometry,
-  type BoundingBox,
-  type Coordinate
-} from './shared/spatial.js';
+import { upsertSpatialGeometry, type Coordinate } from './shared/spatial.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
 
@@ -92,7 +87,7 @@ export const vdSyncJob: JobDefinition = {
   name: 'vd',
   async run({ logger }) {
     const prisma = createPrismaClient();
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
 
     try {
       logger.info('Fetching VecDyn dataset IDs');
@@ -119,7 +114,6 @@ export const vdSyncJob: JobDefinition = {
           );
 
           const coordinates = parseCoordinates(mapData);
-          const bbox = getBoundingBox(coordinates);
           const speciesNames = extractSpeciesNamesFromDetail(detail);
           const temporalCoverage = parseTemporalCoverageFromSpeciesByDate(speciesByDate);
 
@@ -133,7 +127,7 @@ export const vdSyncJob: JobDefinition = {
             buildDescription(csv.consistent_data);
           const publisher = csv.consistent_data?.contact_affiliation?.trim() || 'VectorByte VecDyn';
           const doi = normalizeNullableString(csv.consistent_data?.doi);
-          const homepageUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
+          const sourceUrl = `https://vectorbyte.crc.nd.edu/portal/dataset/${id}`;
           const sourceKey = String(id);
 
           const rawPayload = {
@@ -160,15 +154,11 @@ export const vdSyncJob: JobDefinition = {
             category: VECDYN_CATEGORY,
             title,
             description,
-            homepageUrl,
+            sourceUrl,
             publisher,
             doi,
             publishedAt,
-            raw: rawPayload,
-            bboxMinLon: bbox?.minLon ?? null,
-            bboxMinLat: bbox?.minLat ?? null,
-            bboxMaxLon: bbox?.maxLon ?? null,
-            bboxMaxLat: bbox?.maxLat ?? null
+            raw: rawPayload
           };
 
           const dataset = await prisma.dataset.upsert({
@@ -187,12 +177,7 @@ export const vdSyncJob: JobDefinition = {
           });
 
           await upsertSpatialGeometry(prisma, dataset.id, coordinates);
-          const linkedTaxa = await linkDatasetTaxa(
-            prisma,
-            dataset.id,
-            speciesNames,
-            taxonomyResolutionCache
-          );
+          const linkedTaxa = await linkDatasetTaxa(dataset.id, speciesNames);
 
           logger.info(
             {
