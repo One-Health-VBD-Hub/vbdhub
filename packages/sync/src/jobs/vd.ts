@@ -159,6 +159,8 @@ export const vdSyncJob: JobDefinition = {
             publisher,
             doi,
             publishedAt,
+            temporalStart: temporalCoverage.startDate,
+            temporalEnd: temporalCoverage.endDate,
             raw: rawPayload
           };
 

@@ -49,6 +49,8 @@ const datasetDetailResponseSchema = {
     doi: { type: 'string', maxLength: 2048 },
     publisher: { type: 'string' },
     publishedAt: { type: 'string', format: 'date-time' },
+    temporalStart: { type: 'string', format: 'date' },
+    temporalEnd: { type: 'string', format: 'date' },
     sourceUrl: { type: 'string', maxLength: 2048 },
     license: { type: 'string' }
   }

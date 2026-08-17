@@ -33,6 +33,8 @@ export interface DatasetDetail {
   doi?: string;
   publisher?: string;
   publishedAt?: string;
+  temporalStart?: string;
+  temporalEnd?: string;
   sourceUrl?: string;
   license?: string;
 }
@@ -152,6 +154,8 @@ export const buildDatasetService = ({
         doi: true,
         publisher: true,
         publishedAt: true,
+        temporalStart: true,
+        temporalEnd: true,
         sourceUrl: true,
         license: true
       }
@@ -173,6 +177,8 @@ export const buildDatasetService = ({
       doi: dataset.doi ?? undefined,
       publisher: dataset.publisher ?? undefined,
       publishedAt: toIsoDateStringOrUndefined(dataset.publishedAt ?? undefined),
+      temporalStart: dataset.temporalStart?.toISOString().slice(0, 10),
+      temporalEnd: dataset.temporalEnd?.toISOString().slice(0, 10),
       sourceUrl: dataset.sourceUrl ?? undefined,
       license: dataset.license ?? undefined
     };

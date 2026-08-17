@@ -79,6 +79,10 @@ model Dataset {
   /// Date the dataset was published/released at the source (your “date of publishing” filter)
   publishedAt DateTime?
 
+  /// Earliest and latest dates represented by the dataset's observations or samples
+  temporalStart DateTime? @db.Date
+  temporalEnd   DateTime? @db.Date
+
   /// Heterogeneous per-source metadata blob (store the entire source payload or a mapped subset)
   raw Json @default("{}")
 
@@ -98,6 +102,8 @@ model Dataset {
   @@index([sourceDb])
   @@index([category])
   @@index([publishedAt])
+  @@index([temporalStart])
+  @@index([temporalEnd])
   @@index([sourceDb, category, publishedAt])
   // Optional
   @@index([doi])

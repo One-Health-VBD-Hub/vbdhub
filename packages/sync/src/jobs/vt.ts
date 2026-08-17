@@ -83,6 +83,8 @@ export const vtSyncJob: JobDefinition = {
             publisher,
             doi,
             publishedAt,
+            temporalStart: temporalCoverage.startDate,
+            temporalEnd: temporalCoverage.endDate,
             raw: buildRawPayload(rows, temporalCoverage)
           };
 
