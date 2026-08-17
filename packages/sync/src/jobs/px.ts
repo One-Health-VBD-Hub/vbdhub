@@ -208,8 +208,12 @@ export const pxSyncJob: JobDefinition = {
           skipped: counters.skipped,
           failed: counters.failed
         },
-        'ProteomeXchange synchronisation complete'
+        'ProteomeXchange synchronisation finished'
       );
+
+      if (counters.failed > 0) {
+        throw new Error(`ProteomeXchange dataset sync failures: ${counters.failed}`);
+      }
     } finally {
       await prisma.$disconnect();
     }

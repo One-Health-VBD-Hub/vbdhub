@@ -88,6 +88,7 @@ export const vdSyncJob: JobDefinition = {
   async run({ logger }) {
     const prisma = createPrismaClient();
     const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
+    let failed = 0;
 
     try {
       logger.info('Fetching VecDyn dataset IDs');
@@ -191,9 +192,12 @@ export const vdSyncJob: JobDefinition = {
             'VecDyn dataset synchronised'
           );
         } catch (error) {
+          failed += 1;
           logger.error({ err: error, sourceKey: id }, 'Failed to sync VecDyn dataset');
         }
       }
+
+      if (failed > 0) throw new Error(`VecDyn dataset sync failures: ${failed}`);
     } finally {
       await prisma.$disconnect();
     }
