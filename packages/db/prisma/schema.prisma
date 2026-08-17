@@ -105,8 +105,6 @@ model Dataset {
   @@index([temporalStart])
   @@index([temporalEnd])
   @@index([sourceDb, category, publishedAt])
-  // Optional
-  @@index([doi])
 }
 
 model Taxon {
