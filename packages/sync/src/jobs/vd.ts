@@ -12,7 +12,7 @@ const VECDYN_SOURCE_DB = 'vecdyn';
 const VECDYN_CATEGORY: DatasetCategory = 'abundance';
 
 const vecDynIdsResponseSchema = z.looseObject({
-  ids: z.array(z.coerce.number().int()).default([])
+  ids: z.array(z.coerce.number().int())
 });
 
 const vecDynDetailResultsSchema = z.looseObject({

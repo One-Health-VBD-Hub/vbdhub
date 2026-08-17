@@ -18,16 +18,20 @@ const GLOBALNAMES_BATCH_SIZE = 1000;
 const pxCompactDatasetRowSchema = z.array(z.unknown()).min(1);
 
 const pxCompactResponseSchema = z.looseObject({
-  datasets: z.array(pxCompactDatasetRowSchema).default([]),
+  datasets: z.array(pxCompactDatasetRowSchema),
   result_set: z
     .object({
       n_available_pages: z.coerce.number().int().positive().optional(),
-      n_available_rows: z.coerce.number().int().positive().optional(),
+      n_available_rows: z.coerce.number().int().nonnegative().optional(),
       n_rows_returned: z.coerce.number().int().nonnegative().optional(),
       page_number: z.coerce.number().int().positive().optional(),
       page_size: z.coerce.number().int().positive().optional()
     })
-    .optional(),
+    .refine(
+      (resultSet) =>
+        resultSet.n_available_pages !== undefined || resultSet.n_available_rows !== undefined,
+      { message: 'Expected available page or row count' }
+    ),
   status: z
     .object({
       description: z.string().optional(),
@@ -123,7 +127,7 @@ export const pxSyncJob: JobDefinition = {
       for (let page = PX_FIRST_PAGE; page <= availablePages; page += 1) {
         const response =
           page === PX_FIRST_PAGE ? firstPage : await fetchCompactDatasetPage(page, PX_PAGE_SIZE);
-        const datasetsToProcess = extractCompactDatasets(response.datasets ?? []);
+        const datasetsToProcess = extractCompactDatasets(response.datasets);
 
         if (datasetsToProcess.length === 0) {
           logger.info({ page }, 'No datasets returned on page');
@@ -221,12 +225,12 @@ export const pxSyncJob: JobDefinition = {
 };
 
 function getAvailablePageCount(response: PxCompactResponse, pageSize: number): number {
-  const fromPages = response.result_set?.n_available_pages;
+  const fromPages = response.result_set.n_available_pages;
   if (Number.isFinite(fromPages) && fromPages && fromPages > 0) return fromPages;
 
   // Some PROXI responses expose row counts without a page count; derive pages
   // from rows so the sync still walks the full inventory.
-  const fromRows = response.result_set?.n_available_rows;
+  const fromRows = response.result_set.n_available_rows;
   if (Number.isFinite(fromRows) && fromRows && fromRows > 0) {
     return Math.ceil(fromRows / pageSize);
   }

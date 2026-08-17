@@ -71,7 +71,7 @@ const globalNamesMatchResultSchema = z.object({
   dataSourceId: z.int(),
   sortScore: z.number(),
   taxonomicStatus: z.enum(['Accepted', 'Synonym', 'N/A']),
-  currentRecordId: z.string().trim().min(1),
+  currentRecordId: emptyStringToUndefinedSchema,
   currentCanonicalSimple: emptyStringToUndefinedSchema,
   currentCanonicalFull: emptyStringToUndefinedSchema,
   matchedCanonicalSimple: emptyStringToUndefinedSchema.optional(),
