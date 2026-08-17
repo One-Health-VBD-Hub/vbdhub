@@ -506,6 +506,7 @@ export const buildSearchService = ({
     if (gbifGeometry) url.searchParams.set('geometry', gbifGeometry);
     // Approximate publishedFrom/publishedTo using occurrence "modified" range.
     if (modifiedRange) url.searchParams.set('modified', modifiedRange);
+    // GBIF requires an occurrence's event date range to be fully within this range.
     if (eventDateRange) url.searchParams.set('eventDate', eventDateRange);
     input.taxonomyGbifIds?.forEach((taxonId) =>
       url.searchParams.append('taxonKey', String(taxonId))
