@@ -102,7 +102,7 @@ export const vtSyncJob: JobDefinition = {
           });
 
           await upsertSpatialGeometry(prisma, dataset.id, coordinates);
-          const linkedTaxa = await linkDatasetTaxa(dataset.id, speciesNames);
+          const distinctTaxaMatched = await linkDatasetTaxa(dataset.id, speciesNames);
 
           logger.info(
             {
@@ -110,9 +110,9 @@ export const vtSyncJob: JobDefinition = {
               sourceKey,
               rows: rows.length,
               points: coordinates.length,
-              taxaLinked: linkedTaxa,
-              temporalStart: temporalCoverage.startDate?.toISOString() ?? null,
-              temporalEnd: temporalCoverage.endDate?.toISOString() ?? null
+              distinctTaxaMatched,
+              temporalStart: temporalCoverage.startDate?.toISOString(),
+              temporalEnd: temporalCoverage.endDate?.toISOString()
             },
             'VecTraits dataset synchronised'
           );
