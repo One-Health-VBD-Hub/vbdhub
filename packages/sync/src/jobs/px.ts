@@ -1,7 +1,7 @@
 import { createPrismaClient, type DatasetCategory, type Prisma } from '@vbdhub/db';
 import ky, { HTTPError } from 'ky';
 import { z } from 'zod';
-import { linkDatasetTaxa, type ResolvedGbifTaxon } from './shared/taxonomy.js';
+import { createDatasetTaxaLinker } from './shared/taxonomy.js';
 import { nullableStringSchema } from './shared/schemas.js';
 import { normalizeNullableString, parseDateOnly } from './shared/normalization.js';
 import type { JobDefinition } from '../types.js';
@@ -18,16 +18,20 @@ const GLOBALNAMES_BATCH_SIZE = 1000;
 const pxCompactDatasetRowSchema = z.array(z.unknown()).min(1);
 
 const pxCompactResponseSchema = z.looseObject({
-  datasets: z.array(pxCompactDatasetRowSchema).default([]),
+  datasets: z.array(pxCompactDatasetRowSchema),
   result_set: z
     .object({
       n_available_pages: z.coerce.number().int().positive().optional(),
-      n_available_rows: z.coerce.number().int().positive().optional(),
+      n_available_rows: z.coerce.number().int().nonnegative().optional(),
       n_rows_returned: z.coerce.number().int().nonnegative().optional(),
       page_number: z.coerce.number().int().positive().optional(),
       page_size: z.coerce.number().int().positive().optional()
     })
-    .optional(),
+    .refine(
+      (resultSet) =>
+        resultSet.n_available_pages !== undefined || resultSet.n_available_rows !== undefined,
+      { message: 'Expected available page or row count' }
+    ),
   status: z
     .object({
       description: z.string().optional(),
@@ -97,7 +101,10 @@ export const pxSyncJob: JobDefinition = {
   name: 'px',
   async run({ logger }) {
     const prisma = createPrismaClient();
-    const taxonomyResolutionCache = new Map<string, ResolvedGbifTaxon | null>();
+    const linkDatasetTaxa = createDatasetTaxaLinker(prisma, {
+      batchSize: GLOBALNAMES_BATCH_SIZE,
+      retryAttempts: GLOBALNAMES_RETRY_ATTEMPTS
+    });
     const counters = {
       scanned: 0,
       synced: 0,
@@ -120,7 +127,7 @@ export const pxSyncJob: JobDefinition = {
       for (let page = PX_FIRST_PAGE; page <= availablePages; page += 1) {
         const response =
           page === PX_FIRST_PAGE ? firstPage : await fetchCompactDatasetPage(page, PX_PAGE_SIZE);
-        const datasetsToProcess = extractCompactDatasets(response.datasets ?? []);
+        const datasetsToProcess = extractCompactDatasets(response.datasets);
 
         if (datasetsToProcess.length === 0) {
           logger.info({ page }, 'No datasets returned on page');
@@ -147,16 +154,7 @@ export const pxSyncJob: JobDefinition = {
                 return;
               }
               const dataset = await upsertDataset(prisma, compactDataset, detail);
-              const taxaLinked = await linkDatasetTaxa(
-                prisma,
-                dataset.id,
-                speciesNames,
-                taxonomyResolutionCache,
-                {
-                  batchSize: GLOBALNAMES_BATCH_SIZE,
-                  retryAttempts: GLOBALNAMES_RETRY_ATTEMPTS
-                }
-              );
+              const taxaLinked = await linkDatasetTaxa(dataset.id, speciesNames);
 
               counters.synced += 1;
               logger.debug(
@@ -214,8 +212,12 @@ export const pxSyncJob: JobDefinition = {
           skipped: counters.skipped,
           failed: counters.failed
         },
-        'ProteomeXchange synchronisation complete'
+        'ProteomeXchange synchronisation finished'
       );
+
+      if (counters.failed > 0) {
+        throw new Error(`ProteomeXchange dataset sync failures: ${counters.failed}`);
+      }
     } finally {
       await prisma.$disconnect();
     }
@@ -223,12 +225,12 @@ export const pxSyncJob: JobDefinition = {
 };
 
 function getAvailablePageCount(response: PxCompactResponse, pageSize: number): number {
-  const fromPages = response.result_set?.n_available_pages;
+  const fromPages = response.result_set.n_available_pages;
   if (Number.isFinite(fromPages) && fromPages && fromPages > 0) return fromPages;
 
   // Some PROXI responses expose row counts without a page count; derive pages
   // from rows so the sync still walks the full inventory.
-  const fromRows = response.result_set?.n_available_rows;
+  const fromRows = response.result_set.n_available_rows;
   if (Number.isFinite(fromRows) && fromRows && fromRows > 0) {
     return Math.ceil(fromRows / pageSize);
   }
@@ -326,7 +328,7 @@ async function upsertDataset(
   const title = normalizeNullableString(detail.title) ?? compact.title ?? sourceKey;
   const description = normalizeNullableString(detail.description) ?? compact.publicationSummary;
   const doi = extractDoi(detail);
-  const homepageUrl = extractHomepageUrl(detail, sourceKey);
+  const sourceUrl = extractSourceUrl(detail, sourceKey);
   const publishedAt = parseDateOnly(compact.announceDate);
   const publisher =
     compact.repository ?? extractContactAffiliation(detail.contacts) ?? 'ProteomeXchange';
@@ -347,15 +349,11 @@ async function upsertDataset(
     category: PX_CATEGORY,
     title,
     description,
-    homepageUrl,
+    sourceUrl,
     doi,
     publisher,
     publishedAt,
-    raw: rawPayload,
-    bboxMinLon: null,
-    bboxMinLat: null,
-    bboxMaxLon: null,
-    bboxMaxLat: null
+    raw: rawPayload
   };
 
   return prisma.dataset.upsert({
@@ -416,7 +414,7 @@ function isHumanOnlyDataset(speciesNames: string[]): boolean {
   return normalized === 'homo sapiens';
 }
 
-function extractHomepageUrl(detail: PxDetailResponse, sourceKey: string): string {
+function extractSourceUrl(detail: PxDetailResponse, sourceKey: string): string {
   const urls = [
     ...extractTermUrls(detail.fullDatasetLinks),
     ...extractTermUrls(detail.identifiers)

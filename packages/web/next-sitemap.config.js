@@ -4,5 +4,6 @@ module.exports = {
   generateRobotsTxt: true, // (optional) generate robots.txt
   generateIndexSitemap: false, // (optional) generate index sitemap
   output: 'standalone',
+  exclude: ['/countdown'],
   changefreq: 'weekly' // (optional) change frequency of the sitemap
 };

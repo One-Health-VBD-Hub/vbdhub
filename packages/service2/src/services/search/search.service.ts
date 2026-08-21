@@ -38,6 +38,8 @@ export interface SearchInput {
   sourceDb?: SourceDb[];
   publishedFrom?: Date;
   publishedTo?: Date;
+  temporalFrom?: Date;
+  temporalTo?: Date;
   includeWithoutPublished?: boolean;
   geometry?: string;
   taxonomyGbifIds?: number[];
@@ -54,6 +56,8 @@ export interface SearchDatasetResultItem {
   doi?: string;
   publisher?: string;
   publishedAt?: string;
+  temporalStart?: string;
+  temporalEnd?: string;
 }
 
 export interface SearchResult {
@@ -146,18 +150,18 @@ const mapGbifDatasetToResult = ({
   publishedAt: toIsoDateStringOrUndefined(detail?.publishedAt)
 });
 
-const formatGbifModifiedRange = ({
-  publishedFrom,
-  publishedTo
+const formatGbifDateRange = ({
+  from,
+  to
 }: {
-  publishedFrom: Date | undefined;
-  publishedTo: Date | undefined;
+  from: Date | undefined;
+  to: Date | undefined;
 }): string | undefined => {
-  if (!publishedFrom && !publishedTo) return undefined;
+  if (!from && !to) return undefined;
 
-  const from = publishedFrom ? publishedFrom.toISOString().slice(0, 10) : '*';
-  const to = publishedTo ? publishedTo.toISOString().slice(0, 10) : '*';
-  return `${from},${to}`;
+  const start = from ? from.toISOString().slice(0, 10) : '*';
+  const end = to ? to.toISOString().slice(0, 10) : '*';
+  return `${start},${end}`;
 };
 
 const fetchGbifJson = async <T>(
@@ -354,6 +358,14 @@ export const buildSearchService = ({
       }
     }
 
+    // Match datasets whose temporal coverage overlaps the requested interval.
+    if (input.temporalFrom) {
+      andConditions.push({ temporalEnd: { gte: input.temporalFrom } });
+    }
+    if (input.temporalTo) {
+      andConditions.push({ temporalStart: { lte: input.temporalTo } });
+    }
+
     if (input.taxonomyGbifIds?.length) {
       const expandedTaxonomyGbifIds = await expandTaxonomyGbifIds(
         input.taxonomyGbifIds
@@ -422,7 +434,9 @@ export const buildSearchService = ({
           description: true,
           doi: true,
           publisher: true,
-          publishedAt: true
+          publishedAt: true,
+          temporalStart: true,
+          temporalEnd: true
         }
       })
     ]);
@@ -438,7 +452,9 @@ export const buildSearchService = ({
         description: dataset.description ?? undefined,
         doi: dataset.doi ?? undefined,
         publisher: dataset.publisher ?? undefined,
-        publishedAt: dataset.publishedAt?.toISOString()
+        publishedAt: dataset.publishedAt?.toISOString(),
+        temporalStart: dataset.temporalStart?.toISOString().slice(0, 10),
+        temporalEnd: dataset.temporalEnd?.toISOString().slice(0, 10)
       }))
     };
   };
@@ -452,9 +468,13 @@ export const buildSearchService = ({
     const gbifGeometry = input.geometry
       ? normalizeWktForGbif(input.geometry)
       : undefined;
-    const modifiedRange = formatGbifModifiedRange({
-      publishedFrom: input.publishedFrom,
-      publishedTo: input.publishedTo
+    const modifiedRange = formatGbifDateRange({
+      from: input.publishedFrom,
+      to: input.publishedTo
+    });
+    const eventDateRange = formatGbifDateRange({
+      from: input.temporalFrom,
+      to: input.temporalTo
     });
     const taxonomy = input.taxonomyGbifIds?.length
       ? [...input.taxonomyGbifIds].sort((a, b) => a - b).join(',')
@@ -463,6 +483,7 @@ export const buildSearchService = ({
       `q=${query ?? ''}`,
       `geometry=${gbifGeometry ?? ''}`,
       `modified=${modifiedRange ?? ''}`,
+      `eventDate=${eventDateRange ?? ''}`,
       `taxonomy=${taxonomy}`
     ].join('|');
     const scopedCacheKey = `search:gbif:occurrence-keys:${cacheKey}`;
@@ -485,6 +506,8 @@ export const buildSearchService = ({
     if (gbifGeometry) url.searchParams.set('geometry', gbifGeometry);
     // Approximate publishedFrom/publishedTo using occurrence "modified" range.
     if (modifiedRange) url.searchParams.set('modified', modifiedRange);
+    // GBIF requires an occurrence's event date range to be fully within this range.
+    if (eventDateRange) url.searchParams.set('eventDate', eventDateRange);
     input.taxonomyGbifIds?.forEach((taxonId) =>
       url.searchParams.append('taxonKey', String(taxonId))
     );

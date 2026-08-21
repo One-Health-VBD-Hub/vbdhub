@@ -12,7 +12,7 @@ async function main(): Promise<void> {
   });
 
   const { values } = parseArgs({
-    options: { job: { type: 'string' } }
+    options: { job: { type: 'string' } } // enables --job <name>
   });
 
   const jobName = values.job;
