@@ -18,6 +18,29 @@ export const metadata = {
 
 const posts = [
   {
+    id: 7,
+    title: 'Apply for our 2026 training event on data sharing and analysis',
+    href: '/blog/training-2026',
+    description: (
+      <>
+        Join us at Silwood Park from{' '}
+        <span className='font-medium'>11th to 13th November 2026</span> for a
+        free, hands-on training event on finding, curating, analysing and
+        communicating vector-borne disease data.
+      </>
+    ),
+    date: 'Sep 10, 2026',
+    datetime: '2026-09-10',
+    category: { title: 'Training', href: '#' },
+    author: {
+      name: 'VBD Hub',
+      role: 'Team',
+      imageUrl: '/bordered-logo.webp',
+      imageWidth: 491,
+      imageHeight: 550
+    }
+  },
+  {
     id: 6,
     title: 'Training workshops on data sharing and analysis',
     href: '/blog/training-online-2026',
