@@ -104,6 +104,7 @@ export const hubSyncJob: JobDefinition = {
       bucket
     });
     const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
+    let failed = 0;
 
     try {
       logger.info('Starting hub synchronisation');
@@ -134,9 +135,12 @@ export const hubSyncJob: JobDefinition = {
             'Hub dataset synchronised'
           );
         } catch (error) {
+          failed += 1;
           logger.error({ err: error, key: dataset.object.key }, 'Failed to sync hub dataset');
         }
       }
+
+      if (failed > 0) throw new Error(`Hub dataset sync failures: ${failed}`);
     } finally {
       await prisma.$disconnect();
     }

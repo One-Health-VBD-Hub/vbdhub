@@ -42,6 +42,7 @@ export const vtSyncJob: JobDefinition = {
   async run({ logger }) {
     const prisma = createPrismaClient();
     const linkDatasetTaxa = createDatasetTaxaLinker(prisma);
+    let failed = 0;
 
     try {
       logger.info('Fetching VecTraits dataset IDs');
@@ -50,6 +51,7 @@ export const vtSyncJob: JobDefinition = {
 
       for (const id of ids) {
         try {
+          const sourceKey = String(id);
           const rows: VecTraitsDatasetRow[] = await fetchVecTraitsDatasetRows(id);
           const coordinates = parseCoordinates(rows);
           const speciesNames = extractSpeciesNames(rows);
@@ -72,7 +74,6 @@ export const vtSyncJob: JobDefinition = {
                 })
               : null) ?? parseCitationYear(citation);
           const sourceUrl = `https://vectorbyte.crc.nd.edu/vectraits-dataset/${id}`;
-          const sourceKey = String(id);
 
           const datasetData = {
             category: DB_CATEGORY,
@@ -82,6 +83,8 @@ export const vtSyncJob: JobDefinition = {
             publisher,
             doi,
             publishedAt,
+            temporalStart: temporalCoverage.startDate,
+            temporalEnd: temporalCoverage.endDate,
             raw: buildRawPayload(rows, temporalCoverage)
           };
 
@@ -101,7 +104,7 @@ export const vtSyncJob: JobDefinition = {
           });
 
           await upsertSpatialGeometry(prisma, dataset.id, coordinates);
-          const linkedTaxa = await linkDatasetTaxa(dataset.id, speciesNames);
+          const distinctTaxaMatched = await linkDatasetTaxa(dataset.id, speciesNames);
 
           logger.info(
             {
@@ -109,16 +112,19 @@ export const vtSyncJob: JobDefinition = {
               sourceKey,
               rows: rows.length,
               points: coordinates.length,
-              taxaLinked: linkedTaxa,
-              temporalStart: temporalCoverage.startDate?.toISOString() ?? null,
-              temporalEnd: temporalCoverage.endDate?.toISOString() ?? null
+              distinctTaxaMatched,
+              temporalStart: temporalCoverage.startDate?.toISOString(),
+              temporalEnd: temporalCoverage.endDate?.toISOString()
             },
             'VecTraits dataset synchronised'
           );
         } catch (error) {
+          failed += 1;
           logger.error({ err: error, sourceKey: id }, 'Failed to sync VecTraits dataset');
         }
       }
+
+      if (failed > 0) throw new Error(`VecTraits dataset sync failures: ${failed}`);
     } finally {
       await prisma.$disconnect();
     }

@@ -63,6 +63,8 @@ const searchRequestBodySchema = {
     },
     publishedFrom: { type: 'string', format: 'date' },
     publishedTo: { type: 'string', format: 'date' },
+    temporalFrom: { type: 'string', format: 'date' },
+    temporalTo: { type: 'string', format: 'date' },
     includeWithoutPublished: { type: 'boolean', default: false },
     geometry: {
       type: 'string',
@@ -100,7 +102,9 @@ const searchResponseSchema = {
           description: { type: 'string' },
           doi: { type: 'string', maxLength: 2_048 },
           publisher: { type: 'string' },
-          publishedAt: { type: 'string', format: 'date-time' }
+          publishedAt: { type: 'string', format: 'date-time' },
+          temporalStart: { type: 'string', format: 'date' },
+          temporalEnd: { type: 'string', format: 'date' }
         }
       }
     },
@@ -208,10 +212,17 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           request.body.publishedTo,
           'publishedTo'
         );
+        const temporalFrom = parseDateOnly(request.body.temporalFrom, 'temporalFrom');
+        const temporalTo = parseDateOnly(request.body.temporalTo, 'temporalTo');
 
         if (publishedFrom && publishedTo && publishedFrom > publishedTo) {
           throw new SearchValidationError(
             'publishedFrom must be earlier than or equal to publishedTo'
+          );
+        }
+        if (temporalFrom && temporalTo && temporalFrom > temporalTo) {
+          throw new SearchValidationError(
+            'temporalFrom must be earlier than or equal to temporalTo'
           );
         }
 
@@ -230,6 +241,8 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           sourceDb,
           publishedFrom,
           publishedTo,
+          temporalFrom,
+          temporalTo,
           includeWithoutPublished,
           geometry,
           taxonomyGbifIds
@@ -250,6 +263,8 @@ const searchNewRoute: FastifyPluginAsyncJsonSchemaToTs = async (
           sourceDb,
           publishedFrom,
           publishedTo,
+          temporalFrom,
+          temporalTo,
           includeWithoutPublished,
           geometry,
           taxonomyGbifIds
