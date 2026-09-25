@@ -17,7 +17,7 @@
     "printWidth": 100
   },
   "devDependencies": {
-    "prettier": "^3.9.7",
+    "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "typescript": "^6.0.3"
   }
