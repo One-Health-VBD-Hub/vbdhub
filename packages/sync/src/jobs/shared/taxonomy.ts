@@ -242,7 +242,7 @@ function resolveGlobalNamesGbifMatch(matches: GlobalNamesMatchResult[]): Resolve
   if (!match) return null;
 
   const gbifTaxonId = parseGbifId(match.currentRecordId);
-  if (!gbifTaxonId) return null;
+  if (gbifTaxonId === null) return null;
 
   const classification = parseGbifClassification(match, gbifTaxonId);
   const scientificName = chooseScientificName(match, classification.matchedPathName, gbifTaxonId);
@@ -332,7 +332,8 @@ function buildTaxonRowsFromClassification(
 
   for (let i = 0; i < ids.length; i += 1) {
     const gbifTaxonId = parseGbifId(ids[i]);
-    if (!gbifTaxonId) continue;
+    // GBIF key 0 is a real taxon, so only skip IDs that failed to parse.
+    if (gbifTaxonId === null) continue;
 
     const scientificName = names[i] || `GBIF ${gbifTaxonId}`;
     const rank = toSupportedTaxonRank(ranks[i]);

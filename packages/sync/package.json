@@ -15,7 +15,7 @@
   "dependencies": {
     "@vbdhub/db": "workspace:^",
     "csv-parse": "^7.0.2",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.3",
     "ky": "^2.1.0",
     "minio": "^8.0.7",
     "pino": "^10.3.1",
@@ -26,7 +26,7 @@
   "devDependencies": {
     "@prisma/client": "^7.10.0",
     "@tsconfig/node22": "^22.0.6",
-    "@types/node": "^22.20.3",
+    "@types/node": "^22.20.4",
     "typescript": "^6.0.3"
   }
 }
