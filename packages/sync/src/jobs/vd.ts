@@ -105,7 +105,8 @@ export const vdSyncJob: JobDefinition = {
             `${VECDYN_BASE_URL}/vecdyncsv/?${new URLSearchParams({
               page: '1',
               piids: String(id)
-            }).toString()}`
+            }).toString()}`,
+            { timeout: 45_000, retry: { retryOnTimeout: true } }
           ).json(vecDynCsvResponseSchema);
           const speciesByDate = await ky(
             `${VECDYN_BASE_URL}/vecdyn-detail-species-by-date/${id}`
