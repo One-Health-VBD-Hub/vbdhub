@@ -51,7 +51,7 @@
     "tailwind-variants": "^3.3.1",
     "usehooks-ts": "^3.1.1",
     "wellknown": "^0.5.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
