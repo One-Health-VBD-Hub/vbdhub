@@ -1,1 +1,3 @@
 32cf5939902f0b9091dfb65f68ae1c95198d5b94:packages/web/components/maps/MapboxMap.tsx:generic-api-key:87
+# Public GBIF backbone checklist UUID, not an API credential.
+1eff8b08ac6c300b7f9e8f83f4e69ccd2866ed77:packages/web/app/(main)/search/ResultCard.tsx:generic-api-key:50
