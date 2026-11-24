@@ -145,7 +145,7 @@ async function fetchVecTraitsDatasetIds(): Promise<number[]> {
 async function fetchVecTraitsDatasetRows(datasetId: number): Promise<VecTraitsDatasetRow[]> {
   // This endpoint returns all rows in one response; page parameters are ignored.
   return (
-    await ky(`${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`).json(
+    await ky(`${VECTRAITS_BASE_URL}/vectraits-dataset/${datasetId}/`, { timeout: 180_000 }).json(
       vecTraitsDatasetResponseSchema
     )
   ).results;
