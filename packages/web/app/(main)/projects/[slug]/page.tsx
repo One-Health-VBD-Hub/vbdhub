@@ -5,12 +5,12 @@ import { Launch } from '@carbon/react/icons';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { fundedProjects, getProject, gtrProjectUrl } from '../projects';
+import { getProject, gtrProjectUrl, projects } from '../projects';
 import ProjectDescription from './ProjectDescription';
 import ProjectImageGallery from './ProjectImageGallery';
 
 export function generateStaticParams() {
-  return fundedProjects.map((project) => ({ slug: project.slug }));
+  return projects.map((project) => ({ slug: project.slug }));
 }
 
 export async function generateMetadata(props: PageProps<'/projects/[slug]'>): Promise<Metadata> {
@@ -47,7 +47,8 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
         <div className='mb-4 flex flex-wrap gap-2'>
           <Tag type={project.theme === 'Genomics' ? 'purple' : 'teal'}>{project.theme}</Tag>
           {project.shortName && <Tag type='gray'>{project.shortName}</Tag>}
-          <Tag type='blue'>{project.grantRef}</Tag>
+          {project.grantRef && <Tag type='blue'>{project.grantRef}</Tag>}
+          {project.fundingScheme && <Tag type='blue'>{project.fundingScheme}</Tag>}
         </div>
         <Heading id='project-title' link={false}>
           {project.title}
@@ -160,11 +161,13 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
             How this connects to VBD Hub
           </Heading>
           <p>{project.hubRelevance}</p>
-          <p>
-            VBD Hub was not directly part of these research consortia. It was funded as follow-on
-            shared infrastructure to support discovery, documentation, and reuse of outputs across
-            the wider UK One Health vector-borne disease community.
-          </p>
+          {!project.fundingScheme && (
+            <p>
+              VBD Hub was not directly part of these research consortia. It was funded as follow-on
+              shared infrastructure to support discovery, documentation, and reuse of outputs across
+              the wider UK One Health vector-borne disease community.
+            </p>
+          )}
         </Stack>
       </section>
 
@@ -174,11 +177,13 @@ export default async function ProjectPage(props: PageProps<'/projects/[slug]'>) 
             Project links
           </Heading>
           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            <OutputLink
-              label='Official award record'
-              href={gtrProjectUrl(project.grantRef)}
-              description='Read the official award record and project abstract.'
-            />
+            {project.grantRef && (
+              <OutputLink
+                label='Official award record'
+                href={gtrProjectUrl(project.grantRef)}
+                description='Read the official award record and project abstract.'
+              />
+            )}
             <div
               title='Coming to the Hub search soon.'
               aria-disabled='true'
