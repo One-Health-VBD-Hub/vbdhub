@@ -1,73 +1,12 @@
 'use client';
 
-import React, { ReactNode } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Accordion, AccordionItem, Breadcrumb, BreadcrumbItem } from '@carbon/react';
+import { Breadcrumb, BreadcrumbItem } from '@carbon/react';
 import Anchor from '@/components/Anchor';
 import Heading from '@/components/Heading';
 import Stack from '@/components/Stack';
-
-type ScheduleItem = {
-  time: string;
-  event: ReactNode;
-};
-
-const schedule: Record<'day1' | 'day2' | 'day3', ScheduleItem[]> = {
-  day1: [
-    { time: '09:30', event: 'Welcome and introduction' },
-    { time: '10:00', event: 'Hub tools: what they are and how to use them' },
-    { time: '12:00', event: 'Lunch' },
-    { time: '12:45', event: 'Wrangling VBD data' },
-    { time: '14:45', event: 'Coffee break' },
-    { time: '15:00', event: 'Effectively communicating with different audiences' },
-    { time: '17:00', event: 'Training day ends' },
-    { time: '19:00', event: 'Optional networking activity (TBC)' }
-  ],
-  day2: [
-    { time: '09:00', event: 'Welcome and introduction' },
-    { time: '09:15', event: 'Visualising VBD data in R' },
-    { time: '11:15', event: 'Coffee break' },
-    { time: '11:30', event: 'Talk (TBC)' },
-    { time: '12:30', event: 'Lunch' },
-    {
-      time: '13:30',
-      event: (
-        <div>
-          <p>Applied workshops:</p>
-          <ul className='mt-1 list-inside list-disc'>
-            <li>Environmental and Spatial Data in VBD Research</li>
-            <li>Understanding Vector Ecology Through Trait Data</li>
-          </ul>
-        </div>
-      )
-    },
-    { time: '15:30', event: 'Coffee break' },
-    { time: '15:45', event: 'Applied workshops (continued)' },
-    { time: '17:30', event: 'Training day ends' }
-  ],
-  day3: [
-    { time: '09:00', event: 'Welcome and introduction' },
-    { time: '09:15', event: 'Participant presentations' },
-    { time: '10:15', event: 'Coffee break' },
-    { time: '10:30', event: 'Participant presentations (continued)' },
-    { time: '11:30', event: 'Concluding talk' },
-    { time: '12:00', event: 'Training event ends' }
-  ]
-};
-
-function Schedule({ items }: { items: ScheduleItem[] }) {
-  return (
-    <ul className='divide-y divide-gray-100'>
-      {items.map((item, index) => (
-        <li key={`${item.time}-${index}`} className='flex gap-4 py-2 sm:gap-5'>
-          <time className='shrink-0 text-blue-600'>{item.time}</time>
-          <div className='text-gray-700'>{item.event}</div>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export default function Page() {
   return (
@@ -179,7 +118,6 @@ export default function Page() {
         <li>Data curation practices for VBD databases</li>
         <li>R-based workflows for wrangling and visualising curated datasets</li>
         <li>How to communicate VBD research effectively to different audiences</li>
-        <li>Applied approaches for environmental and spatial data or vector trait data</li>
       </ul>
 
       <Heading as='h2' id='funding'>
@@ -192,59 +130,86 @@ export default function Page() {
         support is not available for international travel.
       </p>
 
-      <Heading as='h2' id='programme'>
-        Programme
-      </Heading>
+      <Stack gap={3} as='section'>
+        <Heading as='h2' id='instructors'>
+          Instructor
+        </Heading>
 
-      <Accordion>
-        <AccordionItem title={<span className='text-base'>Day 1 — Wednesday, 11th November</span>}>
-          <Schedule items={schedule.day1} />
-        </AccordionItem>
-        <AccordionItem title={<span className='text-base'>Day 2 — Thursday, 12th November</span>}>
-          <Schedule items={schedule.day2} />
-        </AccordionItem>
-        <AccordionItem title={<span className='text-base'>Day 3 — Friday, 13th November</span>}>
-          <Schedule items={schedule.day3} />
-        </AccordionItem>
-      </Accordion>
+        <div className='flex items-start gap-3'>
+          <Image
+            src='/members/chloe.webp'
+            alt="Chloe Coxshall's profile picture"
+            width={800}
+            height={800}
+            className='h-16 w-16 shrink-0 rounded-full object-cover'
+          />
+          <p>
+            <span className='font-semibold'>Chloe Coxshall</span> is an experienced instructor and a
+            PhD graduate at <span className='font-semibold'>Imperial College London</span>. Her
+            research examines the evolution of same-sex sexual behaviour in primates, using
+            behavioural data from rhesus macaques to test social bonding hypotheses and broader
+            questions in evolution and behaviour.
+          </p>
+        </div>
 
-      <p className='text-sm text-gray-600'>
-        Workshop breaks will be included according to the content, practical activities and timings
-        on the day.
-      </p>
+        <Heading as='h3' id='supporting-staff' link={false}>
+          Supporting staff
+        </Heading>
 
-      <Heading as='h2' id='workshops'>
-        Applied workshops
-      </Heading>
+        <div className='flex items-start gap-3'>
+          <Image
+            unoptimized
+            src='/members/sarah.webp'
+            alt="Sarah Kelly's profile picture"
+            width={290}
+            height={325}
+            className='h-16 w-16 shrink-0 rounded-full object-cover'
+          />
+          <p>
+            <span className='font-semibold'>Sarah Kelly</span> is the data curator for the Hub. She
+            predominantly focuses on relationship building with data depositors and data wrangling.
+            Sarah has worked as part of VEuPathDB, funded by{' '}
+            <span className='font-semibold'>NIAID</span>, curating both entomological and
+            epidemiological data.
+          </p>
+        </div>
 
-      <p>Participants will choose one of two applied workshops:</p>
+        <div className='flex items-start gap-3'>
+          <div className='h-16 w-16 shrink-0 overflow-hidden rounded-full'>
+            <Image
+              src='/members/stanley.webp'
+              alt="Stanislav Modrak's profile picture"
+              width={800}
+              height={533}
+              className='h-full w-full scale-125 object-cover'
+            />
+          </div>
+          <p>
+            <span className='font-semibold'>Stanislav Modrak</span> is the software engineer behind
+            the Hub platform, based at{' '}
+            <span className='font-semibold'>Imperial College London</span>. He has previously worked
+            on risk analysis and compliance in cryptocurrency markets, digital bureaucracy and
+            e-government platforms.
+          </p>
+        </div>
 
-      <ul className='my-2 list-inside list-disc'>
-        <li>Environmental and Spatial Data in VBD Research</li>
-        <li>Understanding Vector Ecology Through Trait Data</li>
-      </ul>
-
-      <p>
-        Confirmed participants will receive preparation resources, software installation
-        instructions and a workshop preference form. Places in each workshop will be allocated on a
-        first-come, first-served basis.
-      </p>
-
-      <Heading as='h2' id='contact'>
-        Contact
-      </Heading>
-
-      <p>
-        For support during the event, contact Chloe Coxshall at{' '}
-        <a className='text-[#0f62fe] hover:underline' href='mailto:c.coxshall22@imperial.ac.uk'>
-          c.coxshall22@imperial.ac.uk
-        </a>
-        . You can also view the{' '}
-        <Anchor href='https://www.linkedin.com/feed/update/urn:li:activity:7503742835146506240'>
-          LinkedIn announcement
-        </Anchor>
-        .
-      </p>
+        <div className='flex items-start gap-3'>
+          <Image
+            src='/members/francis.webp'
+            alt="Francis Windram's profile picture"
+            width={800}
+            height={800}
+            className='h-16 w-16 shrink-0 rounded-full object-cover'
+          />
+          <p>
+            <span className='font-semibold'>Francis Windram</span> is a PDRA on the Hub at{' '}
+            <span className='font-semibold'>Imperial College London</span>, where he develops tools
+            and visualisations for disease vector trait and population data. During his PhD, he
+            created computational imaging methods to extract traits from the webs of UK orb-weaving
+            spiders.
+          </p>
+        </div>
+      </Stack>
     </Stack>
   );
 }

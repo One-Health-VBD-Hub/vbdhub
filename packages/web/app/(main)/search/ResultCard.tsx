@@ -43,10 +43,11 @@ export default function ResultCard({
 }) {
   const id = `${result.sourceDb}-${result.sourceKey}`;
 
+  // Pin the legacy GBIF backbone because our numeric taxon IDs are not COL XR IDs.
   const href = gbifAggregated
     ? `https://www.gbif.org/occurrence/search?taxon_key=${taxonomy.join(
         '&taxon_key='
-      )}&occurrence_status=present`
+      )}&occurrence_status=present&checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c`
     : `/datasets/${id}`;
   return (
     <div

@@ -6,7 +6,8 @@ interface FundedProject {
   title: string;
   lead: string;
   institution: string;
-  grantRef: string;
+  grantRef?: string;
+  fundingScheme?: string;
   awardValue: string;
   period: string;
   theme: 'Mosquito-borne disease' | 'Tick-borne disease' | 'Genomics';
@@ -35,7 +36,7 @@ export const gtrProjectUrl = (grantRef: string) =>
 
 export const hubSearchUrl = (query: string) => `/search?query=${encodeURIComponent(query)}`;
 
-export const fundedProjects: FundedProject[] = [
+export const projects: FundedProject[] = [
   {
     slug: 'culex-arbovirus-transmission',
     title:
@@ -433,6 +434,10 @@ export const fundedProjects: FundedProject[] = [
         href: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11054956/pdf/viruses-16-00504.pdf'
       },
       {
+        label: 'Alongshan virus paper',
+        href: 'https://www.sciencedirect.com/science/article/pii/S1877959X26000348'
+      },
+      {
         label: 'NCBI GenBank',
         href: 'https://www.ncbi.nlm.nih.gov/genbank/'
       },
@@ -496,9 +501,92 @@ export const fundedProjects: FundedProject[] = [
       'OpTick is expected to produce field evidence, risk guidance, stakeholder outputs, and modelling frameworks relevant to VBD Hub indexing and reuse.',
     searchQuery: 'OpTick',
     website: 'https://www.optick.ceh.ac.uk/'
+  },
+  {
+    slug: 'mosquitoni',
+    shortName: 'MosquitoNI',
+    title: 'Mosquito-borne disease risk to Northern Ireland under environmental change',
+    lead: 'Dr Ross Cuthbert',
+    institution: 'Queen’s University Belfast',
+    fundingScheme: 'BBSRC New Investigator Award',
+    awardValue: '£1.5 million',
+    period: 'Four years from January 2026',
+    theme: 'Mosquito-borne disease',
+    focus: ['Mosquito surveillance', 'Environmental change', 'Disease risk', 'Citizen science'],
+    teamMembers: [
+      { name: 'Ross Cuthbert', role: 'Project Lead' },
+      { name: 'Connor Bamford', role: 'Project Co-Lead' },
+      { name: 'Emilie Pondeville', role: 'Project Co-Lead' },
+      { name: 'Steven White', role: 'Project Co-Lead' },
+      { name: 'Dominic Brass', role: 'Project Co-Lead' }
+    ],
+    organisations: [
+      'Queen’s University Belfast',
+      'University of Glasgow',
+      'UK Centre for Ecology & Hydrology'
+    ],
+    question:
+      'How will environmental change affect mosquito-borne disease risk in Northern Ireland?',
+    summary:
+      'MosquitoNI studies how climate, land use and biological invasions could affect mosquitoes and mosquito-borne disease risk in Northern Ireland.',
+    description: [
+      'Mosquitoes are generally overlooked in Northern Ireland and in many other temperate areas. The cooler climate on the island of Ireland was traditionally thought to limit mosquito abundance and disease risk, yet around 20 mosquito species have been reported. There is no evidence of local mosquito-borne disease transmission, although species found in Ireland are known to transmit pathogens elsewhere. Climate warming, land use change and biological invasions could change the risk.',
+      'Over four years, MosquitoNI will identify which mosquito species occur in different habitats, assess pathogen risks, study how mosquito populations respond to environmental conditions and evaluate future disease risks. The team will work with government, industry, charities, researchers and the public to guide the project and share its findings. The project aims to build regional capacity for surveillance and rapid response to new mosquito and pathogen incursions.',
+      'The team has already carried out a systematic survey of mosquitoes in Northern Irish wetlands.'
+    ],
+    hubRelevance:
+      'MosquitoNI’s surveillance, citizen-science and trait data can help fill gaps in the regional evidence base and support future assessments of mosquito-borne disease risk.',
+    searchQuery: 'MosquitoNI',
+    website: 'https://www.mosquitoni.com/',
+    projectLinks: [
+      {
+        label: 'Queen’s University Belfast project record',
+        href: 'https://pure.qub.ac.uk/en/projects/bbsrc-ukri3563-mosquitoni/'
+      },
+      {
+        label: 'Northern Irish wetland mosquito survey (preprint)',
+        href: 'https://doi.org/10.64898/2026.10.08.757519'
+      }
+    ],
+    dataOutputs: [
+      'Entomological surveillance data — VecDyn.',
+      'Mosquito citizen-science data — GBIF and iNaturalist.',
+      'Experimental mosquito trait data — VecTraits.',
+      'Mosquito pathogen data — VBD Hub.'
+    ],
+    images: [
+      {
+        src: '/assets/project-pages/mosquitoni/wetland-sample.webp',
+        alt: 'A hand holds a sample tube with mosquito larvae beside a wetland pool',
+        width: 1206,
+        height: 1444,
+        caption: 'Larval sample collected in a wetland'
+      },
+      {
+        src: '/assets/project-pages/mosquitoni/wetland-fieldwork.webp',
+        alt: 'A researcher in a blue jacket stands beside a pool in an open wetland',
+        width: 1600,
+        height: 1200,
+        caption: 'Wetland fieldwork in Northern Ireland'
+      },
+      {
+        src: '/assets/project-pages/mosquitoni/field-team.webp',
+        alt: 'Three people inspect equipment hanging from a tree',
+        width: 1200,
+        height: 1600,
+        caption: 'The team checks field equipment'
+      },
+      {
+        src: '/assets/project-pages/mosquitoni/mosquito-trap.webp',
+        alt: 'A mosquito trap hangs from a tree branch',
+        width: 1177,
+        height: 1444,
+        caption: 'Mosquito trap set up for surveillance'
+      }
+    ]
   }
 ];
 
 export function getProject(slug: string) {
-  return fundedProjects.find((project) => project.slug === slug);
+  return projects.find((project) => project.slug === slug);
 }
