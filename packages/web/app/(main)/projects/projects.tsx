@@ -433,6 +433,10 @@ export const fundedProjects: FundedProject[] = [
         href: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11054956/pdf/viruses-16-00504.pdf'
       },
       {
+        label: 'Alongshan virus paper',
+        href: 'https://www.sciencedirect.com/science/article/pii/S1877959X26000348'
+      },
+      {
         label: 'NCBI GenBank',
         href: 'https://www.ncbi.nlm.nih.gov/genbank/'
       },
