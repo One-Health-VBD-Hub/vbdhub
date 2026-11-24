@@ -4,16 +4,16 @@ import Stack from '@/components/Stack';
 import { Tag } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import Link from 'next/link';
-import { fundedProjects } from './projects';
+import { projects } from './projects';
 
 export const metadata = {
   title: 'Community projects - Vector-Borne Diseases Hub',
   description:
-    'Explore projects funded through the UKRI-Defra One Health approach to vector-borne diseases programme and their outputs.',
+    'Explore projects from the UKRI-Defra One Health programme, related vector-borne disease research, and their outputs.',
   openGraph: {
     title: 'Community projects - Vector-Borne Diseases Hub',
     description:
-      'Explore projects funded through the UKRI-Defra One Health approach to vector-borne diseases programme and their outputs.'
+      'Explore projects from the UKRI-Defra One Health programme, related vector-borne disease research, and their outputs.'
   },
   alternates: {
     canonical: '/projects'
@@ -25,7 +25,7 @@ export default function ProjectsPage() {
     <Stack as='main' gap={7} className='mx-auto mt-24 sm:mt-32'>
       <Stack as='header' gap={4} className='max-w-4xl'>
         <p className='text-sm font-medium tracking-wide text-gray-600 uppercase'>
-          UKRI-Defra One Health programme
+          UK vector-borne disease research
         </p>
         <Heading id='community-projects' link={false}>
           Community projects and outputs
@@ -38,8 +38,8 @@ export default function ProjectsPage() {
           reuse of outputs from this community.
         </p>
         <p>
-          Each project page links to award records, Gateway to Research outputs,
-          and related data indexed by VBD Hub as it becomes available.
+          The project pages bring together research from the programme and related projects,
+          with links to project records and outputs as they become available.
         </p>
       </Stack>
 
@@ -79,7 +79,7 @@ export default function ProjectsPage() {
           </Heading>
 
           <div className='grid grid-cols-1 gap-5 lg:grid-cols-2'>
-            {fundedProjects.map((project) => (
+            {projects.map((project) => (
               <article
                 key={project.slug}
                 className='flex min-h-64 flex-col justify-between border border-gray-200 p-5'
@@ -91,6 +91,7 @@ export default function ProjectsPage() {
                     >
                       {project.theme}
                     </Tag>
+                    {project.fundingScheme && <Tag type='blue'>{project.fundingScheme}</Tag>}
                     {project.shortName && (
                       <Tag type='gray'>{project.shortName}</Tag>
                     )}
